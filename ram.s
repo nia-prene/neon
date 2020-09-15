@@ -9,6 +9,8 @@ xRegister: .res 1
 yRegister: .res 1
 personPaletteIndex: .res 1
 personIndex: .res 1
+attributeByte: .res 1
+portraitCounter: .res 1
 .segment "OAM"
 sprites: .res 256
 
@@ -19,4 +21,5 @@ currentDay: .res 1
 currentScene: .res 1
 backgroundColor: .res 1
 palettes: .res 24
-
+portraitPalettes: .res 12
+player: .res 24

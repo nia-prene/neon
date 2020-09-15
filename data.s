@@ -1,17 +1,23 @@
 .segment "RAWDATA"
 ;raw data
 
-paletteData:
-	.byte $28, $08, $18, $37, $28, $05, $15, $35, $28, $0c, $06, $16, $28, $0c, $1c, $3c, $28, $08, $18, $37, $28, $05, $15, $35, $28, $0c, $06, $16, $1c, $0c, $1c, $3c
+;default data
+defaultPalette:
+	.byte $08, $28, $37;odettesprite
+	.byte $0c, $10, $36;white sprite
+	;the two white sprites will be overwritten most often. I want to make sure POC are a part of this game by default.
+	.byte $07, $16, $27;mixed sprite
+	.byte $07, $18, $17;poc sprite
 ;people
 people:
 	.word odetteData, pepperData, reeseData, niaData
 
 .DEFINE odette	0
-odetteData:
+odetteData:;this will be moved to ram eventually
 	;palettes
 	.byte $08, $28, $37;sprite
 	.byte $08, $18, $37;portrait
+	.byte $00, $00 
 .DEFINE pepper	1
 pepperData:
 	;palettes
@@ -28,21 +34,27 @@ niaData:
 	.byte $03, $24, $35;sprite
 	.byte $03, $24, $35;portrait
 
+
 ;places
 places:
 	.word cafeData
 .DEFINE cafe	0
 cafeData:
-	.byte $28 ;background color
 	.byte $08, $18, $38;bg palettes
 	.byte $08, $18, $38
 	.byte $08, $18, $38
 	.byte $00 ;to do objects
 ;scenes
+.DEFINE sunny	$37
+.DEFINE twilight	$26
+.DEFINE night	$00
+.DEFINE rainy	$10
+.DEFINE foggy	$20
 scenes:;an array of pointers
 	.word debugRoom
 debugRoom:
+	.byte twilight;time of day
 	.byte cafe;place
-	.byte odette, pepper, reese, nia, $ff
+	.byte odette, nia, reese, pepper, $ff
 
 
