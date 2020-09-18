@@ -35,9 +35,9 @@ JOY1 = $4016;Joystick 1 data (R) and joystick strobe (W)
 JOY2 = $4017;Joystick 2 data (R) and frame counter control (W) 
 
 ;Project ppu settings
-OAM_LOCATION = $02
+OAM_LOCATION = 02
 
-BASE_NAMETABLE = 0;keep this here for ease of change
+BASE_NAMETABLE = 0;this here for ease of change
 VRAM_INCREMENT = 1;0: add 1, going across; 1: add 32, going down
 SPRITE_TABLE = 0;0: $0000, 1: $1000, ignored in 8x16 mode
 BACKGROUND_TABLE = 1;0: $0000 1: $1000

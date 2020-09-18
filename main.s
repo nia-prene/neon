@@ -8,18 +8,20 @@
 main:
 	lda #$00
 	sta currentScene
-	jsr unzipScene;unzip refers to the process of moving rom files to ram
-	jsr loadAllPalettes;loading refers to the act of using in the program
+	jsr prepareScene;moves all scene items from rom to ram
+	jsr loadAllPalettes
+	bit PPUSTATUS
 @notInBlank:
 	bit PPUSTATUS
 	bpl @notInBlank
 
-	lda PPU_SETTINGS
+	lda #PPU_SETTINGS
 	sta PPUCTRL
+	bit PPUSTATUS
 @vblankWait:
 	bit PPUSTATUS
 	bpl @vblankWait
-	lda MASK_SETTINGS
+	lda #MASK_SETTINGS
 	sta PPUMASK
 loop:
 	jmp loop
@@ -28,7 +30,9 @@ nmi:
 	sta accumulator
 	sty yRegister
 	stx xRegister
-	lda OAM_LOCATION
+	lda #$00
+	sta OAMADDR
+	lda #$02
 	sta OAMDMA
 	;vblank code goes here
 	lda accumulator
@@ -36,47 +40,100 @@ nmi:
 	ldx xRegister
 	rti
 
-;unzipScene(currentScene)
-unzipScene:
-	;first we need to clear data from the old scene
+prepareScene:;(currentScene)
+	lda #$00
+	sta sceneIndex;index in scene object array (starting at 0)
+	sta placeIndex;index in places object array (starting at 0)
+	sta spritePaletteIndex;where we are in spritePalettes
+	sta portraitPaletteIndex;where we are in portraitPalettes
+	sta attributeByte;this will auto increment attributes for sprites
+
+	jsr clearSprites;()
+	jsr clearPlayfield;()
+	jsr loadDefaultPalettes;()
+	jsr getScenePointer;(currentScene
+	jsr getTimeOfDay;(scenePointer)
+	jsr getPlacePointer;(scenePointer)
+	jsr unzipPlacePalettes;(placeIndex)
+
+@paletteLoop:
+	ldy sceneIndex
+	lda (scenePointer), y;peak at the next person for sentinel
+	cmp #$ff
+	beq @endOfPeople;$ff is the sentinel for no more people
+	jsr getPeoplePalettesPointer
+	jsr unzipSpritePalettes
+	jsr unzipPortraitPalettes
+	jmp @paletteLoop
+@endOfPeople:
+@spriteLoop:
+	ldy sceneIndex
+	iny
+	sty sceneIndex
+	lda (scenePointer), y;
+	cmp #$ff ;sentinel for end of sprites
+	beq @endOfSprites
+	jsr getSpritePointer
+	jsr unzipSprites
+	jmp @spriteLoop
+@endOfSprites:
+	rts
+
+
+clearSprites:
 	lda #$ff;clearing sprites with $ff puts them off screen
 	ldx #$00
-@clearSprites:
+;clears the 1 page of data at "sprites" with ff
+@clearSpritesLoop:
 	sta sprites, x
 	inx
-	bne @clearSprites
+	bne @clearSpritesLoop
+	rts
 
+
+clearPlayfield:
+	ldx #$00
 	lda #$00;clearing screens with $00 makes them blank tiles
-	;x is 0 and a is 0
+;clears the page of memory at "screen1:"
 @clearScreen1:
 	sta screen1, x
 	inx
 	bne @clearScreen1
 	;x is 0 and a is 0
+;clears the page of memory at "screen2:"
 @clearScreen2:
 	sta screen2, x
 	inx
 	bne @clearScreen2
-	;x is 0 and a is 0
-	;next we are going to fill our palettes with some default values
+	rts
+
+
+loadDefaultPalettes:
+	lda #$00
+	tax
 	sta backgroundColor ;a is still #$00, grey default color
-	lda #$2b
-	ldy #$00
+	lda #$2b;background palettes get set to ugly palette so its noticable if something goes wrong
+;stores #$2b into the first 16 palette locations
 @loadDefaultBackgroundPalette:
 	sta palettes, x
 	inx
-	cpx #12 ;background palettes get set to ugly palette so its noticable
+	cpx #16; 16 colors 
 	bne @loadDefaultBackgroundPalette
 	ldy #$00
 	;y is 0, x is position in palettes array
+;loads colors 16 - 36 with default sprite colors. if there arent enough people to fill a scene, random people will have unique palettes
 @loadDefaultSpritePalettes:
 	lda defaultPalette, y
 	sta palettes, x
 	inx
 	iny
-	cpx #24 ;12 colors
+	cpx #32 ;32 total colors
 	bne @loadDefaultSpritePalettes
-	;get scene number
+	rts
+
+
+
+getScenePointer:
 	lda currentScene
 	;find pointer to scene. it is in an array of pointers at "scenes:"
 	;because an address is 16 bit, the number needs to be doubled in order to find the correct address. 
@@ -86,15 +143,22 @@ unzipScene:
 	sta scenePointer
 	lda scenes+1, x
 	sta scenePointer+1
-	;loadPlace
+	rts
+
+
+getTimeOfDay:
 	;0th element in scene array is the time of day
-	ldy #$00
+	ldy sceneIndex
 	lda (scenePointer), y
 	sta backgroundColor
 	iny
-	;the next element is the place, decoded as an index in an array of pointers
+	sty sceneIndex
+	rts
+
+
+getPlacePointer:
+	ldy sceneIndex; 2nd element in scene array is place
 	lda (scenePointer), y
-	;"places:" is an array of addresses. the number needs to be doubled to find the pointer
 	asl	;double the number
 	tax
 	;get the pointer to the place and store it in "placePointer"
@@ -102,92 +166,141 @@ unzipScene:
 	sta placePointer
 	lda places+1, x
 	sta placePointer+1
+	iny
+	sty sceneIndex
+	rts
+
+
+unzipPlacePalettes:
 	;first element of the place
-	ldy #$00;byte 0 in places is palettes
+	ldy placeIndex
 @backgroundPaletteLoop:
-	;this loop loads all the palettes from the place pointed at, 9 in total
+	;this loop loads all the palettes from the place pointed at, 12 in total
 	lda (placePointer), y
 	sta palettes, y
 	iny
-	cpy #$09;posttest load 9 colors
+	cpy #12;posttest load 12 colors
 	bne @backgroundPaletteLoop
+	rts
+
+
 ;loadObjects
-;loadPeople(people)
-;variables personPaletteIndex personIndex
-;these variables persist so that the sprite palette index and the current person is not lost
-	;personPaletteIndex = 12 (this is where we are in the palettes as a whole
-	;personIndex = 1 (people start on the 1st byte of a scene array
-	lda #12;through the background palettes. the rest start at #12
-	sta personPaletteIndex
-	lda #$02;people start at byte 2 in scene array
-	sta personIndex
-	lda #$00
-	sta portraitCounter;this helps get all the portraits of all the people in the portrait array
-@loadPeopleLoop:
-	lda personIndex
-	sec
-	sbc #$02;althogh our people start at $2 in array, the first person will need their attribute byte
-	sta attributeByte
-	ldy personIndex
+
+unzipPeoplePalettes:
+	rts
+
+
+getPeoplePalettesPointer:
+	ldy sceneIndex
 	lda (scenePointer), y
-	bmi @endOfPeople;$ff is the sentinel for no more people
+	iny
+	sty sceneIndex
 	asl
 	tax
 	;get the pointer to the person
-	lda people,x
-	sta peoplePointer
-	lda people+1, x
-	sta peoplePointer+1
-	;increase person index for next loop before value is lost
-	iny
-	sty personIndex
+	lda peoplePalettes,x
+	sta peoplePalettesPointer
+	lda peoplePalettes+1, x
+	sta peoplePalettesPointer+1
+	rts
 
-	ldy #$00;sprite palettes are the 0th byte in people arrays
-	ldx personPaletteIndex;this is where we are in loading palettes
-@loadSpritePalette:
-	lda (peoplePointer), y
-	sta palettes, x
+
+unzipSpritePalettes:
+	ldy #$00;sprite palettes are the 0th byte in peoplePalette arrays
+	ldx spritePaletteIndex;this is where we are in loading palettes
+@paletteLoop:
+	lda (peoplePalettesPointer), y
+	sta spritePalettes, x
 	iny
 	inx
-	stx personPaletteIndex
-	cpy #$03
-	bne @loadSpritePalette
-	;y is at 3
-	ldx portraitCounter
-@loadPortraitPalette:
-	;lets get the portraits too, y is at three and portraits start at 3
-	lda (peoplePointer), y
+	cpy #04
+	bne @paletteLoop
+	stx spritePaletteIndex
+	rts
+
+unzipPortraitPalettes:
+	ldx portraitPaletteIndex
+	ldy #04;this is where portrait palettes start in people palettes
+@loadPaletteLoop:
+	lda (peoplePalettesPointer), y
 	sta portraitPalettes, x
 	inx
 	iny
-	cpy #06;three colors
-	bne @loadPortraitPalette
-	stx portraitCounter
-	jmp @loadPeopleLoop
-@endOfPeople:
+	cpy #08;four colors, y was at 4
+	bne @loadPaletteLoop
+	stx portraitPaletteIndex
 	rts
-	;loadConversations(conversation)
 
-	;this subroutine transfers all palettes to the ppu
+
+getSpritePointer:
+	ldy sceneIndex
+	lda (scenePointer), y;
+	asl
+	tax
+	lda spriteData, x
+	sta spritePointer
+	lda spriteData+1, x
+	sta spritePointer+1
+	rts
+
+
+unzipSprites:
+	ldx spriteCounter
+	ldy #$00 ;first element of the array
+@spriteLoop:
+	lda (spritePointer), y
+	cmp #$ff
+	beq @spriteIsDone
+	sta sprites, x
+	inx
+	iny
+	lda (spritePointer), y
+	sta sprites, x
+	inx
+	iny
+	lda (spritePointer), y
+	ora attributeByte
+	sta sprites, x
+	inx
+	iny
+	lda (spritePointer), y
+	sta sprites, x
+	inx
+	iny
+	jmp @spriteLoop
+@spriteIsDone:
+	stx spriteCounter
+	ldx attributeByte
+	inx
+	cpx #04
+	beq @resetAttributeByte
+	stx attributeByte
+	rts
+@resetAttributeByte:
+	lda #$00
+	sta attributeByte
+	rts
+
+;this subroutine transfers all palettes to the ppu
 loadAllPalettes:
 	lda #$3f
 	sta PPUADDR
 	lda #$00
 	sta PPUADDR
-	ldx #$00
+	tax
+	tay
 @mainPaletteLoop:
-	ldy #$00
-	lda backgroundColor
-	sta PPUDATA
-@loadPaletteLoop:
 	lda palettes, x
 	sta PPUDATA
-	iny
 	inx
-	cpy #$03
-	bne @loadPaletteLoop
-	cpx #24
+	cpx #32
 	bne @mainPaletteLoop
+	lda #$3f
+	sta PPUADDR
+	tya 
+	sta PPUADDR
+	lda backgroundColor
+	sta PPUDATA 
 	rts
 .include "data.s"
 .segment "VECTORS"
@@ -196,6 +309,3 @@ loadAllPalettes:
 
 .segment "CHARS"
 .incbin "graphics.chr"
-
-
-

@@ -1,14 +1,16 @@
+;this module initializes the nes to a known state, sets OAM buffer to address $0200 and jumps to the main: subroutine.
+
 reset:
-    sei        ; ignore IRQs
-    cld        ; disable decimal mode
+    sei		;ignore IRQs
+	cld		;disable decimal mode
     ldx #$40
-    stx $4017  ; disable APU frame IRQ
+    stx JOY2	;disable APU frame IRQ
     ldx #$ff
     txs        ; Set up stack
     inx        ; now X = 0
-    stx $2000  ; disable NMI
-    stx $2001  ; disable rendering
-    stx $4010  ; disable DMC IRQs
+	stx PPUCTRL; disable NMI
+    stx PPUMASK; disable rendering
+    stx DMC_FREQ; disable DMC IRQs
 
     ; Optional (omitted):
     ; Set up mapper and jmp to further init code here.
@@ -16,12 +18,12 @@ reset:
     ; The vblank flag is in an unknown state after reset,
     ; so it is cleared here to make sure that @vblankwait1
     ; does not exit immediately.
-    bit $2002
+    bit PPUSTATUS
 
     ; First of two waits for vertical blank to make sure that the
     ; PPU has stabilized
 @vblankwait1:  
-    bit $2002
+	bit PPUSTATUS
     bpl @vblankwait1
 
     ; We now have about 30,000 cycles to burn before the PPU stabilizes.
@@ -30,22 +32,25 @@ reset:
     ; expects for BSS.  Conveniently, X is still 0.
     txa
 @clrmem:
-    sta $000,x
-    sta $100,x
-    sta $200,x
-    sta $300,x
-    sta $400,x
-    sta $500,x
-    sta $600,x
-    sta $700,x
-    inx
-    bne @clrmem
+	lda $00
+	sta $000,x	;clear ram
+	sta $100,x
+	sta $300,x
+	sta $400,x
+	sta $500,x
+	sta $600,x
+	sta $700,x
+	lda #$ff
+	sta $200,x	;hide sprites at lower right
+	lda #$00
+	inx
+	bne @clrmem
+	
+@vblankwait2:	;second of two vblank waits for ppu stabilization
+	bit PPUSTATUS
+	bpl @vblankwait2
+	lda OAM_LOCATION
+	sta OAMDMA;set up OAM DMA at $0200
 
-    ; Other things you can do between vblank waits are set up audio
-    ; or set up other mapper registers.
-   
-@vblankwait2:
-    bit $2002
-    bpl @vblankwait2
-
-	jmp main 
+	nop
+	jsr main;return from interrupt
