@@ -8,8 +8,9 @@
 main:
 	lda #$00
 	sta currentScene
-	jsr prepareScene;moves all scene items from rom to ram
-	jsr loadAllPalettes
+	jsr clearRam
+	jsr unzip
+	jsr fullyRender
 	bit PPUSTATUS
 @notInBlank:
 	bit PPUSTATUS
@@ -18,65 +19,58 @@ main:
 	lda #PPU_SETTINGS
 	sta PPUCTRL
 	bit PPUSTATUS
+	
+	lda #$00
+	sta PPUSCROLL
+	sta PPUSCROLL
+
 @vblankWait:
 	bit PPUSTATUS
 	bpl @vblankWait
 	lda #MASK_SETTINGS
 	sta PPUMASK
 loop:
+	inc loopTest
 	jmp loop
 
 nmi:
-	sta accumulator
-	sty yRegister
-	stx xRegister
+	pha;save registers
+	txa
+	pha
+	tya
+	pha
+	
 	lda #$00
-	sta OAMADDR
-	lda #$02
+	sta OAMADDR;reset OAM 
+	
+	lda #OAM_LOCATION
 	sta OAMDMA
 	;vblank code goes here
-	lda accumulator
-	ldy yRegister
-	ldx xRegister
+
+	pla
+	tay
+	pla;restore registers
+	tax
+	pla
+	
 	rti
 
-prepareScene:;(currentScene)
-	lda #$00
-	sta sceneIndex;index in scene object array (starting at 0)
-	sta placeIndex;index in places object array (starting at 0)
-	sta spritePaletteIndex;where we are in spritePalettes
-	sta portraitPaletteIndex;where we are in portraitPalettes
-	sta attributeByte;this will auto increment attributes for sprites
-
+clearRam:
 	jsr clearSprites;()
-	jsr clearPlayfield;()
+	jsr clearNametables;()
 	jsr loadDefaultPalettes;()
-	jsr getScenePointer;(currentScene
-	jsr getTimeOfDay;(scenePointer)
-	jsr getPlacePointer;(scenePointer)
-	jsr unzipPlacePalettes;(placeIndex)
+	rts
 
-@paletteLoop:
-	ldy sceneIndex
-	lda (scenePointer), y;peak at the next person for sentinel
-	cmp #$ff
-	beq @endOfPeople;$ff is the sentinel for no more people
-	jsr getPeoplePalettesPointer
-	jsr unzipSpritePalettes
-	jsr unzipPortraitPalettes
-	jmp @paletteLoop
-@endOfPeople:
-@spriteLoop:
-	ldy sceneIndex
-	iny
-	sty sceneIndex
-	lda (scenePointer), y;
-	cmp #$ff ;sentinel for end of sprites
-	beq @endOfSprites
-	jsr getSpritePointer
-	jsr unzipSprites
-	jmp @spriteLoop
-@endOfSprites:
+unzip:;(int currentScene)
+	jsr getScenePointer
+	jsr getTimeOfDay
+	jsr getPlacePointer
+	jsr unzipPlacePalettes
+	jsr unzipAllScreens
+	jsr unzipAll128
+	jsr unzipAll64
+	jsr unzipAll32
+
 	rts
 
 
@@ -90,23 +84,20 @@ clearSprites:
 	bne @clearSpritesLoop
 	rts
 
-
-clearPlayfield:
-	ldx #$00
-	lda #$00;clearing screens with $00 makes them blank tiles
-;clears the page of memory at "screen1:"
-@clearScreen1:
-	sta screen1, x
+clearNametables:
+	lda #$20
+	sta PPUADDR
+	lda #$00
+	sta PPUADDR
+	tax
+	ldy #08
+@nametableClear:
+	sta PPUDATA
 	inx
-	bne @clearScreen1
-	;x is 0 and a is 0
-;clears the page of memory at "screen2:"
-@clearScreen2:
-	sta screen2, x
-	inx
-	bne @clearScreen2
+	bne @nametableClear
+	dey
+	bne @nametableClear
 	rts
-
 
 loadDefaultPalettes:
 	lda #$00
@@ -131,8 +122,6 @@ loadDefaultPalettes:
 	bne @loadDefaultSpritePalettes
 	rts
 
-
-
 getScenePointer:
 	lda currentScene
 	;find pointer to scene. it is in an array of pointers at "scenes:"
@@ -148,16 +137,14 @@ getScenePointer:
 
 getTimeOfDay:
 	;0th element in scene array is the time of day
-	ldy sceneIndex
+	ldy #TIMEOFDAY
 	lda (scenePointer), y
 	sta backgroundColor
-	iny
-	sty sceneIndex
 	rts
 
 
 getPlacePointer:
-	ldy sceneIndex; 2nd element in scene array is place
+	ldy #LOCATION
 	lda (scenePointer), y
 	asl	;double the number
 	tax
@@ -166,134 +153,246 @@ getPlacePointer:
 	sta placePointer
 	lda places+1, x
 	sta placePointer+1
-	iny
-	sty sceneIndex
 	rts
 
 
 unzipPlacePalettes:
 	;first element of the place
-	ldy placeIndex
+	ldy #PLACEPALETTES
+	ldx #12
 @backgroundPaletteLoop:
 	;this loop loads all the palettes from the place pointed at, 12 in total
 	lda (placePointer), y
 	sta palettes, y
 	iny
-	cpy #12;posttest load 12 colors
+	dex
 	bne @backgroundPaletteLoop
 	rts
 
-
-;loadObjects
-
-unzipPeoplePalettes:
-	rts
-
-
-getPeoplePalettesPointer:
-	ldy sceneIndex
-	lda (scenePointer), y
+unzipAllScreens:
+	ldy #SCREENS
+	ldx #$00
+@screenLoop:
+	lda (placePointer), y
+	sta halfScreens,x
 	iny
-	sty sceneIndex
-	asl
-	tax
-	;get the pointer to the person
-	lda peoplePalettes,x
-	sta peoplePalettesPointer
-	lda peoplePalettes+1, x
-	sta peoplePalettesPointer+1
-	rts
-
-
-unzipSpritePalettes:
-	ldy #$00;sprite palettes are the 0th byte in peoplePalette arrays
-	ldx spritePaletteIndex;this is where we are in loading palettes
-@paletteLoop:
-	lda (peoplePalettesPointer), y
-	sta spritePalettes, x
-	iny
-	inx
-	cpy #04
-	bne @paletteLoop
-	stx spritePaletteIndex
-	rts
-
-unzipPortraitPalettes:
-	ldx portraitPaletteIndex
-	ldy #04;this is where portrait palettes start in people palettes
-@loadPaletteLoop:
-	lda (peoplePalettesPointer), y
-	sta portraitPalettes, x
-	inx
-	iny
-	cpy #08;four colors, y was at 4
-	bne @loadPaletteLoop
-	stx portraitPaletteIndex
-	rts
-
-
-getSpritePointer:
-	ldy sceneIndex
-	lda (scenePointer), y;
-	asl
-	tax
-	lda spriteData, x
-	sta spritePointer
-	lda spriteData+1, x
-	sta spritePointer+1
-	rts
-
-
-unzipSprites:
-	ldx spriteCounter
-	ldy #$00 ;first element of the array
-@spriteLoop:
-	lda (spritePointer), y
-	cmp #$ff
-	beq @spriteIsDone
-	sta sprites, x
-	inx
-	iny
-	lda (spritePointer), y
-	sta sprites, x
-	inx
-	iny
-	lda (spritePointer), y
-	ora attributeByte
-	sta sprites, x
-	inx
-	iny
-	lda (spritePointer), y
-	sta sprites, x
-	inx
-	iny
-	jmp @spriteLoop
-@spriteIsDone:
-	stx spriteCounter
-	ldx attributeByte
 	inx
 	cpx #04
-	beq @resetAttributeByte
-	stx attributeByte
-	rts
-@resetAttributeByte:
-	lda #$00
-	sta attributeByte
+	bne @screenLoop
 	rts
 
+unzipAll128:
+;called during forced blank to unzip the entire tiles128 array
+	lda #$00
+	sta current128Column
+	jsr unzip128Column
+	inc current128Column
+	jsr unzip128Column
+	inc current128Column
+	jsr unzip128Column
+	inc current128Column
+	jsr unzip128Column
+	rts
+
+unzip128Column:;(current128Column)
+;the tiles128 array stores 8 128x128 from top to bottom in 4 rows of 2. they are loaded in by column
+	lda current128Column
+	tay;y where they are in the half screens array
+	;chop off last 2 bits and store in target128Column
+	and #%00000011
+	asl
+	tax;x where they are going
+	;grab the screen from the array
+	lda halfScreens,y
+	tay;y is the screen
+	lda topHalfScreen,y
+	sta tiles128,x
+	inx
+	lda bottomHalfScreen,y
+	sta tiles128,x
+	rts
+
+unzipAll64:
+;called during forced blank to unzip the entire tiles64 array
+	lda #$00
+	sta current64Column
+	jsr unzip64Column
+	inc current64Column
+	jsr unzip64Column
+	inc current64Column
+	jsr unzip64Column
+	inc current64Column
+	jsr unzip64Column
+	rts
+
+unzip64Column:
+;tiles are decompressed from 8 128x128 blocks into 32 64x64 blocks. decompressed in columns
+	lda current64Column;4 columns, 2 tiles wide
+	and #%00000011
+	asl
+	tax;x where they come from
+	asl
+	asl
+	tay;y where they are going
+	;get first tile in column and save it
+	lda tiles128,x
+	sta tile128a
+	inx
+	;get second tile in column and save it
+	lda tiles128,x
+	sta tile128b
+	;store the left hand sides of tile128a and 128b into tiles64 array
+	ldx tile128a
+	lda topLeft128,x
+	sta tiles64,y
+	iny
+	lda bottomLeft128,x
+	sta tiles64,y
+	iny
+	ldx tile128b
+	lda topLeft128,x
+	sta tiles64,y
+	iny
+	lda bottomLeft128,x
+	sta tiles64,y
+	iny
+	;store the right hand sides of tile128a and 128b into tiles64 array
+	ldx tile128a
+	lda topRight128,x
+	sta tiles64,y
+	iny
+	lda bottomRight128,x
+	sta tiles64,y
+	iny
+	ldx tile128b
+	lda topRight128,x
+	sta tiles64,y
+	iny
+	lda bottomRight128,x
+	sta tiles64,y
+	rts
+
+unzipAll32:
+;called during forced blank to unzip entire tiles32 array
+	lda #$00
+	sta current32Column
+	jsr unzip32Column
+	inc current32Column
+	jsr unzip32Column
+	inc current32Column
+	jsr unzip32Column
+	inc current32Column
+	jsr unzip32Column
+	inc current32Column
+	jsr unzip32Column
+	inc current32Column
+	jsr unzip32Column
+	inc current32Column
+	jsr unzip32Column
+	inc current32Column
+	jsr unzip32Column
+	rts
+
+unzip32Column:
+	;tiles32 is a 128 byte array that stores 32x32 tiles in 16 columns of 8 tiles. tiles are rendered from this array and referenced at this level for collision detection and palette information. tiles are unzipped by column at the 64x64 level, so to columns (16 tiles) at a time
+	lda current32Column
+	;validate input
+	and #%00000111
+	asl
+	asl
+	tax;x where they are coming from
+	asl
+	asl
+	tay;y where they are going
+	;save the 4 tiles we are working with
+	lda tiles64,x
+	sta tile64a
+	inx
+	lda tiles64,x
+	sta tile64b
+	inx
+	lda tiles64,x
+	sta tile64c
+	inx
+	lda tiles64,x
+	sta tile64d
+	;ok lets unload the first column
+	ldx tile64a
+	lda topLeft64,x
+	sta tiles32,y
+	iny
+	lda bottomLeft64,x
+	sta tiles32,y
+	iny
+	ldx tile64b
+	lda topLeft64,x
+	sta tiles32,y
+	iny
+	lda bottomLeft64,x
+	sta tiles32,y
+	iny
+	ldx tile64c
+	lda topLeft64,x
+	sta tiles32,y
+	iny
+	lda bottomLeft64,x
+	sta tiles32,y
+	iny
+	ldx tile64d
+	lda topLeft64,x
+	sta tiles32,y
+	iny
+	lda bottomLeft64,x
+	sta tiles32,y
+	iny
+	ldx tile64a
+	lda topRight64,x
+	sta tiles32,y
+	iny
+	lda bottomRight64,x
+	sta tiles32,y
+	iny
+	ldx tile64b
+	lda topRight64,x
+	sta tiles32,y
+	iny
+	lda bottomRight64,x
+	sta tiles32,y
+	iny
+	ldx tile64c
+	lda topRight64,x
+	sta tiles32,y
+	iny
+	lda bottomRight64,x
+	sta tiles32,y
+	iny
+	ldx tile64d
+	lda topRight64,x
+	sta tiles32,y
+	iny
+	lda bottomRight64,x
+	sta tiles32,y
+	iny
+	rts
+	
+fullyRender:
+	jsr loadPalettes
+	jsr renderEntireScreen
+
+	rts
 ;this subroutine transfers all palettes to the ppu
-loadAllPalettes:
+loadPalettes:
 	lda #$3f
 	sta PPUADDR
 	lda #$00
-	sta PPUADDR
-	tax
 	tay
+	sta PPUADDR
+	ldx #32	
 @mainPaletteLoop:
-	lda palettes, x
+	lda palettes, y
 	sta PPUDATA
-	inx
-	cpx #32
+	iny
+	dex
 	bne @mainPaletteLoop
 	lda #$3f
 	sta PPUADDR
@@ -302,6 +401,177 @@ loadAllPalettes:
 	lda backgroundColor
 	sta PPUDATA 
 	rts
+
+renderEntireScreen:
+	lda #$00
+	sta tileToRender
+@renderScreenLoop:
+	jsr render32
+	inc tileToRender
+	bpl @renderScreenLoop
+	rts
+
+render32:
+;this renders a 32x32 tile from the tiles32 array.
+;variables
+;tileToRender the position of the tile in the array.
+	;render at normal ppu settings
+	lda #PPU_SETTINGS
+	sta PPUCTRL
+	lda tileToRender
+	;validate input
+	and #%011111111
+	tax;x is tile number in array
+	asl
+	tay;y is nametable reference pos
+	lda tileToRender
+	;all tiles ending in 111 are shorter
+	and #%00000111
+	cmp #%00000111
+	bne @standardTile
+	;below is shortened tile
+	;save the 2 tiles
+	lda tiles32,x
+	tax;x is now the 32x32 tile
+	lda topLeft32,x
+	sta tile16a
+	lda topRight32,x
+	sta tile16c
+	;look up nametable conversion, save them and put them in ppu
+	lda nameTableConversion,y
+	sta currentNameTable
+	sta PPUADDR
+	iny
+	lda nameTableConversion,y
+	sta currentNameTable+1
+	sta PPUADDR
+	;now the ppu knows where to put our tile
+	ldx tile16a
+	lda topLeft16,x
+	sta PPUDATA
+	lda bottomLeft16,x
+	sta PPUDATA
+	inc currentNameTable+1
+	lda currentNameTable
+	sta PPUADDR
+	lda currentNameTable+1
+	sta PPUADDR
+	lda topRight16,x
+	sta PPUDATA
+	lda bottomRight16,x
+	sta PPUDATA
+	inc currentNameTable+1
+	lda currentNameTable
+	sta PPUADDR
+	lda currentNameTable+1
+	sta PPUADDR
+	ldx tile16c
+	lda topLeft16,x
+	sta PPUDATA
+	lda bottomLeft16,x
+	sta PPUDATA
+	inc currentNameTable+1
+	lda currentNameTable
+	sta PPUADDR
+	lda currentNameTable+1
+	sta PPUADDR
+	lda topRight16,x
+	sta PPUDATA
+	lda bottomRight16,x
+	sta PPUDATA
+	jmp @attributeByte
+
+@standardTile:
+	;save the 4 tiles
+	lda tiles32,x
+	tax;x is now the 32x32 tile
+	lda topLeft32,x
+	sta tile16a
+	lda bottomLeft32,x
+	sta tile16b
+	lda topRight32,x
+	sta tile16c
+	lda bottomRight32,x
+	sta tile16d
+	;look up nametable conversion, save them and put them in ppu
+	lda nameTableConversion,y
+	sta currentNameTable
+	sta PPUADDR
+	iny
+	lda nameTableConversion,y
+	sta currentNameTable+1
+	sta PPUADDR
+	;now the ppu knows where to put our tile
+	ldx tile16a
+	ldy tile16b
+	lda topLeft16,x
+	sta PPUDATA
+	lda bottomLeft16,x
+	sta PPUDATA
+	lda topLeft16,y
+	sta PPUDATA
+	lda bottomLeft16,y
+	sta PPUDATA
+	inc currentNameTable+1
+	lda currentNameTable
+	sta PPUADDR
+	lda currentNameTable+1
+	sta PPUADDR
+	lda topRight16,x
+	sta PPUDATA
+	lda bottomRight16,x
+	sta PPUDATA
+	lda topRight16,y
+	sta PPUDATA
+	lda bottomRight16,y
+	sta PPUDATA
+	inc currentNameTable+1
+	lda currentNameTable
+	sta PPUADDR
+	lda currentNameTable+1
+	sta PPUADDR
+	ldx tile16c
+	ldy tile16d
+	lda topLeft16,x
+	sta PPUDATA
+	lda bottomLeft16,x
+	sta PPUDATA
+	lda topLeft16,y
+	sta PPUDATA
+	lda bottomLeft16,y
+	sta PPUDATA
+	inc currentNameTable+1
+	lda currentNameTable
+	sta PPUADDR
+	lda currentNameTable+1
+	sta PPUADDR
+	lda topRight16,x
+	sta PPUDATA
+	lda bottomRight16,x
+	sta PPUDATA
+	lda topRight16,y
+	sta PPUDATA
+	lda bottomRight16,y
+	sta PPUDATA
+
+@attributeByte:
+	;get the attribute byte
+	lda tileToRender
+	tay;y is tile pos in tiles32 array
+	asl
+	tax;x is position in conversion
+	lda attributeTableConversion,x
+	sta PPUADDR
+	inx
+	lda attributeTableConversion,x
+	sta PPUADDR
+	lda tiles32,y
+	tay;y is tile itself
+	lda tileAttributeByte,y
+	sta PPUDATA
+	
+	rts
+
 .include "data.s"
 .segment "VECTORS"
 .word nmi

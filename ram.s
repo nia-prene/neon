@@ -1,29 +1,38 @@
 .segment "ZEROPAGE"
 ;pointers
+loopTest: .res 1
+tileToRender: .res 1
+currentNameTable: .res 2
+tile16a: .res 1
+tile16b: .res 1
+tile16c: .res 1
+tile16d: .res 1
 scenePointer: .res 2
 placePointer: .res 2
-peoplePalettesPointer: .res 2
-spritePointer: .res 2
-;variables
-accumulator: .res 1
-xRegister: .res 1
-yRegister: .res 1
-sceneIndex: .res 1
-placeIndex: .res 1
-spritePaletteIndex: .res 1
-portraitPaletteIndex: .res 1
-attributeByte: .res 1
-spriteCounter: .res 1
+;local variables/arguments
+tile128a: .res 1
+tile128b: .res 1
+tile64a: .res 1
+tile64b: .res 1
+tile64c: .res 1
+tile64d: .res 1
+
 .segment "OAM"
+;starts at $0200
 sprites: .res 256
 
 .segment "RAM"
-screen1: .res 256
-screen2: .res 256
-
-;starts at $0500
-currentDay: .res 1
-currentScene: .res 1
+;starts at $0300
+;;;;;;;;;;;;;;;;;;
+;;;metatile ram;;;
+;;;;;;;;;;;;;;;;;;
+halfScreens: .res 4
+tiles128: .res 8
+tiles64: .res 32
+tiles32: .res 128
+current128Column: .res 1
+current64Column: .res 1
+current32Column: .res 1
 backgroundColor: .res 1
 palettes:
 	backgroundPalettes:
@@ -37,4 +46,10 @@ palettes:
 		spritePalette3: .res 4
 		spritePalette4: .res 4
 portraitPalettes: .res 16
-player: .res 24
+
+;;;;;;;;;;;;;;;
+;;;scene ram;;;
+;;;;;;;;;;;;;;;
+currentDay: .res 1
+currentScene: .res 1
+
