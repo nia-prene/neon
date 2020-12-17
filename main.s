@@ -20,8 +20,9 @@ main:
 	sta PPUCTRL
 	bit PPUSTATUS
 	
-	lda #$00
+	lda #$ff
 	sta PPUSCROLL
+	lda #$00
 	sta PPUSCROLL
 
 @vblankWait:
@@ -561,6 +562,7 @@ render32:
 	asl
 	tax;x is position in conversion
 	lda attributeTableConversion,x
+	;store address (big endian)
 	sta PPUADDR
 	inx
 	lda attributeTableConversion,x
@@ -568,6 +570,7 @@ render32:
 	lda tiles32,y
 	tay;y is tile itself
 	lda tileAttributeByte,y
+	;yeet the attribute byte
 	sta PPUDATA
 	
 	rts
