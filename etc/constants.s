@@ -41,7 +41,7 @@ BASE_NAMETABLE = 0;this here for ease of change
 VRAM_INCREMENT = 1;0: add 1, going across; 1: add 32, going down
 SPRITE_TABLE = 0;0: $0000, 1: $1000, ignored in 8x16 mode
 BACKGROUND_TABLE = 1;0: $0000 1: $1000
-SPRITE_SIZE = 1;0: 8x8 pixels 1: 8x16 pixels
+SPRITE_SIZE = 0;0: 8x8 pixels 1: 8x16 pixels
 PPU_MASTER_SLAVE = 0;leave this alone
 GENERATE_NMI = 1; leave default as on
 
@@ -50,6 +50,8 @@ PPU_SETTINGS = BASE_NAMETABLE | (VRAM_INCREMENT << 2) | (SPRITE_TABLE << 3) | (B
 ;PPU_SETTINGS options
 DISABLE_NMI = %01111111;AND 
 INCREMENT_1 = %11111011;AND 
+INCREMENT_32 = %00000100;OR
+NAMETABLE_0 = %11111100;and
 NAMETABLE_1 = %00000001;OR 
 NAMETABLE_2 = %00000010;OR
 NAMETABLE_3 = %00000011;OR
@@ -58,8 +60,8 @@ NAMETABLE_3 = %00000011;OR
 GREYSCALE = 0;0: normal color, 1: produce a greyscale display
 LEFT_BACKGROUND = 1;1: Show background in leftmost 8 pixels of screen, 0: Hide
 LEFT_SPRITES = 1;1: Show sprites in leftmost 8 pixels of screen, 0: Hide
-SHOW_BACKGROUND = 1;1: shows backgrounds, 0: disables backgrounds
-SHOW_SPRITES = 1;1: shows sprites, 0: disables sprites
+SHOW_BACKGROUND = 0;1: shows backgrounds, 0: disables backgrounds
+SHOW_SPRITES = 0;1: shows sprites, 0: disables sprites
 RED_EMPHASIS = 0;1 is on 0 is off
 GREEN_EMPHASIS = 0;1 is on 0 is off
 BLUE_EMPHASIS = 0;1 is on 0 is off
@@ -68,10 +70,12 @@ MASK_SETTINGS = GREYSCALE | (LEFT_BACKGROUND << 1) | (LEFT_SPRITES << 2) | (SHOW
 
 ;MASK_SETTINGS OPTIONS
 ;OR these to enable them
-EMPHASIZE_RED = %00100000
-EMPHASIZE_GREEN = %01000000
-EMPHASIZE_BLUE = %10000000
-
+STANDARD_COLOR = %00011110; and
+EMPHASIZE_RED = %00100000; or
+EMPHASIZE_GREEN = %01000000; or
+EMPHASIZE_BLUE = %10000000; or
+ENABLE_RENDERING = %00011000; or:w
+DISABLE_RENDERING = %11100111;and
 
 
 true = $01 

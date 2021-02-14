@@ -8,81 +8,199 @@
 main:
 	lda #$00
 	sta currentScene
-	jsr clearRam
-	jsr unzip
-	jsr fullyRender
-	bit PPUSTATUS
-@notInBlank:
-	bit PPUSTATUS
-	bpl @notInBlank
+	jsr initializePlayer
+	jsr loadNewScene
 
-	lda #PPU_SETTINGS
-	sta PPUCTRL
-	bit PPUSTATUS
-	
-	lda #$ff
-	sta PPUSCROLL
-	lda #$00
-	sta PPUSCROLL
+gameLoop:
+;if(hasFrameBeenRendered == false)
+	lda hasFrameBeenRendered
+;jmp to gameLoop
+	beq gameLoop
+	jsr updateObjects	
 
-@vblankWait:
-	bit PPUSTATUS
-	bpl @vblankWait
-	lda #MASK_SETTINGS
-	sta PPUMASK
-loop:
-	inc loopTest
-	jmp loop
+;hasFrameBeenRendered = false
+	lda #false
+	sta hasFrameBeenRendered
+	jmp gameLoop
 
-nmi:
-	pha;save registers
-	txa
-	pha
-	tya
-	pha
-	
-	lda #$00
-	sta OAMADDR;reset OAM 
-	
-	lda #OAM_LOCATION
-	sta OAMDMA
-	;vblank code goes here
 
-	pla
+
+initializePlayer:
+	ldy #04;sprite palettes start@4
+	lda paletteColor1,x
+	sta color1,y
+	lda paletteColor2,x
+	sta color2,y
+	lda paletteColor3,x
+	sta color3,y
+;player is in 0th object in ram
+	ldx #00
+	stx objectToInitialize
+	lda #REESE_OBJECT
+	sta spriteObject,x
 	tay
-	pla;restore registers
-	tax
-	pla
+;y is rom, x is ram
+;set previous metasprite to null
+	lda #null
+	sta previousMetaSprite,x
+;null out previous x and y
+	sta previousX,x
+	sta previousY,x
+	lda spriteState0,y
+;currentMetaSprite is now state 0
+	sta currentMetaSprite,x
 	
-	rti
+;get the inputs
+	lda inputMethod,y
+;y is input function number
+;x is object in ram
+	tay
+;put the address in the object
+	lda spriteInputsH,y
+	sta inputsH,x
+	lda spriteInputsL,y
+	sta inputsL,x
+;player starts at sprite 1 in ram
+;sprite 0 is for parallax purposes
+	lda #01
+;which is at 4th address in oam
+	asl;double it
+	asl;quadruple it
+;this is the offset conversion
+	sta oamOffset,x
+	lda spriteObject,x
+	tay
+;y is object in rom, x is ram
+;get the width
+	lda spriteWidth,y
+	sta metaSpriteWidth,x
+;get the height
+	lda spriteHeight,y
+	sta metaSpriteHeight,x
+;get sprite total
+	lda spriteTotal,y
+	sta spriteTileTotal,x
+;put it at this coordinate for now	
+	lda #$55
+	sta spriteX,x
+	lda #$9e
+	sta spriteY,x
+	rts
 
-clearRam:
+loadNewScene:
+	jsr disableRendering
+	jsr clearRam
+	jsr unzipTiles
+	jsr unzipPalettes
+	jsr renderTiles
+	jsr renderPalettes
+	jsr enableRendering
+	jsr resetClock
+	rts
+
+clearRam:;()
 	jsr clearSprites;()
 	jsr clearNametables;()
-	jsr loadDefaultPalettes;()
 	rts
 
-unzip:;(int currentScene)
-	jsr getScenePointer
-	jsr getTimeOfDay
-	jsr getPlacePointer
-	jsr unzipPlacePalettes
-	jsr unzipAllScreens
-	jsr unzipAll128
+unzipTiles:;(unsigned currentScene)
+	jsr unzipScreen
 	jsr unzipAll64
 	jsr unzipAll32
-
 	rts
 
+unzipPalettes:
+	ldx currentScene
+;get background color
+	lda sceneBackgroundColor,x
+	sta backgroundColor
+;get background palettes
+;background palette 0
+	ldy #$00
+	lda backgroundPalette0,x
+	tax
+	lda paletteColor1,x
+	sta color1,y
+	lda paletteColor2,x
+	sta color2,y
+	lda paletteColor3,x
+	sta color3,y
+	iny
+;background palette 0
+	ldx currentScene
+	lda backgroundPalette1,x
+	tax
+	lda paletteColor1,x
+	sta color1,y
+	lda paletteColor2,x
+	sta color2,y
+	lda paletteColor3,x
+	sta color3,y
+	iny
+;background palette 2
+	ldx currentScene
+	lda backgroundPalette2,x
+	tax
+	lda paletteColor1,x
+	sta color1,y
+	lda paletteColor2,x
+	sta color2,y
+	lda paletteColor3,x
+	sta color3,y
+	iny;skip background palette 3
+	iny;skip player sprite
+	iny
+	ldx currentScene
+;sprite palette1
+	ldx currentScene
+	lda spritePalette1,x
+	tax
+	lda paletteColor1,x
+	sta color1,y
+	lda paletteColor2,x
+	sta color2,y
+	lda paletteColor3,x
+	sta color3,y
+	iny
+;sprite palette2
+	ldx currentScene
+	lda spritePalette2,x
+	tax
+	lda paletteColor1,x
+	sta color1,y
+	lda paletteColor2,x
+	sta color2,y
+	lda paletteColor3,x
+	sta color3,y
+	;skip sprite palette 3
 
 clearSprites:
-	lda #$ff;clearing sprites with $ff puts them off screen
-	ldx #$00
-;clears the 1 page of data at "sprites" with ff
-@clearSpritesLoop:
-	sta sprites, x
+;see oam in ram.s
+;clear sprites with $ff in x and y coordinates puts them off screen
+;set sprite number to $ff
+	lda #$ff
+;0-3 will always be sprite interrupt
+;4-51 will always be player sprite
+	ldx #52
+;for y = 0; y!=
+	ldy #$00
+@moveOffScreen:
+;set y, x, attribute and tile to ff
+	sta oam,x
 	inx
-	bne @clearSpritesLoop
+	bne @moveOffScreen
+;64 total, 12 player, 52 cleared
+;set previosMetatile to null
+;a is still $ff and $ff = null
+;player is 0 don't set null
+;for x=0;x<8;x++
+	ldx #$01
+@setPreviousSpriteToNull:
+	sta previousMetaSprite,x
+	sta currentMetaSprite,x
+	inx
+	cpx #8
+	bmi @setPreviousSpriteToNull
 	rts
 
 clearNametables:
@@ -100,117 +218,25 @@ clearNametables:
 	bne @nametableClear
 	rts
 
-loadDefaultPalettes:
-	lda #$00
-	tax
-	sta backgroundColor ;a is still #$00, grey default color
-	lda #$2b;background palettes get set to ugly palette so its noticable if something goes wrong
-;stores #$2b into the first 16 palette locations
-@loadDefaultBackgroundPalette:
-	sta palettes, x
-	inx
-	cpx #16; 16 colors 
-	bne @loadDefaultBackgroundPalette
+
+unzipScreen:;(currentScene)
+;unzips 256 tile into tiles128
+;access the screenTile array at currentScene index
+	ldx currentScene
+	lda screenTile,x
+	tax;screenTile index is in x
+	lda topLeft256,x
 	ldy #$00
-	;y is 0, x is position in palettes array
-;loads colors 16 - 36 with default sprite colors. if there arent enough people to fill a scene, random people will have unique palettes
-@loadDefaultSpritePalettes:
-	lda defaultPalette, y
-	sta palettes, x
-	inx
+	sta tiles128,y
 	iny
-	cpx #32 ;32 total colors
-	bne @loadDefaultSpritePalettes
-	rts
-
-getScenePointer:
-	lda currentScene
-	;find pointer to scene. it is in an array of pointers at "scenes:"
-	;because an address is 16 bit, the number needs to be doubled in order to find the correct address. 
-	asl	;double the number
-	tax
-	lda scenes, x
-	sta scenePointer
-	lda scenes+1, x
-	sta scenePointer+1
-	rts
-
-
-getTimeOfDay:
-	;0th element in scene array is the time of day
-	ldy #TIMEOFDAY
-	lda (scenePointer), y
-	sta backgroundColor
-	rts
-
-
-getPlacePointer:
-	ldy #LOCATION
-	lda (scenePointer), y
-	asl	;double the number
-	tax
-	;get the pointer to the place and store it in "placePointer"
-	lda places,x
-	sta placePointer
-	lda places+1, x
-	sta placePointer+1
-	rts
-
-
-unzipPlacePalettes:
-	;first element of the place
-	ldy #PLACEPALETTES
-	ldx #12
-@backgroundPaletteLoop:
-	;this loop loads all the palettes from the place pointed at, 12 in total
-	lda (placePointer), y
-	sta palettes, y
+	lda bottomLeft256,x
+	sta tiles128,y
 	iny
-	dex
-	bne @backgroundPaletteLoop
-	rts
-
-unzipAllScreens:
-	ldy #SCREENS
-	ldx #$00
-@screenLoop:
-	lda (placePointer), y
-	sta halfScreens,x
+	lda topRight256,x
+	sta tiles128,y
 	iny
-	inx
-	cpx #04
-	bne @screenLoop
-	rts
-
-unzipAll128:
-;called during forced blank to unzip the entire tiles128 array
-	lda #$00
-	sta current128Column
-	jsr unzip128Column
-	inc current128Column
-	jsr unzip128Column
-	inc current128Column
-	jsr unzip128Column
-	inc current128Column
-	jsr unzip128Column
-	rts
-
-unzip128Column:;(current128Column)
-;the tiles128 array stores 8 128x128 from top to bottom in 4 rows of 2. they are loaded in by column
-	lda current128Column
-	tay;y where they are in the half screens array
-	;chop off last 2 bits and store in target128Column
-	and #%00000011
-	asl
-	tax;x where they are going
-	;grab the screen from the array
-	lda halfScreens,y
-	tay;y is the screen
-	lda topHalfScreen,y
-	sta tiles128,x
-	inx
-	lda bottomHalfScreen,y
-	sta tiles128,x
+	lda bottomRight256,x
+	sta tiles128,y
 	rts
 
 unzipAll64:
@@ -277,14 +303,6 @@ unzipAll32:
 ;called during forced blank to unzip entire tiles32 array
 	lda #$00
 	sta current32Column
-	jsr unzip32Column
-	inc current32Column
-	jsr unzip32Column
-	inc current32Column
-	jsr unzip32Column
-	inc current32Column
-	jsr unzip32Column
-	inc current32Column
 	jsr unzip32Column
 	inc current32Column
 	jsr unzip32Column
@@ -375,49 +393,60 @@ unzip32Column:
 	sta tiles32,y
 	iny
 	rts
-	
-fullyRender:
-	jsr loadPalettes
-	jsr renderEntireScreen
 
-	rts
 ;this subroutine transfers all palettes to the ppu
-loadPalettes:
+renderPalettes:
+	;clear vblank flag before write
+	bit PPUSTATUS
+	lda currentPPUSettings
+	and #INCREMENT_1
+	sta PPUCTRL
+
 	lda #$3f
 	sta PPUADDR
 	lda #$00
-	tay
 	sta PPUADDR
-	ldx #32	
-@mainPaletteLoop:
-	lda palettes, y
+	tax
+@loadPalettes:
+	lda color0,x
 	sta PPUDATA
-	iny
-	dex
-	bne @mainPaletteLoop
+	lda color1,x
+	sta PPUDATA
+	lda color2,x
+	sta PPUDATA
+	lda color3,x
+	sta PPUDATA
+	inx
+	cpx #$08;8 palettes
+	bne @loadPalettes
 	lda #$3f
 	sta PPUADDR
-	tya 
+	lda #$00
 	sta PPUADDR
 	lda backgroundColor
-	sta PPUDATA 
+	sta PPUDATA
 	rts
 
-renderEntireScreen:
+renderTiles:
 	lda #$00
 	sta tileToRender
 @renderScreenLoop:
 	jsr render32
 	inc tileToRender
-	bpl @renderScreenLoop
+	lda tileToRender
+	cmp #64
+	bne @renderScreenLoop
 	rts
 
 render32:
 ;this renders a 32x32 tile from the tiles32 array.
 ;variables
 ;tileToRender the position of the tile in the array.
-	;render at normal ppu settings
-	lda #PPU_SETTINGS
+	;render at ppu address increments of 32
+	;clear vblank bit before write
+	bit PPUSTATUS
+	lda currentPPUSettings
+	ora #INCREMENT_32
 	sta PPUCTRL
 	lda tileToRender
 	;validate input
@@ -574,6 +603,420 @@ render32:
 	sta PPUDATA
 	
 	rts
+
+enableRendering:
+	lda #false
+	sta isInBlank
+	lda #true
+@waitForBlank:
+	bit isInBlank
+	beq @waitForBlank
+	lda currentMaskSettings
+	ora #ENABLE_RENDERING
+	sta PPUMASK
+	sta currentMaskSettings
+	rts
+
+disableRendering:
+	lda #false
+	sta isInBlank
+	lda #true
+@waitForBlank:
+	bit isInBlank
+	beq @waitForBlank
+	lda currentMaskSettings
+	and #DISABLE_RENDERING
+	sta PPUMASK
+	sta currentMaskSettings
+	rts
+
+resetClock:
+	lda #$00
+;seconds = 0
+	sta seconds
+;minutes = 0
+	sta minutes
+;hours = 0
+	sta hours
+	rts
+
+updateObjects:
+	lda #$00
+	sta objectToUpdate
+	jsr getInputs
+	jsr updateSpriteTiles
+	jsr updateX
+	jsr updateY
+	rts
+
+getInputs:
+	lda inputsH
+	pha
+	lda inputsL
+	pha
+;this is jumpint to the function
+	rts
+
+updateSpriteTiles:
+;y is ram object
+	ldy objectToUpdate
+	lda currentMetaSprite,y
+	cmp previousMetaSprite,y
+;if theyre the same dont update
+	bne @update
+	rts
+;current meta sprite is y
+@update:
+;a is current metasprite offset
+;previous = current (because update)
+	sta previousMetaSprite,y
+;x is metasprite offset in rom
+	tax
+	lda oamOffset,y
+;y is sprite number in oam
+	tay
+	iny;skip x coord
+	lda spriteTile0,x
+	sta oam,y
+	iny
+	lda spriteAttribute0,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile1,x
+	sta oam,y
+	iny
+	lda spriteAttribute1,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile2,x
+	sta oam,y
+	iny
+	lda spriteAttribute2,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile3,x
+	sta oam,y
+	iny
+	lda spriteAttribute3,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile4,x
+	sta oam,y
+	iny
+	lda spriteAttribute4,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile5,x
+	sta oam,y
+	iny
+	lda spriteAttribute5,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile6,x
+	sta oam,y
+	iny
+	lda spriteAttribute6,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile7,x
+	sta oam,y
+	iny
+	lda spriteAttribute7,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile8,x
+	sta oam,y
+	iny
+	lda spriteAttribute8,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile9,x
+	sta oam,y
+	iny
+	lda spriteAttribute9,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile10,x
+	sta oam,y
+	iny
+	lda spriteAttribute10,x
+	sta oam,y
+	iny
+	iny;skip y coord
+	iny;skip x coord
+	lda spriteTile11,x
+	sta oam,y
+	iny
+	lda spriteAttribute11,x
+	sta oam,y
+
+	rts
+
+updateX:
+;updateXObject - object passed into function
+;compare previous with current, update if different
+;since we stitch sprites together, each need a value depending on the offset from the upper left corner
+;x is object to update
+	ldx objectToUpdate
+	lda spriteX,x
+	cmp previousX,x
+	bne @updateX
+	rts
+@updateX:
+;x is object in ram
+;previous = spritex because update
+	sta previousX,x
+	lda metaSpriteWidth,x
+;y is tile width
+	tay
+	lda spriteX,x
+	sta xValue0
+	dey
+	beq @saveXValues;1 sprite wide
+	clc ;get ready to add
+	adc #8
+	sta xValue1
+	dey
+	beq @saveXValues;2 sprites wide
+	adc #8
+	sta xValue2
+	dey
+	beq @saveXValues;3 sprites wide
+	adc #8
+	sta xValue3
+	dey
+	beq @saveXValues;4 sprites wide
+	adc #8
+	sta xValue4;5 sprites wide
+@saveXValues:
+;x is still object to update
+	lda metaSpriteHeight,x
+	tax
+@saveToStack:
+;save it, from  back to front
+;( ; x>0; ;
+	dex
+	bmi @storeXValues
+	ldy objectToUpdate
+	lda metaSpriteWidth,y
+;y is now width
+	tay
+	dey
+	lda spriteTileXValues,y
+	pha
+	dey
+	bmi @saveToStack;1 tile wide
+	lda spriteTileXValues,y
+	pha
+	dey
+	bmi @saveToStack;2 tiles wide
+	lda spriteTileXValues,y
+	pha
+	dey
+	bmi @saveToStack;2 tiles wide
+	lda spriteTileXValues,y
+	pha
+	dey
+	bmi @saveToStack;2 tiles wide
+	lda spriteTileXValues,y
+	pha
+	dey
+	bmi @saveToStack;2 tiles wide
+	lda spriteTileXValues,y
+	pha
+	jmp @saveToStack;5 tiles wide
+	
+@storeXValues:
+	ldx objectToUpdate
+	lda oamOffset,x
+;y is oamOffset
+	tay
+	lda spriteTileTotal,x
+;x is total sprties to update
+	tax
+@storeLoop:
+	iny;skip y
+	iny;skip tile
+	iny;skip attribute
+	pla
+	sta oam,y
+	iny
+	dex
+	bne @storeLoop
+	rts
+
+updateY:
+;updateXObject - object passed into function
+;compare previous with current, update if different
+;since we stitch sprites together, each need a value depending on the offset from the upper left corner
+;x is object to update
+	ldx objectToUpdate
+	lda spriteY,x
+	cmp previousY,x
+	bne @updateY
+	rts
+@updateY:
+;x is object in ram
+;previous = spritex because update
+	sta previousY,x
+	lda metaSpriteHeight,x
+;y is tile height
+	tay
+	lda spriteY,x
+	sta yValue0
+	dey
+	beq @saveYValues;1 sprite high
+	clc ;get ready to add
+	adc #8
+	sta yValue1
+	dey
+	beq @saveYValues;2 sprites high
+	adc #8
+	sta yValue2
+	dey
+	beq @saveYValues;3 sprites high
+	adc #8
+	sta yValue3
+	dey
+	beq @saveYValues;4 sprites high
+	adc #8
+	sta yValue4
+	dey
+	beq @saveYValues;5 sprites high
+	adc #8
+	sta yValue5;6 sprites high
+@saveYValues:
+;x is still object to update
+;x is now height
+	lda metaSpriteHeight,x
+	tay
+@saveToStack:
+;save it, from  back to front
+	dey
+	bmi @storeYValues
+	ldx objectToUpdate
+	lda metaSpriteWidth,x
+;x is width
+	tax
+	lda spriteTileYValues,y
+	pha
+	dex
+	beq @saveToStack;1 sprite wide
+	lda spriteTileYValues,y
+	pha
+	dex
+	beq @saveToStack;2 sprites wide
+	lda spriteTileYValues,y
+	pha
+	dex
+	beq @saveToStack;3 sprites wide
+	lda spriteTileYValues,y
+	pha
+	dex
+	beq @saveToStack;4 sprites wide
+	lda spriteTileYValues,y
+	pha;5 sprites wide
+	jmp @saveToStack
+	
+@storeYValues:
+	ldx objectToUpdate
+	lda oamOffset,x
+;y is oamOffset
+	tay
+	lda spriteTileTotal,x
+;x is total sprties to update
+	tax
+@storeLoop:
+	pla
+	sta oam,y
+	iny
+	iny;skip tile
+	iny;skip attribute
+	iny;skip x
+	dex
+	bne @storeLoop
+	rts
+;;;;;;
+;test;
+;;;;;;
+
+test:
+	sta testVariable
+	rts
+testLoop:
+	inc testLoopVariable
+	rts
+;;;;;;;;;
+;;;NMI;;;
+;;;;;;;;;
+;vblank;
+;;;;;;;;
+nmi:
+	;save registers
+	pha
+	txa
+	pha
+	tya
+	pha
+	;oamdma transfer
+	;initialize oam
+	lda #$00
+	sta OAMADDR;reset OAM 
+	;begin transfer
+	lda #OAM_LOCATION
+	sta OAMDMA
+	;vblank starts here
+	lda #true
+	sta isInBlank 
+	;vblank code goes here
+	;always jmp to updateScroll
+	;when ending a subroutine
+updateScroll:
+	bit PPUSTATUS
+	lda currentPPUSettings
+	sta PPUCTRL
+	lda #$00
+	sta PPUSCROLL
+	sta PPUSCROLL
+
+;update clock
+	inc seconds
+	bne @endClock
+	inc minutes
+	bne @endClock
+	inc hours
+@endClock:
+;hasFrameBeenRendered = TRUE
+	lda #true
+	sta hasFrameBeenRendered
+
+	pla
+	tay
+	pla;restore registers
+	tax
+	pla
+	
+	rti
 
 .include "data.s"
 .segment "VECTORS"

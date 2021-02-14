@@ -43,9 +43,16 @@ reset:
 
     ; Other things you can do between vblank waits are set up audio
     ; or set up other mapper registers.
-   
+	bit PPUSTATUS
 @vblankwait2:
-    bit $2002
+    bit PPUSTATUS
     bpl @vblankwait2
+	;enable vertical blanking irq
+	lda #PPU_SETTINGS
+	sta PPUCTRL
+	;save ppu settings
+	sta currentPPUSettings
+	lda #MASK_SETTINGS
+	sta currentMaskSettings
 
 	jmp main 
