@@ -78,9 +78,9 @@ ENABLE_RENDERING = %00011000; or:w
 DISABLE_RENDERING = %11100111;and
 
 
-true = $01 
-false = $00
-null = $ff
+TRUE = $01 
+FALSE = $00
+NULL = $ff
 
 
 
