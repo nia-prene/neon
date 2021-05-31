@@ -41,7 +41,7 @@ BASE_NAMETABLE = 0;this here for ease of change
 VRAM_INCREMENT = 1;0: add 1, going across; 1: add 32, going down
 SPRITE_TABLE = 0;0: $0000, 1: $1000, ignored in 8x16 mode
 BACKGROUND_TABLE = 1;0: $0000 1: $1000
-SPRITE_SIZE = 0;0: 8x8 pixels 1: 8x16 pixels
+SPRITE_SIZE = 1;0: 8x8 pixels 1: 8x16 pixels
 PPU_MASTER_SLAVE = 0;leave this alone
 GENERATE_NMI = 1; leave default as on
 

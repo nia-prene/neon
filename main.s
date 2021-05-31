@@ -5,154 +5,143 @@
 .segment "STARTUP"
 .include "init.s"
 .segment "CODE"
-;housekeeping
-;structured data
-;struct Clock {
-	;unsigned seconds = 0
-	;unsigned minutes = 0
-	;unsigned hours = 0
-	;unsigned days = 0
-	;void resetClock()
-	;void updateClock()
-;}
-;struct Palette {
-	;unsigned color1
-	;unsigned color2
-	;unsigned color3
-;}
-;struct Screen {
-	;Palettes palettes[8]
-	;unsigned tile256
-	;unsigned tiles128[4]
-	;unsigned tiles64[16]
-	;unsigned tiles32[64]
-	;void setPalette(x, y)
-	;void setPaletteCollection(x)
-	;void unzipAllTiles(a)
-	;void unzip64Column(a)
-	;void unzip32Column(a)
-	;flags disableRendering(a)
-	;flags enableRendering(a)
-	;void render32(a)
-	;void renderAllTiles()
-	;void renderAllPalettes()
-;}
-;struct Sprite {
-	;spriteID
-	;oamOffset
-	;inputs
-	;behaviorsH
-	;behaviorsL
-	;nextMetasprite
-	;currentMetasprite
-	;initializeSpriteObject(a, x, y)
-	;void clearOam(x, y)
-;}
-;struct scene {
-	;bool hasFrameBeenRendered
-	;unsigned nextScene = 0
-	;unsigned currentScene = NULL
-	;constant BACKGROUND_COLOR
-	;Screen screen
-	;Sprite sprites[8]
-	;Clock clock
-	;void beginOamDma()
-;} 
+;after the init code, we jump here
 main:
-;Scene scene {0; null; ; ; }
+;housekeeping
+;first scene is scene 0
 	lda #00
 	sta nextScene
 	lda #NULL
+;currently no scene is loaded
 	sta currentScene
+;clear this out while we have null
+	sta spriteRoutineOffset
+;there is no frame that needs renderas we haven't begun gameloop
+	lda #TRUE
+	sta hasFrameBeenRendered
+;reset the clock to 0
 	jsr resetClock;()
-;scene.clock.resetClock
 ;get the player object
-	lda #CAT_OBJECT
-	tay
-	lda #0;target in ram
-	tax
-;start on oam offset 4/sprite 1
-;sprite 0 is for effects
-	lda #04
-;initializeSpriteObject(a x y)
-;a - oamOffset
-;x - target in ram
-;y is target in rom
-	jsr initializeSpriteObject
-;returns 
-;a - next available oam offset
-;x is palette of player sprite
-;y is palette to update
-	ldx #0
+	ldx #PLAYER_PALETTE
+;set the players palette to #4 and the coin palette to #5
 	ldy #4
-;scene.screen.palettes[4]= romPalettes[0]
 	jsr setPalette;(x, y)
+	ldx #COIN_PALETTE
+	ldy #5
+	jsr setPalette;(x,y)
+;set sprite speed
+	lda #$03
+	sta spriteSpeedH
+	lda #$00
+	sta spriteSpeedL
 gameLoop:
-;if the scenes are different
+;while(!hasFrameBeenRendered)
+	;hold here until previous frame was rendered
+	lda hasFrameBeenRendered
+	beq gameLoop
+;if(nextScene != currentScene) 
 	lda nextScene
 	cmp currentScene
-	beq @dontUpdateScene
+	beq @addSprites
 	;update the scene
 		lda seconds
 		ldx currentMaskSettings
 		jsr disableRendering;(a, x)
 	;returns new mask settings
-	;scene.currentMaskSettings = scene.disableRendering(a,x)
 		sta currentMaskSettings
-	;clear ram after player
-		ldx #01;ram object
-		ldy #25;oam offset
-	;sprites.clearOam
-		jsr clearOam;(x, y)
+		jsr resetSprites
 		lda nextScene
-	;tile.unzipAllTiles(nextScene)
 		jsr unzipAllTiles;(a)
-	;scene.screen.palettes.unzipPalettes(nextScene)
 		ldx nextScene
 		jsr setPaletteCollection;(x)
 	;we are in forced blank so we can call these two rendering routines
 		jsr renderAllTiles
 		jsr renderAllPalettes
-
+		jsr getAvailableSprite
+		ldy #PLAYER_OBJECT
+	;player starts in middle rail
+		lda #%00001000
+	;(x-target in ram, y-target in rom, a-rail to place it on)
+		jsr initializeSprite
 		lda seconds
 		ldx currentMaskSettings
 		jsr enableRendering;(a, x)
 	;returns new mask settings
-	;scene.currentMaskSettings = scene.enableRendering(a,x)
 		sta currentMaskSettings
 	;set current to next
-	;scene.currentScene = scene.nextScene
 		lda nextScene
 		sta currentScene
-@dontUpdateScene:
-;while frame hasnt been rendered
-	lda hasFrameBeenRendered
-	beq gameLoop
-	ldx #$00
-	stx objectToUpdate
-;get the player's input
-	lda #00
+@addSprites:
+	lda seconds
+	and #%01111111
+	lsr
+	lsr
+	lsr
+	cmp spriteRoutineOffset
+	beq @updateObjects
+	sta spriteRoutineOffset
+;x is the offset for the sprite to fetch
+	jsr getAvailableSprite
+	cpx #$ff
+	beq @updateObjects
+	ldy spriteRoutineOffset
+	lda leftRail,y
 	tay
-	lda controllers,y
-	sta inputs,x 
-;for(
-;objectToUpdate = 0
-;objectToUpdate < 1
-;objectToUpdate ++
-;)
-	jsr interpretBehavior
-	jsr checkXCollision
-	jsr updateX
-	jsr updateY
-	jsr updateSpriteTiles
-;scene.hasFrameBeenRendered = FALSE
+	lda #%01000000
+	jsr initializeSprite;(a,x,y)
+	jsr getAvailableSprite
+	cpx #$ff
+	beq @updateObjects
+	ldy spriteRoutineOffset
+	lda leftRail,y
+	tay
+	lda #%00001000
+	jsr initializeSprite;(a,x,y)
+	jsr getAvailableSprite
+	cpx #$ff
+	beq @updateObjects
+	ldy spriteRoutineOffset
+	lda leftRail,y
+	tay
+	lda #%00000001
+	jsr initializeSprite;(a,x,y)
+@updateObjects:
+;start by updating object 0 (player)
+	ldx #$00
+;for(objectToUpdate=0;objectToUpdate<MAX_OBJECTS;objectToUpdate++)
+@updateLoop:
+	stx objectToUpdate
+	lda isActive,x
+	beq @next
+	jsr interpretBehavior;(x-object to update)
+	lda currentRail,x
+	cmp targetRail,x
+	beq @dontUpdateRail
+	tay
+	lda targetRail,x
+	jsr getNewRail;(a-targetRail, y-currentRail)
+;returns a - new current rail
+	ldx objectToUpdate
+	sta currentRail,x
+@dontUpdateRail:
+	jsr getX;(a-currentRail)
+	ldx objectToUpdate
+	sta spriteX,x
+@next:
+	inx
+	cpx #MAX_OBJECTS
+	bcc @updateLoop
+
+	lda #$00
+	tax
+	jsr buildOAM;(x-object to build, a-oam offset)
 	lda #FALSE
 	sta hasFrameBeenRendered
 	jmp gameLoop
 
 ;;;;;;;;;;;;;;;;
 ;;;Interrupts;;;
-;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;
 ;vblank;
 ;;;;;;;;
 nmi:
@@ -226,68 +215,60 @@ updateClock:
 @updateDays:
 	inc days
 	rts
-;;;;;;;;;
-;sprites;
-;;;;;;;;;
-initializeSpriteObject:
+
+getAvailableSprite:
+;returns
+;x- ram position of next available sprite
+	ldx #$00
+;if isActive = FALSE break
+@findInactive:
+	lda isActive,x
+	beq @returnValue
+	inx
+	cpx #MAX_OBJECTS
+	bcc @findInactive
+;if no sprite is available, return null
+	ldx #NULL
+	rts
+@returnValue:
+;return offset of first sprite where isActive=False
+	rts
+
+initializeSprite:
 ;Constructor
 ;arguments
-;a - oamOffset
-;x - target in ram
-;y is rom object (ID)
-;variables
-;nextFreeOamOffset - oam offset immediately after this object
-;return 
-;a - nextFreeOamOffset
-	sta oamOffset,x
-;save this to calculate next free space
-	sta nextFreeOamOffset
-;set previous metasprite to null
-	tya
-	sta objectID,x
-	lda #NULL
-	sta currentMetaSprite,x
-;null out previous x and y
-	sta previousX,x
-	sta previousY,x
-;set the initial metaSprite
-	lda spriteState0,y
-	sta nextMetaSprite,x
-;get the width
-	lda spriteWidth,y
-	sta metaSpriteWidth,x
-;get the height
-	lda spriteHeight,y
-	sta metaSpriteHeight,x
+;a - rail
+;x - target in ram array
+;y - is rom object (see sprites in data.s)
+;returns void
+;store the rail
+	sta currentRail,x
+	sta targetRail,x
+;copy tile total
+	lda romSpriteTotal,y
+	sta spriteTotal,x
+;copy the width
+	lda romSpriteWidth,y
+	sta spriteWidth,x
+;copy the height
+	lda romSpriteHeight,y
+	sta spriteHeight,x
 ;get hitbox
-	lda hitboxX1,y
-	sta metaSpriteHitboxX1,x
-	lda hitboxX2,y
-	sta metaSpriteHitboxX2,x
-	lda hitboxY1,y
-	sta metaSpriteHitboxY1,x
-	lda hitboxY2,y
-	sta metaSpriteHitboxY2,x
-;put it at this coordinate for now	
-	lda #$55
-	sta spriteX,x
-	lda #$9e
-	sta spriteY,x
-
-	lda behavior,y
-	tay
-	lda behaviorsH,y
-	sta spriteBehaviorsH,y
-	lda behaviorsL,y
-	sta spriteBehaviorsL,y
-;get sprite total
-	lda spriteTotal,y
-	sta metaSpriteTileTotal,x
-;quadrupel it and clear carry
-	asl
-	asl
-	adc nextFreeOamOffset
-;return nextFreeOamOffset
+	lda romHitboxY1,y
+	sta spriteHitboxY1,x
+	lda romHitboxY2,y
+	sta spriteHitboxY2,x
+;copy behavior pointer
+	lda romBehaviorH,y
+	sta behaviorH,x
+	lda romBehaviorL,y
+	sta behaviorL,x
+;every sprite has a starting y coordinate of zero (fall from top screen)
+	lda #$00
+	sta spriteYH,x
+	lda #TRUE
+	sta isActive,x
+;return void
 	rts
 
 setPalette:;(x, y)
@@ -569,18 +550,24 @@ enableRendering:;(a, x)
 	sta PPUMASK
 	rts
 
-clearOam:;(y)
-;arguments
-;y - oam offset to begin with
-;returns void
-;set sprite number to $ff
+resetSprites:
 	lda #NULL
-;for( ; y < 256 ; y++)
+	ldx #$00
+;first set all oam values to ff. this puts them off screen in a known state
+;for(x=0; x < 256 ; x++)
 @setOamToNull:
-;oam[y]=NULL
-	sta oam,y
-	iny
+	sta oam,x
+	inx
 	bne @setOamToNull
+;next set all ram sprite objects to deactive
+;conveniently x is 0(false)
+	txa
+;for(x = 0; x < MAX_OBJECTS; x++
+@setDeactive:
+	sta isActive,x
+	inx
+	cpx #MAX_OBJECTS
+	bcc @setDeactive
 	rts
 
 
@@ -784,860 +771,217 @@ renderAllTiles:
 
 
 interpretBehavior:
-	ldx objectToUpdate
-	lda spriteBehaviorsH,x
+;arguments
+;x - sprite object to interpret
+	lda behaviorH,x
 	pha
-	lda spriteBehaviorsL,x
+	lda behaviorL,x
 	pha
+;we jump to the behavior subroutine pushed on to the stack and pass in sprite array object
+;all behaviors return 
+;a - metasprite
+;y - y coordinate
+;x - rail
 	rts
 
-updateSpriteTiles:
-;x is ram object
-	ldx objectToUpdate
-	lda nextMetaSprite,x
-	cmp currentMetaSprite,x
-;if theyre the same dont update
-	bne @updateTiles
-	rts
-@updateTiles:
-;x is object in ram
-	lda oamOffset,x
-;y is oam offset
-	tay
-;y points to tile byte
-	iny
-	lda metaSpriteTileTotal,x
-;save the number of tiles
-	sta totalTileCounter
-	lda metaSpritePalette,x
-;save the palette byte
-	sta tilePaletteAttribute
-	lda nextMetaSprite,x
-;x is the metasprite in ROM
-	tax
-;y is offset in oam
-;transfer to oam
-	lda spriteTile0,x
-	sta oam,y
-	iny
-	lda spriteAttribute0
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-	bne @moreThanOne
-	rts
-@moreThanOne:
-;second tile
-	iny
-	iny
-	iny
-	lda spriteTile1,x
-	sta oam,y
-	iny
-	lda spriteAttribute1
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;third tile
-	iny
-	iny
-	iny
-	lda spriteTile2,x
-	sta oam,y
-	iny
-	lda spriteAttribute2
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;fourth tile
-	iny
-	iny
-	iny
-	lda spriteTile3,x
-	sta oam,y
-	iny
-	lda spriteAttribute3
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-	bne @moreThan4
-	rts
-@moreThan4:
-;fifth tile
-	iny
-	iny
-	iny
-	lda spriteTile4,x
-	sta oam,y
-	iny
-	lda spriteAttribute4
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;sixth tile
-	iny
-	iny
-	iny
-	lda spriteTile5,x
-	sta oam,y
-	iny
-	lda spriteAttribute5
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-	bne @moreThan6
-	rts
-@moreThan6:
-;seventh tile
-	iny
-	iny
-	iny
-	lda spriteTile6,x
-	sta oam,y
-	iny
-	lda spriteAttribute6
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;eighth tile
-	iny
-	iny
-	iny
-	lda spriteTile7,x
-	sta oam,y
-	iny
-	lda spriteAttribute7
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;ninth tile
-	iny
-	iny
-	iny
-	lda spriteTile8,x
-	sta oam,y
-	iny
-	lda spriteAttribute8
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-	bne @moreThan9
-	rts
-@moreThan9:
-;tenth tile
-	iny
-	iny
-	iny
-	lda spriteTile9,x
-	sta oam,y
-	iny
-	lda spriteAttribute9
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;eleventh tile
-	iny
-	iny
-	iny
-	lda spriteTile10,x
-	sta oam,y
-	iny
-	lda spriteAttribute10,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;twelth tile
-	iny
-	iny
-	iny
-	lda spriteTile11,x
-	sta oam,y
-	iny
-	lda spriteAttribute11,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-	bne @moreThan12
-	rts
-@moreThan12:
-;thirteenth tile
-	iny
-	iny
-	iny
-	lda spriteTile12,x
-	sta oam,y
-	iny
-	lda spriteAttribute12,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;fourteenth tile
-	iny
-	iny
-	iny
-	lda spriteTile13,x
-	sta oam,y
-	iny
-	lda spriteAttribute13,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;fifteenth tile
-	iny
-	iny
-	iny
-	lda spriteTile14,x
-	sta oam,y
-	iny
-	lda spriteAttribute14,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-	bne @moreThan15
-	rts
-@moreThan15:
-;sixteenth tile
-	iny
-	iny
-	iny
-	lda spriteTile15,x
-	sta oam,y
-	iny
-	lda spriteAttribute15,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-	bne @moreThan16
-	rts
-@moreThan16:
-;seventeenth tile
-	iny
-	iny
-	iny
-	lda spriteTile16,x
-	sta oam,y
-	iny
-	lda spriteAttribute16,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;eighteenth tile
-	iny
-	iny
-	iny
-	lda spriteTile17,x
-	sta oam,y
-	iny
-	lda spriteAttribute17,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;nineteenth tile
-	iny
-	iny
-	iny
-	lda spriteTile18,x
-	sta oam,y
-	iny
-	lda spriteAttribute18,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;twentyeth tile
-	iny
-	iny
-	iny
-	lda spriteTile19,x
-	sta oam,y
-	iny
-	lda spriteAttribute19,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-	bne @moreThan20
-	rts
-@moreThan20:
-;twentyfirst tile
-	iny
-	iny
-	iny
-	lda spriteTile20,x
-	sta oam,y
-	iny
-	lda spriteAttribute20,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;twenty second tile
-	iny
-	iny
-	iny
-	lda spriteTile21,x
-	sta oam,y
-	iny
-	lda spriteAttribute21,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;twenty third tile
-	iny
-	iny
-	iny
-	lda spriteTile22,x
-	sta oam,y
-	iny
-	lda spriteAttribute22,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;twenty fourth tile
-	iny
-	iny
-	iny
-	lda spriteTile23,x
-	sta oam,y
-	iny
-	lda spriteAttribute23,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-;twenty fifth tile
-	iny
-	iny
-	iny
-	lda spriteTile24,x
-	sta oam,y
-	iny
-	lda spriteAttribute24,x
-	ora tilePaletteAttribute
-	sta oam,y
-	dec totalTileCounter
-	rts
-checkXCollision:
-	ldx objectToUpdate
-	lda spriteX,x
-	cmp previousX,x
-	beq @dontUpdate
-	bpl @movingRight
-@dontUpdate:
-	rts
+getNewRail:;(a,x)
+;arguments
+;a - targetRail- where player is going
+;x - currentRail- where player is
+;variables
+;railTemp - holds the target rail for comparison
+;return 
+;a-new current rail position
+	sta railTemp
+	tya
+;if the target rail is larger than the current, were moving left
+	cmp railTemp
+	bmi @movingLeft
 @movingRight:
-	jmp checkCollisionMovingRight
+;shift the rail bit left
+	lsr
+	rts
+@movingLeft:
+;shift the rail bit right
+	asl
+	rts
 
-checkCollisionMovingRight:
-;a is y coordinate, x is ram object
-	ldx objectToUpdate
-	lda spriteY,x
-;find the top right corner
-	clc
-	adc metaSpriteHitboxY1,x
-	bcc @notOffScreenY
-;don't allow wrap around
-	lda #$ff
-@notOffScreenY:
-;save the coordinate 
-	sta collisionYCoordinate
-;x is still object in ram
+getX:
+;arguments
+;a - rail
+;|uxxxxxxx|
+;returns x value
+	ror
+	bcs @right;|u0000001|
+	ror
+	bcs @middleRight;|u0000010|
+	ror
+	bcs @middleMiddleRight;|u0000100
+	ror
+	bcs @middle;|u0001000|
+	ror
+	bcs @middleMiddleLeft;|u0010000|
+	ror
+	bcs @middleLeft;|u0100000|
+@left:
+	lda #$28
+	rts
+@middleLeft:
+	lda #$40
+	rts
+@middleMiddleLeft:
+	lda #$60
+	rts
+@middle:
+	lda #$78
+	rts
+@middleMiddleRight:
+	lda #$90
+	rts
+@middleRight:
+	lda #$b0
+	rts
+@right:
+	lda #$c8
+	rts
+
+buildOAM:
+	lda #$00
+	tay
+	tax
+	sty oamOffset
+@oamLoop:
+	stx objectToBuild
+	lda isActive,x
+	beq @skipEntry
+	jsr buildEntry
+	sta oamOffset
+@skipEntry:
+	ldx objectToBuild
+	inx
+	cpx #MAX_OBJECTS
+	bcc @oamLoop
+	lda oamOffset
+	beq @oamFull
+	jmp clearRemainingOAM;(a)
+@oamFull:
+	rts
+
+buildEntry:
+;tiles and attributes
+	lda metasprite,x
+	tay
+	lda spriteTotal,x
+	tax
+	lda spriteTile0,y
+	sta buildTile0
+	lda spriteAttribute0,y
+	sta buildAttribute0
+	dex
+	lda spriteTile1,y
+	sta buildTile1
+	lda spriteAttribute1,y
+	sta buildAttribute1
+	dex
+	beq @coordinates
+	lda spriteTile2,y
+	sta buildTile2
+	lda spriteAttribute2,y
+	sta buildAttribute2
+	dex
+	lda spriteTile3,y
+	sta buildTile3
+	lda spriteAttribute3,y
+	sta buildAttribute3
+@coordinates:
+	ldx objectToBuild
 	lda spriteX,x
+	sta buildX1
 	clc
-	adc metaSpriteHitboxX2,x
-	bcc @notOffScreenX
-;don't allow wrap around
+	adc #08
+	sta buildX2
+	lda spriteYH,x
+	sta buildY1
+	clc
+	adc #16
+	bcc @storeY
 	lda #$ff
-@notOffScreenX:
-	sta collisionXCoordinate
-	jsr getTileCollisionData
-;save the collision data
-	lda tileCollisionData
+@storeY:
+	sta buildY2
+
+;oam
+	ldx oamOffset
+	ldy objectToBuild
+	lda spriteTotal,y
+	tay
+	lda buildY1
+	sta oam,x
+	inx
+	lda buildTile0
+	sta oam,x
+	inx
+	lda buildAttribute0
+	sta oam,x
+	inx
+	lda buildX1
+	sta oam,x
+	inx
+	dey
+	lda buildY1
+	sta oam,x
+	inx
+	lda buildTile1
+	sta oam,x
+	inx
+	lda buildAttribute1
+	sta oam,x
+	inx
+	lda buildX2
+	sta oam,x
+	inx
+	dey
+	beq @next
+	lda buildY2
+	sta oam,x
+	inx
+	lda buildTile2
+	sta oam,x
+	inx
+	lda buildAttribute2
+	sta oam,x
+	inx
+	lda buildX1
+	sta oam,x
+	inx
+	lda buildY2
+	sta oam,x
+	inx
+	lda buildTile3
+	sta oam,x
+	inx
+	lda buildAttribute3
+	sta oam,x
+	inx
+	lda buildX2
+	sta oam,x
+	inx
+@next:
+	txa
 	rts
 
-getTileCollisionData:
-;argument
-;corner coordinates to check 
-;collisionYCoordinate 
-;collisionXCoordinate
-;returns tileCollisionData
-;| t d u u u u u u |
-;tile
-;death
-;unused
-;variables 
-;metaTileToCheckCollision
-;| x x x y y y yc xc |
-;x - 3 msb of x value
-;y - 3 msb of y value
-;yc xc -
-;which tile in the 32x32 metatile
-;determined by the 4th msb of the coordinate
-;00 top left
-;01 bottom right
-;10 top right 
-;11 bottom right
-;see tiles in data.s
-	lda collisionYCoordinate
-;save the msb of y coordinate
-	and #%11110000
-	lsr
-	lsr
-	lsr
-;store | * * * y y y yc * |
-	sta metaTileToCheckCollision
-	lda collisionXCoordinate
-;save x coordinate
-	pha
-;store the msb of x coordinate
-	and #%11100000
-	ora metaTileToCheckCollision
-;store | x x x * * * * * |
-	sta metaTileToCheckCollision
-;a is now x coordinate
-	pla
-	and #%00010000
-	lsr
-	lsr
-	lsr
-	lsr
-	ora metaTileToCheckCollision
-;store | * * * * * * * xc |
-	sta metaTileToCheckCollision
-;a contains | x x x y y y yc xc |
-	lsr
-	bcs @xSet
-	lsr
-	bcs @ySet
-@neitherSet:
-;x is now position in tile array
+clearRemainingOAM:
+;arguments
+;a-starting point to clear
 	tax
-	lda tiles32,x
-	tay
-;y is now tile to check
-	lda collisionTopLeft,y
-	sta tileCollisionData
-	rts
-@xSet:
-	lsr
-	bcs @bothSet
-;x is now position in tile array
-	tax
-	lda tiles32,x
-	tay
-;y is now tile to check
-	lda collisionTopRight,y
-	sta tileCollisionData
-	rts
-@ySet:
-;x is now position in tile array
-	tax
-	lda tiles32,x
-	tay
-;y is now tile to check
-	lda collisionBottomLeft,y
-	sta tileCollisionData
-	rts
-@bothSet:
-;x is now position in tile array
-	tax
-	lda tiles32,x
-	tay
-;y is now tile to check
-	lda collisionBottomRight,y
-	sta tileCollisionData
-	rts
-
-updateX:
-; x is sprite object in ram
-	ldx objectToUpdate
-	lda spriteX,x
-	cmp previousX,x
-	bne @updateX
-;if they are equal, don't update
-	rts
-@updateX:
-;current is now previous
-	sta previousX,x
-	sta xVal0
-	clc
-	adc #08
-	bcs @overflow1
-	sta xVal1
-	adc #08
-	bcs @overflow2
-	sta xVal2
-	adc #08
-	bcs @overflow3
-	sta xVal3
-	adc #08
-	bcs @overflow4
-	sta xVal4
-	jmp @storeInOam
-@overflow1:
 	lda #$ff
-	sta xVal1
-	sta xVal2
-	sta xVal3
-	sta xVal4
-	jmp @storeInOam
-@overflow2:
-	lda #$ff
-	sta xVal2
-	sta xVal3
-	sta xVal4
-	jmp @storeInOam
-@overflow3:
-	lda #$ff
-	sta xVal3
-	sta xVal4
-	jmp @storeInOam
-@overflow4:
-	lda #$ff
-	sta xVal4
-@storeInOam:
-;x is object in ram
-	lda oamOffset,x
-;y is offset in oam
-	tay
-	iny
-	iny
-;y points to first y coordinate
-	iny
-	lda metaSpriteHeight,x
-	sta xUpdateHeightCounter
-	lda metaSpriteWidth,x
-;save the width
-	pha
-;loop
-@storeRow:
-;pull and push width
-	pla
-	pha
-;x is width
-	tax
-	dec xUpdateHeightCounter
-	bmi @end
-	lda xVal0
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @storeRow
-	lda xVal1
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @storeRow
-	lda xVal2
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @storeRow
-	lda xVal3
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @storeRow
-	lda xVal4
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	jmp@storeRow
-@end:
-;pull height off the stack
-	pla
-	rts
-updateY:
-; x is sprite object in ram
-	ldx objectToUpdate
-	lda spriteY,x
-	cmp previousY,x
-	bne @updateY
-;if they are equal, don't update
-	rts
-@updateY:
-;current is now previous
-	sta previousY,x
-	sta yVal0
-	clc
-	adc #08
-	bcs @overflow1
-	sta yVal1
-	adc #08
-	bcs @overflow2
-	sta yVal2
-	adc #08
-	bcs @overflow3
-	sta yVal3
-	adc #08
-	bcs @overflow4
-	sta yVal4
-	jmp @storeInOam
-@overflow1:
-	lda #$ff
-	sta yVal1
-	sta yVal2
-	sta yVal3
-	sta yVal4
-	jmp @storeInOam
-@overflow2:
-	lda #$ff
-	sta yVal2
-	sta yVal3
-	sta yVal4
-	jmp @storeInOam
-@overflow3:
-	lda #$ff
-	sta yVal3
-	sta yVal4
-	jmp @storeInOam
-@overflow4:
-	lda #$ff
-	sta yVal4
-@storeInOam:
-;x is object in ram
-	lda oamOffset,x
-;y is offset in oam
-;y points to first y coordinate
-	tay
-	lda metaSpriteHeight,x
-	sta yUpdateHeightCounter
-	lda metaSpriteWidth,x
-;save the width
-	pha
-;x is width
-	tax
-;loop
-	lda yVal0
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @secondRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @secondRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @secondRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @secondRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-@secondRow:
-	dec yUpdateHeightCounter
-	bne @doSecondRow
-;pull width off stack
-	pla
-	rts
-@doSecondRow:
-;get width
-	pla
-	pha
-;x is width
-	tax
-	lda yVal1
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @thirdRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @thirdRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @thirdRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @thirdRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-@thirdRow:
-	dec yUpdateHeightCounter
-	bne @doThirdRow
-;pull width off stack
-	pla
-	rts
-@doThirdRow:
-;get width
-	pla
-	pha
-;x is width
-	tax
-	lda yVal2
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @fourthRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @fourthRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @fourthRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @fourthRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-@fourthRow:
-	dec yUpdateHeightCounter
-	bne @doFourthRow
-;pull width off stack
-	pla
-	rts
-@doFourthRow:
-;get width
-	pla
-	pha
-;x is width
-	tax
-	lda yVal3
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @fifthRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @fifthRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @fifthRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @fifthRow
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-@fifthRow:
-	dec yUpdateHeightCounter
-	bne @doFifthRow
-;pull width off stack
-	pla
-	rts
-@doFifthRow:
-	pla
-	pha
-;x is width
-	tax
-	lda yVal4
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @end
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @end
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @end
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-	dex
-	beq @end
-	sta oam,y
-	iny
-	iny
-	iny
-	iny
-@end:
-;remove width
-	pla
+@clearOAM:
+	sta oam,x
+	inx
+	inx
+	inx
+	sta oam,x
+	inx
+	bne @clearOAM
 	rts
 
 readControllers:
@@ -1657,15 +1001,79 @@ loop:
 	rol controller2; Carry -> bit 0; bit 7 -> Carry
     bcc loop
     rts
-;;;;;;
-;test;
-;;;;;;
 
-test:
-	sta testVariable
+;;;;;;;;;;;;;;;;;;;;;;
+;;;sprite behaviors;;;
+;;;;;;;;;;;;;;;;;;;;;;
+
+playerBehavior:;(a)
+;arguments 
+;x - position in sprite array
+;returns
+;x - target rail position
+;y - y coordinate
+;a - metasprite
+;bit positions are rail positions
+;#%u0001000 is the center of rail
+;#%u1000000 is left
+;#%u0000001 is right
+	lda controller1
+	ror
+	bcs @pressingRight
+	ror
+	bcs @pressingLeft
+	jmp @pressingNone
+@pressingRight:
+	ror
+	bcs @pressingBoth
+	lda #%00000001
+	jmp @getMetasprite
+@pressingLeft:
+	ror
+	bcs @pressingBoth
+	lda #%01000000
+	jmp @getMetasprite
+@pressingNone:
+@pressingBoth:
+	lda #%00001000
+@getMetasprite:
+	sta targetRail,x
+;y value is constant for player
+	lda #$c0
+	sta spriteYH,x
+	lda #00
+;todo player metasprites
+	sta metasprite,x
 	rts
-testLoop:
-	inc testLoopVariable
+
+coinBehavior0:
+;arguments
+;x - ram object
+;returns
+;a = metatile
+;x - rail
+;y - y coordinate
+;y = y + sprite speed
+	clc
+	lda spriteYL,x
+	adc spriteSpeedL
+	sta spriteYL,x
+	lda spriteYH,x
+	adc spriteSpeedH
+	bcs @clearSprite
+	sta spriteYH,x
+	lda seconds
+	and #%00011000
+	lsr
+	lsr
+	lsr
+	tay
+	lda coinAnimation,y
+	sta metasprite,x
+	rts
+@clearSprite:
+	lda #$00
+	sta isActive,x
 	rts
 
 .include "data.s"

@@ -1,4 +1,8 @@
 .segment "RAWDATA"
+
+leftRail:
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01 
+
 ;;;;;;;;;;;;;;;
 ;;;romScenes;;; 
 ;;;;;;;;;;;;;;;
@@ -91,58 +95,46 @@ palette2:
 	.byte OASIS2
 palette3:
 	.byte OASIS3
-CAT_PALETTE = 0
-OASIS0 = 1
-OASIS1 = 2
-OASIS2 = 3
-OASIS3 = 4
+PLAYER_PALETTE= 0
+COIN_PALETTE = 1
+OASIS0 = 2
+OASIS1 = 3
+OASIS2 = 4
+OASIS3 = 5
 romColor1:
-	.byte $23, $16, $05, $26, $07
+	.byte $05, $07, $16, $05, $26, $07
 romColor2:
-	.byte $10, $26, $06, $34, $0b
+	.byte $25, $27, $26, $06, $34, $0b
 romColor3:
-	.byte $08, $31, $07, $2c, $1b
+	.byte $35, $37, $31, $07, $2c, $1b
 
 ;;;;;;;;;;;;;
 ;;;sprites;;;
 ;;;;;;;;;;;;;;;;
 ;sprite objects;
 ;;;;;;;;;;;;;;;;
-CAT_OBJECT = 0
-inputMethod:
-	.byte CONTROLLER_1
-behavior:
-	.byte PLAYER_BEHAVIOR
-;metatile collections as states
-spriteWidth:
-	.byte 01
-spriteHeight:
-	.byte 01
-spriteTotal:
-	.byte 01
-hitboxX1:
-	.byte 02
-hitboxX2:
-	.byte 06
-hitboxY1:
-	.byte 02
-hitboxY2:
-	.byte 06
-spriteState0:
-	.byte CAT_IDLE_0
-spriteState1:
-spriteState2:
-spriteState3:
-spriteState4:
-spriteState5:
-;sprite data;
-;number, attribute
-;;;;;;;;;;;;
-;metasprite;
-;;;;;;;;;;;;
-CAT_IDLE_0= 0
-numberOfTiles:
-	.byte 12 
+PLAYER_OBJECT = 0
+COIN_0 = 1
+romSpriteTotal:
+	.byte 04, 02
+romSpriteWidth:
+	.byte 02, 02
+romSpriteHeight:
+	.byte 02, 02
+romHitboxY1:
+	.byte 02, 02
+romHitboxY2:
+	.byte 06, 14
+romBehaviorH:
+	.byte >playerBehavior
+	.byte >coinBehavior0
+romBehaviorL:
+	.byte <playerBehavior-1
+	.byte <coinBehavior0-1
+;;;;;;;;;;;;;
+;metasprites;
+;;;;;;;;;;;;;
+;tile, attribute
 ;76543210
 ;||||||||
 ;||||||++- Palette of sprite
@@ -150,141 +142,39 @@ numberOfTiles:
 ;||+------ Priority (0: in front of background; 1: behind background)
 ;|+------- Flip sprite horizontally
 ;+-------- Flip sprite vertically
+PLAYER_IDLE = 0
+COIN_FRAME_0 = 1
+COIN_FRAME_1 = 2
+COIN_FRAME_2 = 3
+COIN_FRAME_3 = 4
+
 spriteTile0:
-	.byte $01 
+	.byte $00, $40, $42, $46, $44
 spriteAttribute0:
-	.byte %00000000
+	.byte %00000000, %00000001, %00000001, %00000001, %01000001
 spriteTile1:
-	.byte $01
+	.byte $02, $40, $44, $46, $42
 spriteAttribute1:
-	.byte %00000000
+	.byte %00000000, %01000001, %00000001, %01000001, %01000001
 spriteTile2:
-	.byte $01
+	.byte $04
 spriteAttribute2:
 	.byte %00000000
 spriteTile3:
-	.byte $01 
+	.byte $06 
 spriteAttribute3:
 	.byte %00000000
-spriteTile4:
-	.byte $01
-spriteAttribute4:
-	.byte %00000000
-spriteTile5:
-	.byte $01
-spriteAttribute5:
-	.byte %00000000
-spriteTile6:
-	.byte $01
-spriteAttribute6:
-	.byte %00000000
-spriteTile7:
-	.byte $01
-spriteAttribute7:
-	.byte %00000000
-spriteTile8:
-	.byte $01
-spriteAttribute8:
-	.byte %00000000
-spriteTile9:
-	.byte $01
-spriteAttribute9:
-	.byte %00000000
-spriteTile10:
-	.byte $01
-spriteAttribute10:
-	.byte %00000000
-spriteTile11:
-	.byte $01
-spriteAttribute11:
-	.byte %00000000
-spriteTile12:
-	.byte $01
-spriteAttribute12:
-	.byte %00000000
-spriteTile13:
-	.byte $01
-spriteAttribute13:
-	.byte %00000000
-spriteTile14:
-	.byte $01
-spriteAttribute14:
-	.byte %00000000
-spriteTile15:
-	.byte $01
-spriteAttribute15:
-	.byte %00000000
-spriteTile16:
-	.byte $01
-spriteAttribute16:
-	.byte %00000000
-spriteTile17:
-	.byte $01
-spriteAttribute17:
-	.byte %00000000
-spriteTile18:
-	.byte $01
-spriteAttribute18:
-	.byte %00000000
-spriteTile19:
-	.byte $01
-spriteAttribute19:
-	.byte %00000000
-spriteTile20:
-	.byte $01
-spriteAttribute20:
-	.byte %00000000
-spriteTile21:
-	.byte $01
-spriteAttribute21:
-	.byte %00000000
-spriteTile22:
-	.byte $01
-spriteAttribute22:
-	.byte %00000000
-spriteTile23:
-	.byte $01
-spriteAttribute23:
-	.byte %00000000
-spriteTile24:
-	.byte $01
-spriteAttribute24:
-	.byte %00000000
-;;;;;;;;;;;;;;;
-;sprite inputs;
-;;;;;;;;;;;;;;;
-CONTROLLER_1 = 0
-CONTROLLER_2 = 1
-;behaviors;
-;;;;;;;;;;;
-PLAYER_BEHAVIOR=0
-behaviorsH:
-	.byte >playerBehavior
-behaviorsL:
-	.byte <playerBehavior-1, $ff
-
-playerBehavior:
-	ldx objectToUpdate
-	lda inputs,x
-	clc
-	lsr
-	bcc @noRight
-	inc spriteX,x
-@noRight:
-	lsr
-	bcc @noLeft
-	dec spriteX,x
-@noLeft:
-	lsr
-	bcc @noDown
-	inc spriteY,x
-@noDown:
-	lsr
-	bcc @noUp
-	dec spriteY,x
-@noUp:
-	rts
-
+;;;;;;;;;;;;;;;;
+;;;animations;;;
+;;;;;;;;;;;;;;;;
+playerIdleAnimation:
+playerLeftAnimation:
+playerRightAnimation:
+coinAnimation:
+	.byte COIN_FRAME_0, COIN_FRAME_1, COIN_FRAME_2, COIN_FRAME_3 
+;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;
 ;;;lookup tables;;;
 ;;;;;;;;;;;;;;;;;;;
