@@ -10,7 +10,10 @@ main:
 ;housekeeping
 ;first scene is scene 0
 	lda #00
+	sta xScroll
 	sta nextScene
+	lda #239
+	sta yScroll
 	lda #NULL
 ;currently no scene is loaded
 	sta currentScene
@@ -42,7 +45,7 @@ gameLoop:
 ;if(nextScene != currentScene) 
 	lda nextScene
 	cmp currentScene
-	beq @addSprites
+	beq @updateScroll
 	;update the scene
 		lda seconds
 		ldx currentMaskSettings
@@ -71,6 +74,15 @@ gameLoop:
 	;set current to next
 		lda nextScene
 		sta currentScene
+;update the scroll
+@updateScroll:
+	ldx yScroll
+	dex
+	cpx #$ff 
+	bne @endScroll
+	ldx #239
+@endScroll:
+	stx yScroll
 @addSprites:
 	lda seconds
 	and #%01111111
@@ -81,14 +93,14 @@ gameLoop:
 	beq @updateObjects
 	sta spriteRoutineOffset
 ;x is the offset for the sprite to fetch
-	jsr getAvailableSprite
-	cpx #$ff
-	beq @updateObjects
-	ldy spriteRoutineOffset
-	lda leftRail,y
-	tay
-	lda #%01000000
-	jsr initializeSprite;(a,x,y)
+;	jsr getAvailableSprite
+;	cpx #$ff
+;	beq @updateObjects
+;	ldy spriteRoutineOffset
+;	lda leftRail,y
+;	tay
+;	lda #%01000000
+;	jsr initializeSprite;(a,x,y)
 	jsr getAvailableSprite
 	cpx #$ff
 	beq @updateObjects
@@ -97,14 +109,14 @@ gameLoop:
 	tay
 	lda #%00001000
 	jsr initializeSprite;(a,x,y)
-	jsr getAvailableSprite
-	cpx #$ff
-	beq @updateObjects
-	ldy spriteRoutineOffset
-	lda leftRail,y
-	tay
-	lda #%00000001
-	jsr initializeSprite;(a,x,y)
+;	jsr getAvailableSprite
+;	cpx #$ff
+;	beq @updateObjects
+;	ldy spriteRoutineOffset
+;	lda leftRail,y
+;	tay
+;	lda #%00000001
+;	jsr initializeSprite;(a,x,y)
 @updateObjects:
 ;start by updating object 0 (player)
 	ldx #$00
@@ -131,7 +143,6 @@ gameLoop:
 	inx
 	cpx #MAX_OBJECTS
 	bcc @updateLoop
-
 	lda #$00
 	tax
 	jsr buildOAM;(x-object to build, a-oam offset)
@@ -168,8 +179,9 @@ updateScroll:
 	bit PPUSTATUS
 	lda currentPPUSettings
 	sta PPUCTRL
-	lda #$00
+	lda xScroll
 	sta PPUSCROLL
+	lda yScroll
 	sta PPUSCROLL
 ;hasFrameBeenRendered = TRUE
 	lda #TRUE

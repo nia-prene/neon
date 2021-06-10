@@ -2,6 +2,8 @@
 test: .res 1
 objectToUpdate: .res 1
 ;highes level variables/arguments
+xScroll: .res 1
+yScroll: .res 1
 spriteSpeedH: .res 1
 spriteSpeedL: .res 1
 scrollSpeedH: .res 1
