@@ -1,8 +1,5 @@
 .segment "RAWDATA"
 
-leftRail:
-	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01 
-
 ;;;;;;;;;;;;;;;
 ;;;romScenes;;; 
 ;;;;;;;;;;;;;;;
@@ -116,7 +113,7 @@ romColor3:
 PLAYER_OBJECT = 0
 COIN_0 = 1
 romSpriteTotal:
-	.byte 04, 02
+	.byte 04, 01
 romSpriteWidth:
 	.byte 02, 02
 romSpriteHeight:
@@ -125,12 +122,10 @@ romHitboxY1:
 	.byte 02, 02
 romHitboxY2:
 	.byte 06, 14
-romBehaviorH:
-	.byte >playerBehavior
-	.byte >coinBehavior0
-romBehaviorL:
-	.byte <playerBehavior-1
-	.byte <coinBehavior0-1
+
+;;;;;;;;;
+;bullets;
+;;;;;;;;;
 ;;;;;;;;;;;;;
 ;metasprites;
 ;;;;;;;;;;;;;
@@ -143,25 +138,21 @@ romBehaviorL:
 ;|+------- Flip sprite horizontally
 ;+-------- Flip sprite vertically
 PLAYER_IDLE = 0
-COIN_FRAME_0 = 1
-COIN_FRAME_1 = 2
-COIN_FRAME_2 = 3
-COIN_FRAME_3 = 4
-
+PLAYER_MAIN_BULLET = 1
 spriteTile0:
-	.byte $00, $40, $42, $46, $44
+	.byte $08, $20
 spriteAttribute0:
-	.byte %00000000, %00000001, %00000001, %00000001, %01000001
+	.byte %00000000, %00000000
 spriteTile1:
-	.byte $02, $40, $44, $46, $42
+	.byte $0a 
 spriteAttribute1:
-	.byte %00000000, %01000001, %00000001, %01000001, %01000001
+	.byte %00000000
 spriteTile2:
-	.byte $04
+	.byte $0c
 spriteAttribute2:
 	.byte %00000000
 spriteTile3:
-	.byte $06 
+	.byte $0e 
 spriteAttribute3:
 	.byte %00000000
 ;;;;;;;;;;;;;;;;
@@ -170,8 +161,6 @@ spriteAttribute3:
 playerIdleAnimation:
 playerLeftAnimation:
 playerRightAnimation:
-coinAnimation:
-	.byte COIN_FRAME_0, COIN_FRAME_1, COIN_FRAME_2, COIN_FRAME_3 
 ;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;

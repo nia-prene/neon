@@ -2,6 +2,7 @@
 .segment "HEADER"
 .include "header.s"
 .include "ram.s"
+.include "data.s"
 .segment "STARTUP"
 .include "init.s"
 .segment "CODE"
@@ -10,15 +11,13 @@ main:
 ;housekeeping
 ;first scene is scene 0
 	lda #00
-	sta xScroll
 	sta nextScene
+	sta xScroll
 	lda #239
 	sta yScroll
 	lda #NULL
 ;currently no scene is loaded
 	sta currentScene
-;clear this out while we have null
-	sta spriteRoutineOffset
 ;there is no frame that needs renderas we haven't begun gameloop
 	lda #TRUE
 	sta hasFrameBeenRendered
@@ -29,14 +28,6 @@ main:
 ;set the players palette to #4 and the coin palette to #5
 	ldy #4
 	jsr setPalette;(x, y)
-	ldx #COIN_PALETTE
-	ldy #5
-	jsr setPalette;(x,y)
-;set sprite speed
-	lda #$03
-	sta spriteSpeedH
-	lda #$00
-	sta spriteSpeedL
 gameLoop:
 ;while(!hasFrameBeenRendered)
 	;hold here until previous frame was rendered
@@ -52,7 +43,6 @@ gameLoop:
 		jsr disableRendering;(a, x)
 	;returns new mask settings
 		sta currentMaskSettings
-		jsr resetSprites
 		lda nextScene
 		jsr unzipAllTiles;(a)
 		ldx nextScene
@@ -60,12 +50,6 @@ gameLoop:
 	;we are in forced blank so we can call these two rendering routines
 		jsr renderAllTiles
 		jsr renderAllPalettes
-		jsr getAvailableSprite
-		ldy #PLAYER_OBJECT
-	;player starts in middle rail
-		lda #%00001000
-	;(x-target in ram, y-target in rom, a-rail to place it on)
-		jsr initializeSprite
 		lda seconds
 		ldx currentMaskSettings
 		jsr enableRendering;(a, x)
@@ -83,72 +67,15 @@ gameLoop:
 	ldx #239
 @endScroll:
 	stx yScroll
-@addSprites:
-	lda seconds
-	and #%01111111
-	lsr
-	lsr
-	lsr
-	cmp spriteRoutineOffset
-	beq @updateObjects
-	sta spriteRoutineOffset
-;x is the offset for the sprite to fetch
-;	jsr getAvailableSprite
-;	cpx #$ff
-;	beq @updateObjects
-;	ldy spriteRoutineOffset
-;	lda leftRail,y
-;	tay
-;	lda #%01000000
-;	jsr initializeSprite;(a,x,y)
-	jsr getAvailableSprite
-	cpx #$ff
-	beq @updateObjects
-	ldy spriteRoutineOffset
-	lda leftRail,y
-	tay
-	lda #%00001000
-	jsr initializeSprite;(a,x,y)
-;	jsr getAvailableSprite
-;	cpx #$ff
-;	beq @updateObjects
-;	ldy spriteRoutineOffset
-;	lda leftRail,y
-;	tay
-;	lda #%00000001
-;	jsr initializeSprite;(a,x,y)
-@updateObjects:
-;start by updating object 0 (player)
-	ldx #$00
-;for(objectToUpdate=0;objectToUpdate<MAX_OBJECTS;objectToUpdate++)
-@updateLoop:
-	stx objectToUpdate
-	lda isActive,x
-	beq @next
-	jsr interpretBehavior;(x-object to update)
-	lda currentRail,x
-	cmp targetRail,x
-	beq @dontUpdateRail
-	tay
-	lda targetRail,x
-	jsr getNewRail;(a-targetRail, y-currentRail)
-;returns a - new current rail
-	ldx objectToUpdate
-	sta currentRail,x
-@dontUpdateRail:
-	jsr getX;(a-currentRail)
-	ldx objectToUpdate
-	sta spriteX,x
-@next:
-	inx
-	cpx #MAX_OBJECTS
-	bcc @updateLoop
-	lda #$00
+	jsr updatePlayer
+	jsr updatePlayerBullets
+	lda #0
 	tax
 	jsr buildOAM;(x-object to build, a-oam offset)
 	lda #FALSE
 	sta hasFrameBeenRendered
 	jmp gameLoop
+
 
 ;;;;;;;;;;;;;;;;
 ;;;Interrupts;;;
@@ -228,60 +155,27 @@ updateClock:
 	inc days
 	rts
 
-getAvailableSprite:
+getAvailableOam:
 ;returns
-;x- ram position of next available sprite
-	ldx #$00
+;y- ram position of next available sprite
+	ldy #$00
 ;if isActive = FALSE break
 @findInactive:
-	lda isActive,x
+	lda isActive,y
 	beq @returnValue
-	inx
-	cpx #MAX_OBJECTS
+	iny
+	cpy #MAX_OBJECTS
 	bcc @findInactive
 ;if no sprite is available, return null
-	ldx #NULL
+	ldy #NULL
 	rts
 @returnValue:
-;return offset of first sprite where isActive=False
+;caller now owns this spot
+	lda #TRUE
+	sta isActive,y
+;return offset of first sprite where inactive on y
 	rts
 
-initializeSprite:
-;Constructor
-;arguments
-;a - rail
-;x - target in ram array
-;y - is rom object (see sprites in data.s)
-;returns void
-;store the rail
-	sta currentRail,x
-	sta targetRail,x
-;copy tile total
-	lda romSpriteTotal,y
-	sta spriteTotal,x
-;copy the width
-	lda romSpriteWidth,y
-	sta spriteWidth,x
-;copy the height
-	lda romSpriteHeight,y
-	sta spriteHeight,x
-;get hitbox
-	lda romHitboxY1,y
-	sta spriteHitboxY1,x
-	lda romHitboxY2,y
-	sta spriteHitboxY2,x
-;copy behavior pointer
-	lda romBehaviorH,y
-	sta behaviorH,x
-	lda romBehaviorL,y
-	sta behaviorL,x
-;every sprite has a starting y coordinate of zero (fall from top screen)
-	lda #$00
-	sta spriteYH,x
-	lda #TRUE
-	sta isActive,x
-;return void
-	rts
 
 setPalette:;(x, y)
 ;sets a palette to one of 8 possible locations on screen.palette
@@ -562,28 +456,6 @@ enableRendering:;(a, x)
 	sta PPUMASK
 	rts
 
-resetSprites:
-	lda #NULL
-	ldx #$00
-;first set all oam values to ff. this puts them off screen in a known state
-;for(x=0; x < 256 ; x++)
-@setOamToNull:
-	sta oam,x
-	inx
-	bne @setOamToNull
-;next set all ram sprite objects to deactive
-;conveniently x is 0(false)
-	txa
-;for(x = 0; x < MAX_OBJECTS; x++
-@setDeactive:
-	sta isActive,x
-	inx
-	cpx #MAX_OBJECTS
-	bcc @setDeactive
-	rts
-
-
-
 ;this subroutine transfers all palettes to the ppu
 renderAllPalettes:
 	;clear vblank flag before write
@@ -781,82 +653,6 @@ renderAllTiles:
 	bcc	@renderScreenLoop
 	rts
 
-
-interpretBehavior:
-;arguments
-;x - sprite object to interpret
-	lda behaviorH,x
-	pha
-	lda behaviorL,x
-	pha
-;we jump to the behavior subroutine pushed on to the stack and pass in sprite array object
-;all behaviors return 
-;a - metasprite
-;y - y coordinate
-;x - rail
-	rts
-
-getNewRail:;(a,x)
-;arguments
-;a - targetRail- where player is going
-;x - currentRail- where player is
-;variables
-;railTemp - holds the target rail for comparison
-;return 
-;a-new current rail position
-	sta railTemp
-	tya
-;if the target rail is larger than the current, were moving left
-	cmp railTemp
-	bmi @movingLeft
-@movingRight:
-;shift the rail bit left
-	lsr
-	rts
-@movingLeft:
-;shift the rail bit right
-	asl
-	rts
-
-getX:
-;arguments
-;a - rail
-;|uxxxxxxx|
-;returns x value
-	ror
-	bcs @right;|u0000001|
-	ror
-	bcs @middleRight;|u0000010|
-	ror
-	bcs @middleMiddleRight;|u0000100
-	ror
-	bcs @middle;|u0001000|
-	ror
-	bcs @middleMiddleLeft;|u0010000|
-	ror
-	bcs @middleLeft;|u0100000|
-@left:
-	lda #$28
-	rts
-@middleLeft:
-	lda #$40
-	rts
-@middleMiddleLeft:
-	lda #$60
-	rts
-@middle:
-	lda #$78
-	rts
-@middleMiddleRight:
-	lda #$90
-	rts
-@middleRight:
-	lda #$b0
-	rts
-@right:
-	lda #$c8
-	rts
-
 buildOAM:
 	lda #$00
 	tay
@@ -881,15 +677,19 @@ buildOAM:
 
 buildEntry:
 ;tiles and attributes
+	lda #FALSE
+	sta isActive,x
 	lda metasprite,x
 	tay
-	lda spriteTotal,x
+	lda romSpriteTotal,y
+	sta buildTotal
 	tax
 	lda spriteTile0,y
 	sta buildTile0
 	lda spriteAttribute0,y
 	sta buildAttribute0
 	dex
+	beq @coordinates
 	lda spriteTile1,y
 	sta buildTile1
 	lda spriteAttribute1,y
@@ -911,8 +711,11 @@ buildEntry:
 	sta buildX1
 	clc
 	adc #08
+	bcc @storeX
+	lda #$ff
+@storeX:
 	sta buildX2
-	lda spriteYH,x
+	lda spriteY,x
 	sta buildY1
 	clc
 	adc #16
@@ -923,9 +726,7 @@ buildEntry:
 
 ;oam
 	ldx oamOffset
-	ldy objectToBuild
-	lda spriteTotal,y
-	tay
+	ldy buildTotal
 	lda buildY1
 	sta oam,x
 	inx
@@ -939,6 +740,7 @@ buildEntry:
 	sta oam,x
 	inx
 	dey
+	beq @next
 	lda buildY1
 	sta oam,x
 	inx
@@ -1017,78 +819,179 @@ loop:
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;;sprite behaviors;;;
 ;;;;;;;;;;;;;;;;;;;;;;
-
-playerBehavior:;(a)
-;arguments 
-;x - position in sprite array
-;returns
-;x - target rail position
-;y - y coordinate
-;a - metasprite
-;bit positions are rail positions
-;#%u0001000 is the center of rail
-;#%u1000000 is left
-;#%u0000001 is right
-	lda controller1
-	ror
-	bcs @pressingRight
-	ror
-	bcs @pressingLeft
-	jmp @pressingNone
-@pressingRight:
-	ror
-	bcs @pressingBoth
+updatePlayer:
+;constants
+;pixel per frame when moving fast
+FAST_MOVEMENT = 3
+;pixel per frame when moving slow
+SLOW_MOVEMENT = 1
+;furthest right player can go
+MAX_RIGHT = 247
+;furthest left player can go
+MAX_LEFT = 04
+;furthest up player can go
+MAX_UP = 16
+;furthest down player can go
+MAX_DOWN = 209
+;arguments none
+	lda #%10000000
+	bit controller1
+	bne @goingSlow
+@goingFast:
+	lda #FAST_MOVEMENT
+	sta playerSpeed
+	jmp @updateMovement
+@goingSlow:
+	lda #SLOW_MOVEMENT
+	sta playerSpeed
+@updateMovement:
 	lda #%00000001
-	jmp @getMetasprite
-@pressingLeft:
-	ror
-	bcs @pressingBoth
-	lda #%01000000
-	jmp @getMetasprite
-@pressingNone:
-@pressingBoth:
-	lda #%00001000
-@getMetasprite:
-	sta targetRail,x
-;y value is constant for player
-	lda #$c0
-	sta spriteYH,x
-	lda #00
-;todo player metasprites
-	sta metasprite,x
-	rts
-
-coinBehavior0:
-;arguments
-;x - ram object
-;returns
-;a = metatile
-;x - rail
-;y - y coordinate
-;y = y + sprite speed
+	bit controller1
+	beq @notRight
+;if bit 0 set then move right
 	clc
-	lda spriteYL,x
-	adc spriteSpeedL
-	sta spriteYL,x
-	lda spriteYH,x
-	adc spriteSpeedH
-	bcs @clearSprite
-	sta spriteYH,x
-	lda seconds
-	and #%00011000
-	lsr
-	lsr
-	lsr
-	tay
-	lda coinAnimation,y
-	sta metasprite,x
-	rts
-@clearSprite:
-	lda #$00
-	sta isActive,x
+	lda playerX
+	adc playerSpeed
+	cmp #MAX_RIGHT
+	bcc @storeRight
+	lda #MAX_RIGHT
+@storeRight:
+	sta playerX
+@notRight:
+	lda #%00000010
+	bit controller1
+	beq @notLeft
+;if bit 1 set then move left 
+	sec
+	lda playerX
+	sbc playerSpeed
+	cmp #MAX_LEFT
+	bcs @storeLeft
+	lda #MAX_LEFT
+@storeLeft:
+	sta playerX
+@notLeft:
+	lda #%00000100
+	bit controller1
+	beq @notDown
+;if bit 2 set then move down
+	clc
+	lda playerY
+	adc playerSpeed
+	cmp #MAX_DOWN
+	bcc @storeDown
+	lda #MAX_DOWN
+@storeDown:
+	sta playerY
+@notDown:
+	lda #%00001000
+	bit controller1
+	beq @notUp
+;if bit 3 set then move down
+	sec
+	lda playerY
+	sbc playerSpeed
+	cmp #MAX_UP
+	bcs @storeUp
+	lda #MAX_UP
+@storeUp:
+	sta playerY
+@notUp:
+	lda #%01000000
+	bit controller1
+	beq @notShooting
+	inc pressingShoot
+	lda pressingShoot
+	and #%00000011
+	cmp #%00000001
+	bne @getMetatile
+	jsr initializePlayerBullet
+	jmp @getMetatile
+@notShooting:
+	lda #0
+	sta pressingShoot
+@getMetatile:
+	jsr getAvailableOam
+;x is now oam position to use
+	lda #PLAYER_OBJECT
+	sta metasprite,y
+	lda playerX
+	sta spriteX,y
+	lda playerY
+	sta spriteY,y
 	rts
 
-.include "data.s"
+initializePlayerBullet:
+;arguments - none
+;constants
+PLAYER_BULLET_X_OFFSET = 4
+PLAYER_BULLET_Y_OFFSET = 8
+
+;find empty bullet
+	ldx #0
+@findEmptyBullet:
+	lda isPlayerBulletActive,x
+;if bullet inactive initialize here
+	beq @initializeBullet
+	inx
+	cpx #MAX_PLAYER_BULLETS
+	bcc @findEmptyBullet
+;no empty bullet
+	rts
+@initializeBullet:
+	clc
+	lda playerX
+	adc #PLAYER_BULLET_X_OFFSET
+	sta playerBulletX,x
+	sec
+	lda playerY
+	sbc #PLAYER_BULLET_Y_OFFSET 
+	sta playerBulletY,x
+	lda #TRUE
+	sta isPlayerBulletActive,x
+	rts
+
+updatePlayerBullets:
+;arguments - none
+;constants
+;speed bullet travels up
+PLAYER_BULLET_SPEED = 08
+;start with bullet 0
+	ldx #0
+@bulletLoop:
+	lda isPlayerBulletActive,x
+;if true, update
+	bne @updateBullet
+	inx
+;while x < maximum bullets
+	cpx #MAX_PLAYER_BULLETS
+	bcc @bulletLoop
+	rts
+@updateBullet:
+	sec
+	lda playerBulletY,x
+	sbc #PLAYER_BULLET_SPEED
+;if it has left screen, deactivate
+	bcc @deactivateBullet
+;else update y coordinate
+	sta playerBulletY,x
+;get an oam slot (returned on y)
+	jsr getAvailableOam
+;place coordinates and sprite on oambuffer
+	lda playerBulletY,x
+	sta spriteY,y
+	lda playerBulletX,x
+	sta spriteX,y
+	lda #PLAYER_MAIN_BULLET
+	sta metasprite,y
+	inx
+	jmp @bulletLoop
+@deactivateBullet:
+	lda #FALSE
+	sta isPlayerBulletActive,x
+	inx
+	jmp @bulletLoop
+
 .segment "VECTORS"
 .word nmi
 .word reset
