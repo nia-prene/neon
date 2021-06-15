@@ -1,10 +1,10 @@
-# Neon (working title) for the NES
+# Neon engine for the NES
 
-Neon is a social simulator role playing game for the Nintendo Entertainment System. With large sprites, detailed environments, and well designed characters, Neon will stretch the limitations of the console and bring a more inviting experience to a notoriously punishing console library
+Neon is the name given to this NES engine. Although this particular build is suited best to a top-down bullet hell style gameplay, it can be easily retooled for almost any project with a few changes. The primary
 
 ## Getting Started
 
-To play the .nes file, all you need is a Nintendo emulator, like fceux. 
+To play the current build, locate the .nes file located in the /dbg folder. All you need now is a Nintendo emulator, like fceux. All functions are in the main.s file. All ram variables are in ram.s, and all rom data can be found in the data.s. Everything has been written in a basic text editor, so no IDE or outside game engine software is necessary.
 
 ### Prerequisites
 
@@ -16,7 +16,7 @@ yy-chr - viewing and editing the graphical data
 
 To play the game, simply run the .nes file in the Nintendo emulator of your choice
 
-To assemble the code, unzip the directory and open the makefile. Comment out the "test" portion and hit make in the command line. The .nes file will be located in the /dbg folder. 
+To assemble the code, unzip the directory and open the makefile. Comment out the "test" portion (which opens the game in an emulator) and hit make in the command line. The .nes file will be located in the /dbg folder. 
 
 
 ## Built With
@@ -26,7 +26,7 @@ To assemble the code, unzip the directory and open the makefile. Comment out the
 
 ## Authors
 
-* **Avery Grey** - *Initial work*
+* **nia-prene** - *Initial work*
 
 
 ## Acknowledgments

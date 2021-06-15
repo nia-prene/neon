@@ -1,0 +1,507 @@
+Section
+	Overview
+		1.0 Hardware Overview
+		1.1 Memory Map
+	Graphics
+		2.0 PPU Registers
+		2.1 Pattern Tables
+		2.2 Nametables
+		2.3 Attribute Tables
+		2.4 Hardware Sprites
+		2.5 Palette Data
+	Engine Specific
+		3.0 Scope
+		3.1 Tile Compression 
+		3.2 Rendering Backgrounds
+		3.3 Palettes
+		3.4 Sprites
+		3.5 Object Data
+
+Overview
+
+	1.0 Hardware Overview
+	The Nintendo Entertainment System (known as the Family computer / Famicom in Japan) is an 8-bit console developed by Nintendo. Released in 1983 in Japan, the NES was part of the 3rd generation of home consoles and is most notably known for the Super Mario and Zelda series. 
+	The NES utilizes the Ricoh 2A03 (RP2a03) in NTSC regions and the 2A07 (RP2A07) in PAL regions as its CPU. These processors are functionally identical, but have different clock dividers and vertical refresh rates to compensate for television protocol differences.
+	At its core, the 2A03 is almost indistinguishable from the MOS 6502, an incredibly popular and affordable processor that helped fuel the personal computer boom of the late 70s. The only notable differences between the two is the instution of a sound generator, and the  absence of decimal mode, possibly instituted to avoid patent infringement. 
+	The 2A03 has an 8-bit data bus and a 16-bit address bus. It is capable of addition, subtraction, bitwise operations, and direct or indirect addressing. The 6502 instruction set has been documented at length on countless sites, and can be found with a quick search. The NES relies on memory mapping to access the Picture Processing Unit as well as the audio channels.
+	The PPU (Picture Processing Unit) was the 2d picture generator for the NES. The PPU generates a composite video signal with 240 lines of pixels. It has its own address space, totaling 10 kiloytes. 8 kilobytes were reserved for character data (background and sprites), located in the cartridge, as either RAM or more commonly ROM. 2 kilobytes of RAM were located in the console, and stores two screens of data. Seperate smaller address spaces hold palette data and OAM (see Spries). The CPU accesses the PPU through a few registers visible to the CPU via memory mapping.
+	
+	1.1 Memory Map
+
+CPU memory map
+ __________________________________________________
+| Address Range  | Size  |      Device             |
+|________________|_______|_________________________|
+| $0000 - $00FF  | $0100 | Zero Page               |
+|________________|_______|_________________________|
+| $0100 - $01FF  | $0100 | Stack                   |
+|________________|_______|_________________________|
+| $0200 - $07FF  | $0600 | General Purpse RAM      |
+|________________|_______|_________________________|
+| $0800 - $0FFF  | $0800 |                         |
+|________________|_______|                         |
+| $1000 - $17FF  | $0800 | Mirror of $0000 - $07ff |
+|________________|_______|                         |
+| $1800 - $1FFF  | $0800 |                         |
+|________________|_______|_________________________|
+| $2000 - $2007  | $0008 | PPU Registers           |
+|________________|_______|_________________________|
+| $2008 - $3FFF  | $1FF8 | Mirror of $2000 - $2007 |
+|________________|_______|_________________________|
+| $4000 - $4017  | $0018 | APU and I/O registers   |
+|________________|_______|_________________________|
+| $4018 - $401F  | $0008 | Disabled APU Test Mode  |
+|________________|_______|_________________________|
+| $4020 - $FFFF  | $0018 | Cartridge Space         |
+|________________|_______|_________________________|
+
+The CPU expects interrupt vectors at the end of the cartridge space. Functionally, the CPU will read the address located at these vectors, jump to that address, and begin execution
+	$FFFA - $FFFB NMI Vector - Used for PPU updates / housekeeping after each frame. The CPU generates an interrupt at the beginning of vertical blanking, the period of time whenthe CRT beam is travelling from bottom right to top left
+	$FFFC - $FFFD Reset Vector - When reset or powered on, CPU begins at address pointed to herea
+	$FFFE - $FFFF IRQ / BRK Vector - Some cartridges have additional Interrupts that will bring CPU here
+
+Note: This engine uses $0200 - $02FF for OAM, a formatted page of ram that is sent to the PPU during vertical blank via DMA (See Sprites)
+
+Registers
+
+	2.0 PPU Registers
+
+ _______________________ __________________________________
+| Common Name | Address | Bits      | Description          |
+|_____________|_________|___________|______________________|
+| PPUCTRL     | $2000   | VPHB SINN | See Below            |
+|_____________|_________|___________|______________________|
+| PPUMASK     | $2001   | BGRs bMmG | See Below            |
+|_____________|_________|___________|______________________|
+| PPUSTATUS   | $2002   | VSO- ---- | See Below            |
+|_____________|_________|___________|______________________|
+| OAMADDR     | $2003   | aaaa aaaa | Address              |
+|_____________|_________|___________|______________________|
+| OAMDATA     | $2004   | dddd dddd | Data                 |
+|_____________|_________|___________|______________________|
+| PPUSCROLL   | $2005   | xxxx xxxx | Fine Scroll X then Y |
+|_____________|_________|___________|______________________|
+| PPUADDR     | $2006   | aaaa aaaa | Address              |
+|_____________|_________|___________|______________________|
+| PPUDATA     | $2007   | dddd dddd | Data                 |
+|_____________|_________|___________|______________________|
+| OAMDMA      | $4014   | aaaa aaaa | Address High Byte    |
+|_____________|_________|___________|______________________|
+
+The PPU has an 8-bit internal data bus used for communication with the CPU. The bus behaves as a dynamic latch due to the capacitance of very long traces running to various parts of the PPU. Writing a value to any PPU port will fill this latch. Reading from a readable port will fill the latch with the bits read. Reading a write-only port returns the latch's current value, as do the unused bits of PPUSTATUS. It is prudent to clear this latch with a bit operation (bit PPUSTATUS) before writing to a PPU register.
+
+Controller ($2000) > write
+	Common Name: PPUCTRl
+	Description: PPU Control register
+	Access: Write
+
+Various flags controlling PPU operation 
+
+7  bit  0
+---- ----
+VPHB SINN
+|||| ||||
+|||| ||++- Base nametable address
+|||| ||    (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
+|||| |+--- VRAM address increment per CPU read/write of PPUDATA
+|||| |     (0: add 1, going across; 1: add 32, going down)
+|||| +---- Sprite pattern table address for 8x8 sprites
+||||       (0: $0000; 1: $1000; ignored in 8x16 mode)
+|||+------ Background pattern table address (0: $0000; 1: $1000)
+||+------- Sprite size (0: 8x8 pixels; 1: 8x16 pixels)
+|+-------- PPU master/slave select
+|          (0: read backdrop from EXT pins; 1: output color on EXT pins)
++--------- Generate an NMI at the start of the
+           vertical blanking interval (0: off; 1: on)
+
+Bits 0 and 1 are the most significant bits of the scrolling coordinates
+
+7  bit  0
+---- ----
+.... ..YX
+       ||
+       |+- 1: Add 256 to the X scroll position
+       +-- 1: Add 240 to the Y scroll position
+
+WARNING: PPU Master / Slave mode is unimplemented. When this bit is set to 0, as should always be the case, the PPU reads backgroud data from the single background color in video RAM. Theoretically, setting this bit could enable the background data to be read from a static image, creating parallax scrolling. Instead this is tied to ground, and setting this bit will effectively short Vcc and GND together.a
+
+Mask ($2001) > write
+
+    Common name: PPUMASK
+    Description: PPU mask register
+    Access: write
+
+This register controls the rendering of sprites and backgrounds, as well as colour effects.
+
+7  bit  0
+---- ----
+BGRs bMmG
+|||| ||||
+|||| |||+- Greyscale (0: normal color, 1: produce a greyscale display)
+|||| ||+-- 1: Show background in leftmost 8 pixels of screen, 0: Hide
+|||| |+--- 1: Show sprites in leftmost 8 pixels of screen, 0: Hide
+|||| +---- 1: Show background
+|||+------ 1: Show sprites
+||+------- Emphasize red (green on PAL/Dendy)
+|+-------- Emphasize green (red on PAL/Dendy)
++--------- Emphasize blue
+
+
+Status ($2002) < read
+
+    Common name: PPUSTATUS
+    Description: PPU status register
+    Access: read
+
+This register reflects the state of various functions inside the PPU. It is often used for determining timing. To determine when the PPU has reached a given pixel of the screen, put an opaque (non-transparent) pixel of sprite 0 there.
+
+7  bit  0
+---- ----
+VSO. ....
+|||| ||||
+|||+-++++- Least significant bits previously written into a PPU register
+|||        (due to register not being updated for this address)
+||+------- Sprite overflow. The intent was for this flag to be set
+||         whenever more than eight sprites appear on a scanline, but a
+||         hardware bug causes the actual behavior to be more complicated
+||         and generate false positives as well as false negatives; see
+||         PPU sprite evaluation. This flag is set during sprite
+||         evaluation and cleared at dot 1 (the second dot) of the
+||         pre-render line.
+|+-------- Sprite 0 Hit.  Set when a nonzero pixel of sprite 0 overlaps
+|          a nonzero background pixel; cleared at dot 1 of the pre-render
+|          line.  Used for raster timing.
++--------- Vertical blank has started (0: not in vblank; 1: in vblank).
+           Set at dot 1 of line 241 (the line *after* the post-render
+           line); cleared after reading $2002 and at dot 1 of the
+           pre-render line.
+
+OAM address ($2003) > write
+
+    Common name: OAMADDR
+    Description: OAM address port
+    Access: write
+
+Write the address of OAM to access here. Most games including this one use an OAM DMA by setting up a page for OAM in RAM
+
+OAM data ($2004) <> read/write
+
+    Common name: OAMDATA
+    Description: OAM data port
+    Access: read, write
+
+Write OAM data here. Writes will increment OAMADDR after the write. Most games including this one, use an OAM DMA
+
+Scroll ($2005) >> write x2
+
+    Common name: PPUSCROLL
+    Description: PPU scrolling position register
+    Access: write twice, first x scroll, then y
+
+Address ($2006) >> write x2
+
+    Common name: PPUADDR
+    Description: PPU address register
+    Access: write twice
+
+Because the CPU and the PPU are on separate buses, neither has direct access to the other's memory. The CPU writes to VRAM through a pair of registers on the PPU. First it loads an address into PPUADDR, and then it writes repeatedly to PPUDATA to fill VRAM.
+
+After reading PPUSTATUS to reset the address latch, write the 16-bit address of VRAM you want to access here, upper byte first.
+
+Data ($2007) <> read/write
+
+    Common name: PPUDATA
+    Description: PPU data port
+    Access: read, write
+
+VRAM read/write data register. After access, the video memory address will increment by an amount determined by bit 2 of $2000.
+
+When the screen is turned off by disabling the background/sprite rendering flag with the PPUMASK or during vertical blank, you can read or write data from VRAM through this port. Since accessing this register increments the VRAM address, it should not be accessed outside vertical or forced blanking because it will cause graphical glitches, and if writing, write to an unpredictable address in VRAM.
+
+OAM DMA ($4014) > write
+
+    Common name: OAMDMA
+    Description: OAM DMA register (high byte)
+    Access: write
+
+This port is located on the CPU. Writing $XX will upload 256 bytes of data from CPU page $XX00-$XXFF to the internal PPU OAM. This page is typical located in RAM, $0200-$02FF
+
+	2.1 Pattern Tables (CHR)
+
+The pattern table is an area of memory connected to the PPU that defines the tiles used in rendering sprites and background data. This can either be a ROM or RAM chip located on the cartridge. Each tile is 16 bytes, made up of 2 bit planes. The first plane controls bit 0 and the second controls bit one. Any color who's bit is 0 will show as transparent (sprites) or the background color (tiles)
+
+	00000000        11111111
+	00011000        00011000
+	00111100        00111100
+	01100110        01100110
+	01111110        01111110
+	01100110        01100110
+	01100110        01100110
+	11111111        00000000
+
+Letter A as character data. the A will appear as color 3, the underline will be color 1, the line on top will be color 2, and the rest will appear as transparent/background color
+
+The pattern can be divided into two logical banks. A 256 tile bank located from $0000 - $0FFF (left bank), and a 256 tile bank located at $1000 - $1FFF (right bank). One bank is selected for background tiles, and one bank is selecte for sprite tiles. This selection is made with writes to PPUCTRL (see PPU Registers) and can be changed during program execution. Some programmers use this instant swapping of data to create animation effects. 
+
+NOTE: The NES supports an 8x16 sprite mode, in which case the left bank will be the sprite table and the right bank will be background data. In 8x16 mode, even numberd sprites are consecutive tiles in the left bank, and odd numbered sprites are consecutive tiles in the right bank. IE sprite 0 is the first two tiles of the left bank, sprite 1 is the first two tiles of the right bank, and so on. This allows for background data to be used as sprites
+
+	2.2 Nametables
+
+The NES has 4 nametables, a 1,024 byte area in VRAM used to display the background. Each byte corresponds to a tile in the pattern table. Each nametable consists of 30 rows and 32 columns of 8x8 pixel tiles. These tiles account for 960 bytes, and the remaining 64 bytes are allocated to the attribute table.
+
+(0,0)               (256,0)            (511,0)
+        _______________________________
+	   |               |               |
+	   | Nametable A   | Nametabel B   |
+	   |    $2000      |    $2400      |
+       |               |               |
+(0,240)|_______________|_______________|(511,240)
+       |               |               |
+	   | Nametable C   | Nametabel D   |
+	   |    $2800      |    $2C00      |
+	   |               |               |
+       |_______________|_______________|
+(0,479)            (256,479)            (511,479)
+
+	Mirroring
+
+Each nametable would occupy 1 KiB. However, the NES only has 2 Kib of of VRAM (called CIRAM, stored on a separate SRAM chip), only enough for two nametables. Each cardridge controls bit 10, and selects which nametables will be mirrored.
+
+	Vertical Mirroring
+Nametable A and B will be used, and the data will be mirrored in nametables C and D. This project utilizes Vertical Mirroring
+
+	Horizontal Mirroring
+Nametable A and C will be used, and the data will be mirrored in nametables B and D
+
+Some games will utilize four-screen mirroring, and others have internal ram that allow for 4 unique nametables, both unused in this project
+
+	2.3 Attribute Table
+
+At the end of each nametable lies a 64 byte array. Each byte represents a 32x32 tile, read left to right, top to bottom. Each byte contains palette data for the 4 16x16 tiles that make up the 32x32 tile.
+
+	Attribute Byte Format
+
+7654 3210
+|||| ||++- Color bits 3-2 for top left quadrant of this byte
+|||| ++--- Color bits 3-2 for top right quadrant of this byte
+||++------ Color bits 3-2 for bottom left quadrant of this byte
+++-------- Color bits 3-2 for bottom right quadrant of this byte
+
+	2.4 Hardware Sprites
+
+The NES supports hardware sprites. It can display 64 sprites on the screen at any given time. The location, tile, and palette of these sprites is determined by a 256 byte array in VRAM called OAM. It is best practice to keep a copy of this data in WRAM and upload it to the PPU during VBLANK as a DMA.
+
+Each of the 64 possible sprites is represented by 4 bytes in OAM. 
+
+Byte 0: Y position of the top of the sprite relative to the top right of the screen. Y position is delayed by one scanline, so this byte represents the scanline on top of the sprite
+
+Byte 1: Tile number in the pattern table
+
+Byte 2: Tile attribute
+
+76543210
+||||||||
+||||||++- Palette (4 to 7) of sprite
+|||+++--- Unimplemented
+||+------ Priority (0: in front of background; 1: behind background)
+|+------- Flip sprite horizontally
++-------- Flip sprite vertically
+
+
+Byte 3: X position of the left side of the sprite relative to the top left corner of the screen. 
+
+Sprite priority is determined by the position in OAM. To have a sprite appear above another, have this sprite appear first in OAM
+
+The NES has a hard 8 sprites per scanline limit, and any sprite appearing after the 8 sprites in oam will not be drawn. This gives the NES its signature sprite flicker, as most programs will try to draw the sprites in alternating frames to maintain some visibility.
+
+The NES supports 8x8 and 8x16 pixel sprites. There are benifits to both, but this project uses 8x16 tiles, as to fill the screen more. Because of this, the sprite data is fixed to the left pattern table, and increments in even numbers. See pattern tables
+
+	2.5 Palette Data
+	The palette for the background runs from VRAM $3F00 to $3F0F; the palette for the sprites runs from $3F10 to $3F1F. Each color takes up one byte.
+
+Address 		Purpose
+$3F00 			Universal background color
+$3F01-$3F03 	Background palette 0
+$3F05-$3F07 	Background palette 1
+$3F09-$3F0B 	Background palette 2
+$3F0D-$3F0F 	Background palette 3
+$3F11-$3F13 	Sprite palette 0
+$3F15-$3F17 	Sprite palette 1
+$3F19-$3F1B 	Sprite palette 2
+$3F1D-$3F1F 	Sprite palette 3
+
+Engine Specific
+
+	3.0 Scope
+This project is a single screen, vertical shooter bullet hell. It will utilize a standard NROM cartridge configured to vertical mirroring. It will consist of a main menu, an arcade mode with 4 consecutive levels, and a short mode with a level selection.
+
+	3.1 Tile Compression
+
+To compensate for the 1 Kib of data required to fill the screen, this program utilizes sprite compression. Essentially each 8x8 tile is used to create a 16x16 tile. Each 16x16 tile grouped together to form one 32x32 tile. These are used to create a 64x64 tile which are used to create a 128x128 tile, and these are combined to form one 256x256 tile (one full screen). To see a visual representation of this, see the screens in the /documentation/screens folder
+
+The raw data can be found in the data.s file as:
+
+topLeft16:
+	.byte foo
+bottomLeft16:
+	.byte foo
+topRight16:
+	.byte foo
+bottomRight16:
+	.byte foo
+Each of these bytes represents an 8x8 pixel tile in the pattern table
+
+This process continues:
+topLeft32:
+	.byte foo
+bottomLeft32:
+	.byte foo
+topRight32:
+	.byte foo
+bottomRight32:
+	.byte foo
+
+Each of these bytes represents a 16x16 tile in the previous table (as an array index). It is at this level that we will also include a logical connection to the attribute bytes. Since each attribute byte perfectly represents one of these blocks, we will render both the tile block and the attribute byte simultaneously. See Rendering Backgrounds
+
+tileAttribute:
+	.byte foobar
+
+The process is repeated until we have a complete screen
+topLeft64:
+	.byte foo
+bottomLeft64:
+	.byte foo
+topRight64:
+	.byte foo
+bottomRight64:
+	.byte foo
+
+topLeft128:
+	.byte foo
+bottomLeft128: 
+	.byte foo
+topRight128:
+	.byte foo
+bottomRight128:
+	.byte foo
+
+one full screen
+topLeft256:
+	.byte foo
+bottomLeft256: 
+	.byte foo
+topRight256:
+	.byte foo
+bottomRight256:
+	.byte foo
+
+	3.2 Rendering Backgrounds
+
+This game only uses only one screen, rendered in nametable A. Each tile is written to VRAM as 32x32 pixel tiles. Since each background is stored as one byte 
+
+screenTile:
+	.byte foo ;represents an offset in the previous table
+
+and the tiles are rendered as 32x32 tiles, first we must unzip these tiles.
+
+The initial tile is unzipped into tiles128 in RAM, from top to bottom, left to right as tiles128 is a 2d array
+
+it is then unzipped into tiles64 in RAM by column, top to bottom left to right
+
+From there we can unzip it into tiles32, by column, top to botom, left to right
+
+Once the screen is in the 64 byte array tiles32, we can render it to the screen
+
+
+Now that all the 32x32 pixel tiles are in WRAM, it is time to write them to VRAM. Once rendering is disabled, each tile will be passed to the render32 function, a function that will take an index in the tiles32 array and render the corresponding tile and attribute byte to the screen. The VRAM addresses are located in a lookup table in data.s and alleviates the need for a mathematical conversion. Since the lowest 32x32 tile is not completely rendered (the screen is 240 pixels tall, not 256 due to the attribute table) if a tile is detected in this space, only half the tile will be rendered.
+
+	3.3 Palettes
+
+Palettes are held in WRAM until the renderAllPalettes function is called. This function will place all palettes in VRAM consecutively. Palletes can be set in WRAM using the setPalette function or the setPaletteCollection (the latter being used to set the 4 palettes used for backgrounds) 
+
+Palettes are stored in rom as follows
+
+color1
+	.byte foo
+color2
+	.byte foo
+color3
+	.byte foo
+
+and a palette can be made into a collection that references the aformentioned table
+
+palette0
+	.byte foo
+palette1
+	.byte foo
+palette2
+	.byte foo
+palette3
+	.byte foo
+
+	3.4 Sprites
+This engine utilizes 8x16 sprites and uses collections of these sprites to create metasprites. The metasprite shapes are as follows
+
+ __
+|  | Type 1 8x16
+|  |
+|__|
+ _____
+|     | Type 2 16x16
+|     |
+|_____|
+ _____
+|     | Type 3 16x32
+|     |
+|     |
+|     |
+|_____|
+ _________
+|         | Type 4 32x16
+|         |
+|_________|
+
+This is layout allows these tiles to be placed into the RAM copy of OAM quickly, and every tile that needs to be larger than this can be groupded into multiple metasprites with a parent-child relationship (see object data). Additionally this allows for destructable tiles on bosses and larger sprites with more complex behavior.
+
+Copying these tiles to WRAM OAM is a 3 step process.
+	1. After each sprite object is updated in the game loop, their member functions will first make a call to getAvailableOam which will return an index in the WRAM OAM que and set that index flag to active
+	2. Their member function will place a metasprite, an x coordinate, and a y coordinate in the WRAM OAM que.
+	3. buildOAM will cycle through the entire que and find active sprites. it will then take that x and y coordinate and unzip all tiles in into WRAM OAM. it will then set that index flag to deactive.
+
+	3.5 Object Data
+
+Every logical relationship in this program is represented by parallel arrays. To learn more about parallel arrays, read parallel-arrays.doc in the /documentation folder
+
+There are functionally 5 "Classes/Structs" in this program. They can be found in the ram.s or the data.s file. If they are found in both, this denotes that they are copied once in use.
+
+Object			Variables/functions		found in
+
+Screen     		screenTile				data.s
+				paletteCollection
+
+Metasprite 		tileTotal				data.s	
+				tileWidth	
+				tile0
+				attribute0
+				tile1
+				attribute1
+				tile2
+				attribute2
+				tile3
+				attribute3
+
+clock			seconds					ram.s
+				minutes
+				hours
+
+player			playerX
+				playerY
+
+playerBullets	playerBulletX
+				playerBulletY			ram.s
+
+enemies			enemyBehaviorH			ram.s and data.s
+				enemyBehaviorL
+
+enemyBullets	bulletBehaviorH			ram.s and data.s
+				bulletBehaviorL			
