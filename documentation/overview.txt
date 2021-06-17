@@ -16,6 +16,10 @@ Section
 		3.3 Palettes
 		3.4 Sprites
 		3.5 Object Data
+		3.6 Collections of Objects
+		3.7 Setting up a Scene
+		3.8 Game Loop
+		3.9 Coding Standards
 
 Overview
 
@@ -90,6 +94,8 @@ Registers
 
 The PPU has an 8-bit internal data bus used for communication with the CPU. The bus behaves as a dynamic latch due to the capacitance of very long traces running to various parts of the PPU. Writing a value to any PPU port will fill this latch. Reading from a readable port will fill the latch with the bits read. Reading a write-only port returns the latch's current value, as do the unused bits of PPUSTATUS. It is prudent to clear this latch with a bit operation (bit PPUSTATUS) before writing to a PPU register.
 
+NOTE: all reads and writes to the PPU and VRAM must be made during vblank or forced blank (meaning rendering is disabled). If writes to the ppu are made during rendering, graphical glitches will occour (with the exception of updating the scroll registers, used to create parallax scrolling and other effects). If we disable the ppu with the function disableRendering, we can make as many changes to VRAM as we wish outside of vblank, as the PPU is disabled.
+
 Controller ($2000) > write
 	Common Name: PPUCTRl
 	Description: PPU Control register
@@ -109,7 +115,7 @@ VPHB SINN
 ||||       (0: $0000; 1: $1000; ignored in 8x16 mode)
 |||+------ Background pattern table address (0: $0000; 1: $1000)
 ||+------- Sprite size (0: 8x8 pixels; 1: 8x16 pixels)
-|+-------- PPU master/slave select
+|+-------- PPU master/slave select (unimplemented, see note below)
 |          (0: read backdrop from EXT pins; 1: output color on EXT pins)
 +--------- Generate an NMI at the start of the
            vertical blanking interval (0: off; 1: on)
@@ -470,38 +476,214 @@ Copying these tiles to WRAM OAM is a 3 step process.
 
 	3.5 Object Data
 
-Every logical relationship in this program is represented by parallel arrays. To learn more about parallel arrays, read parallel-arrays.doc in the /documentation folder
+Every logical relationship in this program is represented by parallel arrays. To learn more about parallel arrays, read parallel-arrays.pdf in the /documentation folder
 
-There are functionally 5 "Classes/Structs" in this program. They can be found in the ram.s or the data.s file. If they are found in both, this denotes that they are copied once in use.
+There are several "Classes/Structs" in this program. All object names are for semantic use only and do not appear in the code except when used in comments. All data is stored and used as a parallel array, where an array index represents that object
 
-Object			Variables/functions		found in
+Object/Description		Variables/functions		found in
 
-Screen     		screenTile				data.s
-				paletteCollection
 
-Metasprite 		tileTotal				data.s	
-				tileWidth	
-				tile0
-				attribute0
-				tile1
-				attribute1
-				tile2
-				attribute2
-				tile3
-				attribute3
+Palette:				color0					ram.s
+hex color data 			color1
+for all palettes		color2
 
-clock			seconds					ram.s
-				minutes
-				hours
+Palette:				romColor0				data.s
+copied in ram			romColor1
+from previous			romColor2
+object for current
+screen during screen
+loading
 
-player			playerX
-				playerY
+PaletteCollection		palette0				data.s
+used to store			palette1
+all backgrounds			palette2
+palettes for screen 	palette3
+in one byte
 
-playerBullets	playerBulletX
-				playerBulletY			ram.s
+Screen:    				screenTile				data.s
+all data used			paletteCollection
+to render a screen
 
-enemies			enemyBehaviorH			ram.s and data.s
-				enemyBehaviorL
+Metasprite 				tileTotal				data.s	
+tile data grouped		tileWidth	
+together to form		tile0
+larger, more 			attribute0
+usable sprites			tile1
+						attribute1
+						tile2
+						attribute2
+						tile3
+						attribute3
 
-enemyBullets	bulletBehaviorH			ram.s and data.s
-				bulletBehaviorL			
+clock					seconds					ram.s
+updated during			minutes
+interrupt to			hours
+allow for 
+rudimentary 
+timekeeping
+
+player					playerX					ram.s
+all variables			playerY
+relating to the			metasprite
+player
+
+playerBullets			playerBulletX			ram.s
+all the bullets			playerBulletY
+the player can shoot
+
+enemies					enemyBehaviorH			todo
+things the player		enemyBehaviorL
+shoots					enemyX
+						enemyY
+
+enemyBullets			bulletBehaviorH			todo
+bullets the				bulletBehaviorL
+player dodges			enemyBulletX
+						enemyBulletY
+
+	3.6 Collections of Objects
+
+To allow for faster and more comprehensive program execution, this program divides all objects in the playfield into 4 groups; the player, the players bullets, enemies, and enemy bullets. This allows for an easy distinction when making comparisons. For example, the player's bullets will have hit detection when compared agains the enemies, but the player's bullets will never need to be compared to the player, as the player cannot shoot themselves. This is a visual representation of all the groups of data
+
+Player
+
+PlayerBullets[MAX_PLAYER_BULLETS]
+
+Enemies[MAX_NUMBER_OF_ENEMIES]
+
+EnemyBullets[MAX_NUMBER_OF_ENEMY_BULLETS]
+
+Note that in assembly, all these values are represented by parallel arrays, where each field of these objects exist in separate arrays, and the index of that array correspond to the object.
+
+
+
+	3.7 Setting up a Scene
+
+A scene is the collection of all the parts of a "level." This includes the background, the player, the palettes, and the waves of enemies. Each scene can be represented by one hexadecimal index into a parallel array of every attribute of the scene:
+
+screenTile
+paletteCollection
+enemyWave (todo)
+
+Here are the tasks to set up a scene, this can be found in main.s
+
+	Step/description				function
+	1. Turn off PPU					(disableRendering)
+	2. unzip tiles 					(unzipAllTiles)
+	3. set background palettes 		(setPaletteCollection)
+	4. place all 32x32 tiles		(renderAllTiles)
+	   in VRAM
+	5. Place all palettes in		(renderAllPalettes) 
+	   VRAM
+	6. Turn PPU back on 			(enableRendering)
+
+	3.8 Game Loop
+
+This is the simplified overview of the game loop
+	Step/Description				
+	1. Hold until previous frame is rendered
+	2. If the scene changed, load a new scene
+	3. Update the player object
+	4. Update the player bullets
+	5. Update the enemies
+	6. Update the enemy bullets
+	7. Check to see if enemy was hit by player bullet
+	8. Check to see if player was hit by enemy bullet
+	9. Build OAM
+	10. Jump back to gave loop
+	3.9 Coding Standards
+The primary goal with this program is to maintain human-readable code. Therefore a few standards must be maintained.
+
+First, comment every piece of code that may be considered a single unit
+
+;if foo != NULL, do bar
+	lda foo
+	cmp #NULL
+	bne @bar
+
+Next, comment every time an x or y register changes use
+
+;y is now foo
+	ldy foo
+	iny; no need to comment here, y is still foo(+1)
+	lda bar,y
+;y is now bar
+	tay
+
+When passing a value into a function, document as such. if that function returns a value, clearly state the register, if not, clearly state
+
+;pass foo into getBar
+	lda foo
+	jsr getBar;(a)
+;returns
+;a - bar
+;x - fooBar
+
+OR
+
+;returns void
+
+When building a function, clearly state all parameters and their registers, declare constants, and state returns and their registers
+
+getbar:
+;arguments
+;a - foo
+;x - foobar
+;constants
+MAX_FOO = 3
+;returns
+;a - bar
+
+Variables should not be changed outside of their scope
+
+This is a no
+
+	lda foo
+	sta bar
+	jsr getFooBar
+
+getFooBar
+	lda barbar
+	sta bar
+	rts
+
+Instead do this
+
+	lda foo
+	sta bar
+	jsr getFooBar
+;getFooBar returns
+;a - barbar
+	sta bar
+
+getFooBar
+;returns 
+;a - barbar
+	lda barbar
+	rts
+
+The ONLY exceptions to this rule are member functions of objects, which can modify their variables, and functions with more than 3 parameters, in which case a new parameter variable must be created. This is exceptionally rare, and has not occoured as of yet
+
+To reduce spagetti code, no single use functions are allowed
+
+for example, this is a not acceptable
+
+	lda currentScene
+	jsr loadScene
+
+since loading a scene is such a massive task, and is only used once, it is far more benificial to put every task at surface level. It is easy to have a game loop that looks like this
+
+gameLoop:
+	jsr updatePlayer
+	jsr updatePlayerBullets
+	jsr updateEnemies
+	jsr updateEnemyBullets
+	jsr checkPlayerCollision
+	jsr checkEnemyCollision
+	jmp gameloop
+
+but this ensures spagetti code. 
+
+There is a place for a simplified semantic game loop, but it does not belong in the code itself. It belongs in the previous section regarding the game loop. A general rule, if the 4 major collections of object data are being modified or accessed, this needs to be done at the main level.
+
+
