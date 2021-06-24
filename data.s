@@ -1,10 +1,8 @@
 .segment "RAWDATA"
 
-;;;;;;;;;;;;;;;
-;;;romScenes;;; 
-;;;;;;;;;;;;;;;
-;unsigned screentile
-;unsigned paletteCollection
+;;;;;;;;;;;;;;;;
+;;;Scenes;;; 
+;;;;;;;;;;;;;;;;
 screenTile:
 	.byte $0
 paletteCollection:
@@ -82,6 +80,19 @@ bottomRight16:
 ;;;;;;;;;;;;;;
 ;;;palettes;;;
 ;;;;;;;;;;;;;;
+PLAYER_PALETTE= 0
+BEACH_0= 1
+BEACH_1= 2
+BEACH_2= 3
+TARGET_PALETTE=4
+PURPLE_BULLET=5
+romColor1:
+	.byte $07, $17, $2b, $01, $1d, $04
+romColor2:
+	.byte $25, $19, $23, $21, $05, $24
+romColor3:
+	.byte $35, $29, $37, $31, $30, $34
+;;;;;;;;;;;;;
 ;collections;
 ;;;;;;;;;;;;;
 BEACH_PALETTE = 0
@@ -93,43 +104,19 @@ palette2:
 	.byte BEACH_2
 palette3:
 	.byte BEACH_2
-PLAYER_PALETTE= 0
-COIN_PALETTE = 1
-BEACH_0= 2
-BEACH_1= 3
-BEACH_2= 4
-romColor1:
-	.byte $07, $1d, $17, $2b, $01
-romColor2:
-	.byte $25, $27, $19, $23, $21
-romColor3:
-	.byte $35, $37, $29, $37, $31
 
 ;;;;;;;;;;;;;
 ;;;sprites;;;
-;;;;;;;;;;;;;;;;
-;sprite objects;
-;;;;;;;;;;;;;;;;
-PLAYER_OBJECT = 0
-COIN_0 = 1
-romSpriteTotal:
-	.byte 04, 01
-romSpriteWidth:
-	.byte 02, 02
-romSpriteHeight:
-	.byte 02, 02
+;;;;;;;;;;;;;
 romHitboxY1:
-	.byte 02, 02
+	.byte 02, 03
 romHitboxY2:
-	.byte 06, 14
+	.byte 06, 10
 
-;;;;;;;;;
-;bullets;
-;;;;;;;;;
 ;;;;;;;;;;;;;
 ;metasprites;
 ;;;;;;;;;;;;;
-;tile, attribute
+;tileTotal, tileWidth, tiles, attributes
 ;76543210
 ;||||||||
 ;||||||++- Palette of sprite
@@ -137,33 +124,77 @@ romHitboxY2:
 ;||+------ Priority (0: in front of background; 1: behind background)
 ;|+------- Flip sprite horizontally
 ;+-------- Flip sprite vertically
-PLAYER_IDLE = 0
-PLAYER_MAIN_BULLET = 1
+PLAYER_SPRITE = 0
+TARGET_SPRITE = 1
+PLAYER_MAIN_BULLET = 2
 spriteTile0:
-	.byte $08, $20
+	.byte $00, $60, $20
 spriteAttribute0:
-	.byte %00000000, %00000000
+	.byte %00000000, %00000010, %00000000
 spriteTile1:
-	.byte $0a 
+	.byte $02, $60
 spriteAttribute1:
-	.byte %00000000
+	.byte %00000000, %01000010
 spriteTile2:
-	.byte $0c
+	.byte $04, $60
 spriteAttribute2:
-	.byte %00000000
+	.byte %00000001, %00000010
 spriteTile3:
-	.byte $0e 
+	.byte $06, $60
 spriteAttribute3:
-	.byte %00000000
+	.byte %00000000, %01000010
+
+;;;;;;;;;;;;;
+;;;Enemies;;;
+;;;;;;;;;;;;;
+;behaviors found in main.s
+;first byte is a burner byte so we can use zero flag to denote empty slot
+romEnemyBehaviorH:
+	.byte NULL, >targetBehavior
+romEnemyBehaviorL:
+	.byte NULL, <targetBehavior-1
+;the type determines the width, height, and how it is built in oam
+romEnemyType: 
+	.byte NULL, 01 
+romEnemyWidth:
+	.byte 8, 16, 16, 32
+romEnemyHeight:
+	.byte 16, 16, 32, 16
+romEnemyHitboxX1:
+	.byte 1, 2, 2, 2
+romEnemyHitboxX2:
+	.byte 6, 12, 12, 30
+romEnemyHitboxY2:
+	.byte 14, 14, 30, 14
+enemySlot0:
+	.byte $01
+enemySlot1:
+enemySlot2:
+enemySlot3:
+enemySlot4:
+enemySlot5:
+enemySlot6:
+enemySlot7:
+enemySlot8:
+enemySlot9:
+;;;;;;;;;;;;;;;;;;;;;;;
+;enemy slot coordinate;
+;;;;;;;;;;;;;;;;;;;;;;;
+slotX:
+	.byte 00
+slotY:
+	.byte 00
 ;;;;;;;;;;;;;;;;
 ;;;animations;;;
 ;;;;;;;;;;;;;;;;
 playerIdleAnimation:
 playerLeftAnimation:
 playerRightAnimation:
-;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;
+;;;color cycles;;;
+;;;;;;;;;;;;;;;;;;
+playerHitbox:
+	.byte $05, $15, $25, $35, $30, $35, $25, $15 
 ;;;;;;;;;;;;;;;;;;;
 ;;;lookup tables;;;
 ;;;;;;;;;;;;;;;;;;;
@@ -204,3 +235,5 @@ attributeTableConversionL:
 	.byte $c2, $ca, $d2, $da, $e2, $ea, $f2, $fa, $c3, $cb, $d3, $db, $e3, $eb, $f3, $fb
 	.byte $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc, $c5, $cd, $d5, $dd, $e5, $ed, $f5, $fd
 	.byte $c6, $ce, $d6, $de, $e6, $ee, $f6, $fe, $c7, $cf, $d7, $df, $e7, $ef, $f7, $ff
+.segment "RAWDATA"
+
