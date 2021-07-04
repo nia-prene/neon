@@ -1,6 +1,6 @@
 # Neon engine for the NES
 
-Neon is the name given to this NES engine. Although this particular build is suited best to a top-down bullet hell style gameplay, it can be easily retooled for almost any project with a few changes. The primary
+Neon is the name given to this NES engine. Although this particular build is suited best to a top-down bullet hell style gameplay, it can be easily retooled for almost any project with a few changes. The primary goal of this project is to slowly add features with each title until this engine is comperable to those of capcom, sunsoft, and nintendo in the early 90s. The current build will focus primarily on single-screen gameplay, a robust sprite enine with accurate sprite collision detection, and comprehensive prigram flow. Dynamically updated scrolling, tile collision detection, and more complex mappers will be added in future games.
 
 ## Getting Started
 

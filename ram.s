@@ -1,11 +1,17 @@
 .segment "ZEROPAGE"
 test: .res 1
-playerX: .res 1
-playerY: .res 1
-playerSpeed: .res 1
+playerStatus: .res 1
+iFrames: .res 1
+playerXH: .res 1
+playerXL: .res 1
+playerYH: .res 1
+playerYL: .res 1
+playerSpeedH: .res 1
+playerSpeedL: .res 1
+playerRateOfFire: .res 1
 pressingShoot: .res 1
 playerMetasprite: .res 1
-MAX_PLAYER_BULLETS = 7
+MAX_PLAYER_BULLETS = 9
 playerBulletX: .res MAX_PLAYER_BULLETS 
 playerBulletY: .res MAX_PLAYER_BULLETS 
 isPlayerBulletActive: .res MAX_PLAYER_BULLETS
@@ -18,13 +24,12 @@ nextScene: .res 1
 currentScene: .res 1
 currentPPUSettings: .res 1
 currentMaskSettings: .res 1
-objectToBuild: .res 1
-enemyToUpdate: .res 1
-currentHitboxColor: .res 1
+waveRate: .res 1
 ;highest level flags
 hasFrameBeenRendered: .res 1
-willHitboxUpdate: .res 1
 ;local variables
+enemyIndex: .res 1
+waveIndex: .res 1
 sprite1LeftOrTop: .res 1
 sprite1RightOrBottom: .res 1
 sprite2LeftOrTop: .res 1
@@ -50,31 +55,57 @@ tile64d: .res 1
 controllers:
 	controller1: .res 1
 	controller2: .res 1
+;pointers
+levelWavePointer: .res 2
+wavePointer: .res 2
 .segment "OAM"
 ;starts at $0200
 oam: .res 256
 
 .segment "RAM"
 ;starts at $0300
-;;;;;;;;;;;;;;
+;;;;;;;;;;;
 ;;Sprites;;
 ;;;;;;;;;;;
+;;;;;;;;;
+;Bullets;
+;;;;;;;;;
+MAX_ENEMY_BULLETS=50
+enemyBulletHitboxX1: .res MAX_ENEMY_BULLETS
+enemyBulletHitboxX2: .res MAX_ENEMY_BULLETS
+enemyBulletHitboxY1: .res MAX_ENEMY_BULLETS
+enemyBulletHitboxY2: .res MAX_ENEMY_BULLETS
+enemyBulletClock: .res MAX_ENEMY_BULLETS
+enemyBulletBehaviorH: .res MAX_ENEMY_BULLETS
+enemyBulletBehaviorL: .res MAX_ENEMY_BULLETS
+enemyBulletXH: .res MAX_ENEMY_BULLETS
+enemyBulletXL: .res MAX_ENEMY_BULLETS
+enemyBulletYH: .res MAX_ENEMY_BULLETS
+enemyBulletYL: .res MAX_ENEMY_BULLETS
+enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
+enemyBulletWidth: .res MAX_ENEMY_BULLETS
+isEnemyBulletActive: .res MAX_ENEMY_BULLETS
+;;;;;;;;;
 ;Enemies;
 ;;;;;;;;;
 MAX_ENEMIES = 8
-enemyWidth: .res MAX_ENEMIES
-enemyHeight: .res MAX_ENEMIES
-enemyHitboxX1: .res MAX_ENEMIES
-enemyHitboxX2: .res MAX_ENEMIES
+enemyClock: .res MAX_ENEMIES
+enemyX: .res MAX_ENEMIES
+enemyY: .res MAX_ENEMIES
+enemyHP: .res MAX_ENEMIES
+i: .res MAX_ENEMIES
+j: .res MAX_ENEMIES
 enemyType: .res MAX_ENEMIES
 enemyBehaviorH: .res MAX_ENEMIES
 enemyBehaviorL: .res MAX_ENEMIES
-enemyX: .res MAX_ENEMIES
-enemyY: .res MAX_ENEMIES
 enemyMetasprite: .res MAX_ENEMIES
+enemyHitboxX1: .res MAX_ENEMIES
+enemyHitboxX2: .res MAX_ENEMIES
 enemyHitboxY2: .res MAX_ENEMIES
+enemyWidth: .res MAX_ENEMIES
+enemyHeight: .res MAX_ENEMIES
 isEnemyActive: .res MAX_ENEMIES
-isEnemyHit: .res MAX_ENEMIES
+enemyStatus: .res MAX_ENEMIES
 ;;;;;;;;;;;;
 ;;;screen;;;
 ;;;;;;;;;;;;

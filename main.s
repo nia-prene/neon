@@ -22,7 +22,6 @@ main:
 	lda #TRUE
 	sta hasFrameBeenRendered
 ;initialize player	
-	jsr initializePlayer
 ;reset the clock to 0
 	jsr resetClock;()
 ;load in target and palette
@@ -32,7 +31,6 @@ main:
 	ldx #PURPLE_BULLET
 	ldy #7
 	jsr setPalette
-	jsr initializeEnemyWave
 
 gameLoop:
 ;while(!hasFrameBeenRendered)
@@ -49,6 +47,7 @@ gameLoop:
 		jsr disableRendering;(a, x)
 	;returns new mask settings
 		sta currentMaskSettings
+		jsr initializePlayer
 		lda nextScene
 		jsr unzipAllTiles;(a)
 		ldx nextScene
@@ -56,12 +55,23 @@ gameLoop:
 	;we are in forced blank so we can call these two rendering routines
 		jsr renderAllTiles
 		jsr renderAllPalettes
+	;start on 0th wave, 0th enemy
+		ldx nextScene
+		lda levelWavesL,x
+		sta levelWavePointer
+		lda levelWavesH,x
+		sta levelWavePointer+1
+		lda #0
+		sta enemyIndex
+		sta waveIndex
+		lda #NULL
+		sta waveRate
+	;set current to next
 		lda seconds
 		ldx currentMaskSettings
 		jsr enableRendering;(a, x)
 	;returns new mask settings
 		sta currentMaskSettings
-	;set current to next
 		lda nextScene
 		sta currentScene
 		jsr resetClock;()
@@ -75,35 +85,60 @@ gameLoop:
 @endScroll:
 	stx yScroll
 	jsr updatePlayer
-;load with hitbox oscilation rate
-	lda #%00111000
-	and seconds
-;if hitbox is a new color, update
-	cmp currentHitboxColor
-	beq @noHitboxChange
-	sta currentHitboxColor
-	jsr updateHitboxColor
-@noHitboxChange:
 ;move player bullets
 	jsr updatePlayerBullets
+;isolate bit 3 of clock
+	lda seconds
+	and #%0001000
+;if bit 3 of clock has changed
+	cmp waveRate
+	beq @skipWave
+;save the new position
+	sta waveRate
+;add a new enemy to the wave
+	jsr initializeEnemyWave
+@skipWave:
 ;move enemies
 	jsr updateEnemies
-;see if enemy hit by player bullet
-;start building oam at 0
+	jsr updateEnemyBullets
+;if playerStatus != 0, player hit
+	lda playerStatus
+	bne @playerHarmed
+@playerUnharmed:
+;else, build oam normally
 	ldy #0
+	jsr buildPlayerHitboxOam
+	jsr buildEnemyBulletsOam
 	jsr buildPlayerOam;(y)
-;returns
-;y - new oam offset
 	jsr buildPlayerBulletOam;(y)
-;returns
-;y - new oam offset
 	jsr buildEnemyOam;(y)
-;returns
-;y - new oam offset
+	jsr clearRemainingOam;(y)
+;this frame is finished
+	lda #FALSE
+	sta hasFrameBeenRendered
+	jmp gameLoop
+@playerHarmed:
+;when iFrames hits 128, reset
+	inc iFrames
+	bmi @resetIFrame
+;when bit 3 is set, render normally, this will make the sprite flash
+	lda #%00001000
+	and seconds
+	bne @playerUnharmed
+;else, build oam without player
+	ldy #0
+	jsr buildEnemyBulletsOam
+	jsr buildPlayerBulletOam;(y)
+	jsr buildEnemyOam;(y)
 	jsr clearRemainingOam;(y)
 	lda #FALSE
 	sta hasFrameBeenRendered
 	jmp gameLoop
+@resetIFrame:
+	lda #0
+	sta playerStatus
+	sta iFrames
+	jmp @playerUnharmed
 
 
 ;;;;;;;;;;;;;;;;
@@ -120,9 +155,6 @@ nmi:
 	pha
 ;scene.clock.updateClock()
 	jsr updateClock;()
-	lda willHitboxUpdate
-	beq beginOamDma
-	jsr updateHitboxVram
 ;rendering code goes here
 ;oamdma transfer
 ;reset with bit 0 write
@@ -187,23 +219,6 @@ updateClock:
 	inc days
 	rts
 
-updateHitboxVram:
-;uploads new color for player hitbox in ppu
-;arguments - none
-;returns - void
-;put address of hitbox color in ppu
-	lda #$3f
-	sta PPUADDR
-	lda #$16
-	sta PPUADDR
-;get hitbox color (palette5 color 2)
-	lda color2+5
-	sta PPUDATA
-;set flag to false
-	lda #FALSE
-	sta willHitboxUpdate
-	rts
-
 initializePlayer:
 ;first initialize palettes
 	ldx #PLAYER_PALETTE
@@ -215,9 +230,9 @@ initializePlayer:
 	ldy #5
 	jsr setPalette;(x, y)
 	lda #200
-	sta playerY
+	sta playerYH
 	lda #120
-	sta playerX
+	sta playerXH
 	rts
 
 setPalette:;(x, y)
@@ -696,13 +711,134 @@ renderAllTiles:
 	bcc	@renderScreenLoop
 	rts
 
+buildPlayerHitboxOam:
+;renders glowing hitbox above everything else, so that player can be beneath bullets but hitbox wont flicker
+;arguments
+;y - oam position
+;returns
+;y - new oam position
+	clc
+	lda playerYH
+	adc #16
+	sta oam,y
+	iny
+	lda #%00010000
+	bit seconds
+	bne @frame2
+	lda #06
+	sta oam,y
+	iny
+	lda #0
+	sta oam,y
+	iny
+	lda playerXH
+	sta oam,y
+	iny
+	rts
+@frame2:
+	lda #08
+	sta oam,y
+	iny
+	lda #0
+	sta oam,y
+	iny
+	lda playerXH
+	sta oam,y
+	iny
+	rts
+
+buildEnemyBulletsOam:
+	ldx #MAX_ENEMY_BULLETS-1
+@bulletLoop:
+	lda isEnemyBulletActive,x
+	bne @buildBullet
+	dex
+	bpl @bulletLoop
+	rts
+@buildBullet:
+;width is either 8px or 10px. cleared carry denotes 2 tiles
+	lda enemyBulletWidth,x
+	cmp #10
+	bcs @buildBullet2
+	jsr buildBullet0
+	dex
+	bpl @bulletLoop
+	rts
+@buildBullet2:
+	jsr buildBullet1
+	dex
+	bpl @bulletLoop
+	rts
+
+buildBullet0:
+	lda enemyBulletYH,x
+	sta oam,y
+	iny
+	lda enemyBulletXH,x
+	sta buildX1
+	txa
+	pha
+	lda enemyBulletMetasprite,x
+	tax
+	lda spriteTile0,x
+	sta oam,y
+	iny
+	lda spriteAttribute0,x
+	sta oam,y
+	iny
+	lda buildX1
+	sta oam,y
+	iny
+	pla
+	tax
+	rts
+
+buildBullet1:
+	lda enemyBulletYH,x
+	sta buildY1
+	sta oam,y
+	iny
+	lda enemyBulletXH,x
+	sta buildX1
+	clc
+	adc #08
+	sta buildX2
+	txa
+	pha
+	lda enemyBulletMetasprite,x
+	tax
+	lda spriteTile0,x
+	sta oam,y
+	iny
+	lda spriteAttribute0,x
+	sta oam,y
+	iny
+	lda buildX1
+	sta oam,y
+	iny
+	lda buildY1
+	sta oam,y
+	iny
+	lda spriteTile1,x
+	sta oam,y
+	iny
+	lda spriteAttribute1,x
+	sta oam,y
+	iny
+	lda buildX2
+	sta oam,y
+	iny
+	pla
+	tax
+	rts
+
 buildPlayerOam:
 ;arguments
 ;y - oam offset
 	lda playerMetasprite
 ;x is now metasprite data
 	tax
-	lda playerY
+	lda playerYH
 ;store y of tile 0
 	sta oam,y
 	iny
@@ -717,13 +853,13 @@ buildPlayerOam:
 ;store attribute 0
 	sta oam,y
 	iny
-	lda playerX 
+	lda playerXH
 ;store x tile 0
 	sta oam,y
 	iny
 	adc #08
 	sta buildX1
-	lda playerY
+	lda playerYH
 ;store y tile 1
 	sta oam,y
 	iny
@@ -752,7 +888,7 @@ buildPlayerOam:
 	sta oam,y
 	iny
 ;store x tile 2
-	lda playerX
+	lda playerXH
 	sta oam,y
 	iny
 	rts
@@ -797,26 +933,57 @@ buildPlayerBulletOam:
 	jmp @buildLoop
 
 buildEnemyOam:
+;cycles through enemies in oam and draws them to the screen. function uses two loops, one indexing forward, one backward, alternating every frame to produce sprite flicker instead of masking consistent sprites
 ;arguments
 ;y - oam offset
+;returns
+;y - new oam offset
+	lda #%00000001
+	bit seconds
+	bne @loop1
 	ldx #0
-enemyOamLoop:
+@enemyOamLoop0:
 ;while x < max enemies
 	cpx #MAX_ENEMIES
 	bcs @endLoop
 ;if enemy active, build oam entry
 	lda isEnemyActive,x
-	bne @buildEnemy
+	bne @enemyActive
 ;x++
 	inx
-	jmp enemyOamLoop
+	jmp @enemyOamLoop0
 @endLoop:
 	rts
-@buildEnemy:
+@enemyActive:
+	jsr buildEnemy
+	inx
+	jmp @enemyOamLoop0
+
+@loop1:
+	ldx #MAX_ENEMIES-1
+@enemyOamLoop1:
+;if enemy active, build oam entry
+	lda isEnemyActive,x
+	bne @enemyActive1
+;x++
+	dex
+	bmi @endLoop1
+	jmp @enemyOamLoop1
+@endLoop1:
+	rts
+@enemyActive1:
+	jsr buildEnemy
+	dex
+	bmi @endLoop1
+	jmp @enemyOamLoop1
+
+buildEnemy:
 ;save x
 	txa
 	pha
-	lda isEnemyHit,x
+	lda enemyStatus,x
+;hit information held in bit 1. this will flash palette
+	and #%00000001
 	sta buildAttribute
 	lda enemyType,x
 	tax
@@ -865,8 +1032,7 @@ buildType0:
 	iny
 	pla
 	tax
-	inx
-	jmp enemyOamLoop
+	rts
 
 buildType1:
 ;save x
@@ -913,8 +1079,7 @@ buildType1:
 	iny
 	pla
 	tax
-	inx
-	jmp enemyOamLoop
+	rts
 
 buildType2:
 ;save x
@@ -994,8 +1159,7 @@ buildType2:
 	iny
 	pla
 	tax
-	inx
-	jmp enemyOamLoop
+	rts
 
 buildType3:
 ;save x
@@ -1083,8 +1247,7 @@ buildType3:
 	iny
 	pla
 	tax
-	inx
-	jmp enemyOamLoop
+	rts
 
 clearRemainingOam:
 ;arguments
@@ -1119,40 +1282,110 @@ loop:
     rts
 
 initializeEnemyWave:
-	lda enemySlot0
-	beq @slot1
-	ldy #0;slot 0
-	tax;enemy is x
-	jsr initializeEnemy;(a,y)
-@slot1:
+;track the index in the array
+	ldy enemyIndex
+;if y=0, get a new wave
+	beq @newWave
+;@newWave returns here w/ new pntr
+@resume:
+;else get the enemy
+	lda (wavePointer),y
+	beq @skip
+;null terminated
+	cmp #NULL
+	beq @hold
+;save enemy
+	pha
+	iny
+;get the coordinate
+	lda (wavePointer),y
+;y is now coordinate
+	tax
+	lda waveY,x
+	pha
+	lda waveX,x
+	tax
+	iny
+	sty enemyIndex
+	pla
+	tay
+	pla
+	jmp initializeEnemy;(a,x,y)
+@skip:
+	iny
+	sty enemyIndex
 	rts
-
+@hold:
+	jsr areEnemiesRemaining
+	bcc @noneRemaining
+	rts
+@noneRemaining:
+	lda #0
+	sta enemyIndex
+	rts
+@newWave:
+	tya
+	pha
+	ldy waveIndex
+	lda (levelWavePointer),y
+	tax
+	lda wavePointerL,x
+	sta wavePointer
+	lda wavePointerH,x
+	sta wavePointer+1
+	iny
+	sty waveIndex
+	pla
+	tay
+	jmp @resume
 
 initializeEnemy:
 ;places enemy from slot onto enemy array and screen coordinates
 ;arguments
 ;a - enemy
-;y - slot
-;save the enemy
+;x - x coordinate
+;y - y coordinate
+;returns null
+;save enemy
 	pha
+;save x
+	txa
+	pha
+;save y
+	tya
+	pha
+;save x coordinate
 	jsr getAvailableEnemy
+	bcc @enemiesFull
 ;returns x - available enemy
-;y is still slot, function retains y
-;slotX and slotY are decoded x and y values for that slot
-	lda slotX,y
-	sta enemyX,x
-	lda slotY,y
-	sta enemyY,x
-;get enemy
+;retains y, enemy
+;get y coordinate
 	pla
-;y is now enemy
+	sta enemyY,x
+;get x coordinate
+	pla
+	sta enemyX,x
+;copy data from rom
+	pla
 	tay
 	lda romEnemyBehaviorH,y
 	sta enemyBehaviorH,x
 	lda romEnemyBehaviorL,y
 	sta enemyBehaviorL,x
+	lda romEnemyMetasprite,y
+	sta enemyMetasprite,x
+	lda romEnemyHP,y
+	sta enemyHP,x
+	lda #0
+;clear variables
+	sta i,x
+	sta j,x
+;zero out the clock
+	sta enemyClock,x
+;get enemy type
 	lda romEnemyType,y
 	sta enemyType,x
+;use enemy type to get hardcoded attributes
 	tay
 	lda romEnemyHitboxX1,y
 	sta enemyHitboxX1,x
@@ -1165,35 +1398,56 @@ initializeEnemy:
 	lda romEnemyHeight,y
 	sta enemyHeight,x
 	rts
+@enemiesFull:
+	rts
 
 getAvailableEnemy:
 ;finds open enemy slot, returns offset, sets slot to active
 ;arguments - none
 ;returns
 ;x - enemy offset
-	ldx #0
+	ldx #MAX_ENEMIES-1
 @enemySlotLoop:
 	lda isEnemyActive,x
 ;if enemy is inactive return offset
 	beq @returnEnemy
-;x++
-	inx
-;while x < max enemies
-	cpx #MAX_ENEMIES
-	bcc @enemySlotLoop
+;x--
+	dex
+;while x >= 0
+	bpl @enemySlotLoop
+	clc
 	rts
 @returnEnemy:
 	lda #TRUE
 ;set enemy to active
 	sta isEnemyActive,x
+;set carry to success
+	sec
+	rts
+
+areEnemiesRemaining:
+	ldx #MAX_ENEMIES-1
+@enemyLoop:
+	lda isEnemyActive,x
+	bne @enemiesActive
+	dex
+	bpl @enemyLoop
+	clc
+	rts
+@enemiesActive:
+	sec
 	rts
 
 updatePlayer:
 ;constants
 ;pixel per frame when moving fast
-FAST_MOVEMENT = 3
+FAST_MOVEMENT_H = 3
+FAST_MOVEMENT_L = 128
 ;pixel per frame when moving slow
-SLOW_MOVEMENT = 1
+SLOW_MOVEMENT_H = 0
+SLOW_MOVEMENT_L = 128
+RAPID_FIRE = %00000001
+STANDARD_FIRE=%00000011
 ;furthest right player can go
 MAX_RIGHT = 249
 ;furthest left player can go
@@ -1207,71 +1461,91 @@ MAX_DOWN = 209
 	bit controller1
 	bne @goingSlow
 @goingFast:
-	lda #FAST_MOVEMENT
-	sta playerSpeed
+	lda #FAST_MOVEMENT_L
+	sta playerSpeedL
+	lda #FAST_MOVEMENT_H
+	sta playerSpeedH
+	lda #STANDARD_FIRE
+	sta playerRateOfFire
 	jmp @updateMovement
 @goingSlow:
-	lda #SLOW_MOVEMENT
-	sta playerSpeed
+	lda #SLOW_MOVEMENT_L
+	sta playerSpeedL
+	lda #SLOW_MOVEMENT_H
+	sta playerSpeedH
+	lda #RAPID_FIRE
+	sta playerRateOfFire
 @updateMovement:
 	lda #%00000001
 	bit controller1
 	beq @notRight
 ;if bit 0 set then move right
 	clc
-	lda playerX
-	adc playerSpeed
+	lda playerXL
+	adc playerSpeedL
+	sta playerXL
+	lda playerXH
+	adc playerSpeedH
 	cmp #MAX_RIGHT
 	bcc @storeRight
 	lda #MAX_RIGHT
 @storeRight:
-	sta playerX
+	sta playerXH
 @notRight:
 	lda #%00000010
 	bit controller1
 	beq @notLeft
 ;if bit 1 set then move left 
 	sec
-	lda playerX
-	sbc playerSpeed
+	lda playerXL
+	sbc playerSpeedL
+	sta playerXL
+	lda playerXH
+	sbc playerSpeedH
 	cmp #MAX_LEFT
 	bcs @storeLeft
 	lda #MAX_LEFT
 @storeLeft:
-	sta playerX
+	sta playerXH
 @notLeft:
 	lda #%00000100
 	bit controller1
 	beq @notDown
 ;if bit 2 set then move down
 	clc
-	lda playerY
-	adc playerSpeed
+	lda playerYL
+	adc playerSpeedL
+	sta playerYL
+	lda playerYH
+	adc playerSpeedH
 	cmp #MAX_DOWN
 	bcc @storeDown
 	lda #MAX_DOWN
 @storeDown:
-	sta playerY
+	sta playerYH
 @notDown:
 	lda #%00001000
 	bit controller1
 	beq @notUp
 ;if bit 3 set then move down
 	sec
-	lda playerY
-	sbc playerSpeed
+	lda playerYL
+	sbc playerSpeedL
+	sta playerYL
+	lda playerYH
+	sbc playerSpeedH
 	cmp #MAX_UP
 	bcs @storeUp
 	lda #MAX_UP
 @storeUp:
-	sta playerY
+	sta playerYH
 @notUp:
 	lda #%01000000
 	bit controller1
 	beq @notShooting
 	inc pressingShoot
 	lda pressingShoot
-	and #%00000011
+	and playerRateOfFire
 	cmp #%00000001
 	bne @getMetatile
 	jsr initializePlayerBullet
@@ -1305,11 +1579,11 @@ PLAYER_BULLET_Y_OFFSET = 8
 	rts
 @initializeBullet:
 	clc
-	lda playerX
+	lda playerXH
 	adc #PLAYER_BULLET_X_OFFSET
 	sta playerBulletX,x
 	sec
-	lda playerY
+	lda playerYH
 	sbc #PLAYER_BULLET_Y_OFFSET 
 	sta playerBulletY,x
 	lda #TRUE
@@ -1318,43 +1592,21 @@ PLAYER_BULLET_Y_OFFSET = 8
 	sta playerBulletMetasprite,x
 	rts
 
-updateHitboxColor:
-;cycles through colors to give players hitbox glowing effect
-;arguments
-;a - current hitbox color
-;returns void
-;shift right to turn into array index
-	lsr
-	lsr
-	lsr
-	tax
-;get color from array of values
-	lda playerHitbox,x
-;oscilating color is color 2, palette 5
-	sta color2+5
-;set flag for nmi
-	lda #TRUE
-	sta willHitboxUpdate
-	rts
-
 updatePlayerBullets:
 ;arguments - none
 ;constants
 ;speed bullet travels up
-PLAYER_BULLET_SPEED = 08
-;start with bullet 0
-	ldx #0
+PLAYER_BULLET_SPEED = 12
+;start with last bullet(faster)
+	ldx #MAX_PLAYER_BULLETS-1
 @bulletLoop:
-;while x < maximum bullets
-	cpx #MAX_PLAYER_BULLETS
-	bcs @endBulletLoop
 	lda isPlayerBulletActive,x
 ;if true, update bullet
 	bne @updateBullet
-;x++
-	inx
-	jmp @bulletLoop
-@endBulletLoop:
+;x--
+	dex
+;while x >=0
+	bpl @bulletLoop
 	rts
 @updateBullet:
 ;bit 2 holds collision data
@@ -1369,105 +1621,188 @@ PLAYER_BULLET_SPEED = 08
 	bcc @deactivateBullet
 ;else update y coordinate
 	sta playerBulletY,x
-	inx
-	jmp @bulletLoop
+	dex
+	bpl @bulletLoop
+	rts
 @deactivateBullet:
 	lda #FALSE
 	sta isPlayerBulletActive,x
-	inx
-	jmp @bulletLoop
-
-updateEnemies:
-	ldy #0
-@enemyUpdateLoop:
-	lda isEnemyActive,y
-	beq @enemyInactive
-	jsr jumpToEnemyRoutine
-@enemyInactive:
-	iny
-	cpy #MAX_ENEMIES
-	bcc @enemyUpdateLoop
+	dex
+	bpl @bulletLoop
 	rts
 
-jumpToEnemyRoutine:
-	lda enemyBehaviorH,y
+updateEnemies:
+;loops through enemy list, if enemy is active, pushes enemy index and behavior function onto stack, returns. If enemy behavior is on the stack, it will essentially jump to that function. all enemy functions need to pull the index off the stack or processor will jump to unknown location
+;arguments - none
+;returns - none
+	ldx #MAX_ENEMIES-1
+@enemyUpdateLoop:
+;if enemy is active, update
+	lda isEnemyActive,x
+	bne @enemyActive
+;x--
+	dex
+;while x >= 0
+	bpl @enemyUpdateLoop
+	rts
+@enemyActive:
+;save index
+	txa
 	pha
-	lda enemyBehaviorL,y
+;push function onto stack
+	lda enemyBehaviorH,x
 	pha
+	lda enemyBehaviorL,x
+	pha
+;x--
+	dex
+;while x>=0
+	bpl @enemyUpdateLoop
 	rts
 
 wasEnemyHit:
-;x is player bullet, start with 0
-	ldx #0
+;compares enemies to the player bullets and determines if they overlap
+;arguments
+;x - enemy to check
+;y is player bullet, start with 0
+	ldy #0
 @bulletLoop:
-;while x < max player bullets
-	cpx #MAX_PLAYER_BULLETS
+;while y < max player bullets
+	cpy #MAX_PLAYER_BULLETS
 	bcs @endBulletLoop
 ;if player bullet active, check
-	lda isPlayerBulletActive,x
+	lda isPlayerBulletActive,y
 	bne @cullX
-;x ++
-	inx
+;y ++
+	iny
 	jmp @bulletLoop
 @endBulletLoop:
 	clc
 	rts
 @cullX:
 	sec
-	lda playerBulletX,x
-	sbc enemyX,y
+	lda playerBulletX,y
+	sbc enemyX,x
 	bcs @playerGreaterX
 	eor #%11111111
 @playerGreaterX:
-	cmp enemyWidth,y
+	cmp enemyWidth,x
 	bcc @cullY
-	inc test
-	inx
+	iny
 	jmp @bulletLoop
 @cullY:
 	sec
-	lda playerBulletY,x
-	sbc enemyY,y
+	lda playerBulletY,y
+	sbc enemyY,x
 	bcs @playerGreaterY
 	eor #%11111111
 @playerGreaterY:
-	cmp enemyHeight,y
+	cmp enemyHeight,x
 	bcc @checkCollision
-	inx
-	inc test
+	iny
 	jmp @bulletLoop
 @checkCollision:
 	clc
-	lda playerBulletX,x
+	lda playerBulletX,y
 	sta sprite1LeftOrTop
 	adc #08
 	sta sprite1RightOrBottom
-	lda enemyX,y
-	adc enemyHitboxX1,y
+	lda enemyX,x
+	adc enemyHitboxX1,x
 	sta sprite2LeftOrTop
-	adc enemyHitboxX2,y
+	adc enemyHitboxX2,x
 	sta sprite2RightOrBottom
 	jsr checkCollision
 	bcs @checkY
-	inx
+	iny
 	jmp @bulletLoop
 @checkY:
 	clc
-	lda playerBulletY,x
+	lda playerBulletY,y
 	sta sprite1LeftOrTop
 	adc #02
 	sta sprite1RightOrBottom
-	lda enemyY,y
+	lda enemyY,x
 	sta sprite2LeftOrTop
-	adc enemyHitboxY2,y
+	adc enemyHitboxY2,x
 	sta sprite2RightOrBottom
 	jsr checkCollision
 	bcs @hitDetected
-	inx
+	iny
 	jmp @bulletLoop
 @hitDetected:
 	lda #%00000011
-	sta isPlayerBulletActive,x
+	sta isPlayerBulletActive,y
+	rts
+
+wasPlayerHit:
+;arguments
+;x - enemy bullet offset
+@cullX:
+;find the distance between x values
+	sec
+	lda enemyBulletXH,x
+	sbc playerXH
+	bcs @bulletGreaterX
+;twos compliment if negative
+	eor #%11111111
+@bulletGreaterX:
+;compare to bullet width, proceed if distance less than width
+	cmp enemyBulletWidth,x
+	bcc @cullY
+;mark false and return
+	clc
+	rts
+@cullY:
+;find distance between Y coordinates
+	sec
+	lda enemyBulletYH,x
+	sbc playerYH
+	bcs @bulletGreaterY
+;twos compliment if negative
+	eor #%11111111
+@bulletGreaterY:
+;compare to distance from y to player hitbox (alwas greater than bullet height)
+	cmp #24
+;check collision distance less
+	bcc @checkCollision
+;mark false and return
+	clc
+	rts
+@checkCollision:
+	clc
+	lda playerXH
+	adc #02
+	sta sprite1LeftOrTop
+	adc #03
+	sta sprite1RightOrBottom
+	lda enemyBulletXH,x
+	adc enemyBulletHitboxX1,x
+	sta sprite2LeftOrTop
+	adc enemyBulletHitboxX2,x
+	sta sprite2RightOrBottom
+	jsr checkCollision
+	bcs @checkY
+	clc
+	rts
+@checkY:
+	clc
+	lda playerYH
+	adc #19
+	sta sprite1LeftOrTop
+	adc #02
+	sta sprite1RightOrBottom
+	lda enemyBulletYH,x
+	adc enemyBulletHitboxY1,x
+	sta sprite2LeftOrTop
+	adc enemyBulletHitboxY2,x
+	sta sprite2RightOrBottom
+	jsr checkCollision
+	bcs @hitDetected
+	clc
+	rts
+@hitDetected:
+	sec
 	rts
 
 checkCollision:
@@ -1490,26 +1825,323 @@ checkCollision:
 	sec
 	rts
 
+updateEnemyBullets:
+	ldx #MAX_ENEMY_BULLETS-1
+@bulletLoop:
+;if bullet active, update
+	lda isEnemyBulletActive,x
+	bne @updateBullet
+;x--
+	dex
+;while x>=0
+	bpl @bulletLoop
+	rts
+@updateBullet:
+;save offset
+	txa
+	pha
+;push the address
+	lda enemyBulletBehaviorH,x
+	pha
+	lda enemyBulletBehaviorL,x
+	pha
+;x--
+	dex
+;while x>=0
+	bpl @bulletLoop
+	rts
+
+initializeEnemyBullet:
+;initializes a bullet based on coordinates and a bullet ID
+;arguments
+;x - x coordinate
+;y - y coordinate
+;a - bullet ida
+;save bullet
+	pha
+;save y
+	tya
+	pha
+;save x
+	txa
+	pha
+	jsr getAvailableEnemyBullet
+;returns x - offset of bullet object
+	bcc @bulletsFull
+;retrieve x
+	pla
+	sta enemyBulletXH,x
+;retrieve y
+	pla
+	sta enemyBulletYH,x
+;zero out low bit
+	lda #0
+	sta enemyBulletXL,x
+	sta enemyBulletYL,x
+;retrieve bullet id
+	pla
+;y is now the id
+	tay
+;copy function pointer
+	lda romEnemyBulletBehaviorH,y
+	sta enemyBulletBehaviorH,x
+	lda romEnemyBulletBehaviorL,y
+	sta enemyBulletBehaviorL,x
+;get the type
+	lda romEnemyBulletType,y
+;y is now type, copy values on type
+	tay
+;copy metasprite
+	lda romEnemyBulletMetasprite,y
+	sta enemyBulletMetasprite,x
+;copy width
+	lda romEnemyBulletWidth,y
+	sta enemyBulletWidth,x
+;copy hitboxes
+	lda romEnemyBulletHitboxX1,y
+	sta enemyBulletHitboxX1,x
+	lda romEnemyBulletHitboxX2,y
+	sta enemyBulletHitboxX2,x
+	lda romEnemyBulletHitboxY1,y
+	sta enemyBulletHitboxY1,x
+	lda romEnemyBulletHitboxY2,y
+	sta enemyBulletHitboxY2,x
+;reset clock
+	lda #$ff
+	sta enemyBulletClock,x
+	rts
+@bulletsFull:
+;pull x, y, id
+	pla
+	pla
+	pla
+	rts
+
+getAvailableEnemyBullet:
+;loos through bullet collection, finds inactive bullet, sets to active, returns offset
+;arguments - none
+;returns
+;x - active offset
+;carry clear if full, set if success
+	ldx #MAX_ENEMY_BULLETS-1
+@bulletLoop:
+	lda isEnemyBulletActive,x
+	beq @returnBullet
+	dex
+	bpl @bulletLoop
+;mark full
+	clc
+	rts
+@returnBullet:
+;set active
+	lda #TRUE
+	sta isEnemyBulletActive,x
+;mark success
+	sec
+	rts
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;;Sprite Behaviors;;;
 ;;;;;;;;;;;;;;;;;;;;;;
-.byte 00
+;Enemy Behaviors;
+;;;;;;;;;;;;;;;;;
+;enemy set up
+.macro esu
+;pull out index, set to x
+	pla
+	tax
+;increase clock
+	inc enemyClock,x
+.endmacro
+
+;to reference sprite.self, use x register
 targetBehavior:
-	lda #128
-	sta enemyX,y
-	lda #128
-	sta enemyY,y
-	lda #TARGET_SPRITE
-	sta enemyMetasprite,y
-	jsr wasEnemyHit;(y)
+	esu
+	jsr wasEnemyHit;(x)
 	bcs @hitDetected
 	lda #FALSE
-	sta isEnemyHit,y
+	sta enemyStatus,x
+	rts
+@hitDetected:
+	dec enemyHP,x
+	lda #TRUE
+	sta enemyStatus,x
+	txa
+	pha
+	clc
+	lda enemyY,x
+	adc #16
+	tay
+	lda enemyX,x
+	adc #8
+	tax
+	lda #$00
+	jsr initializeEnemyBullet
+	pla
+	tax
+	pha
+	clc
+	lda enemyY,x
+	adc #16
+	tay
+	lda enemyX,x
+	adc #8
+	tax
+	lda #$02
+	jsr initializeEnemyBullet
+	pla
+	tax
+	pha
+	clc
+	lda enemyY,x
+	adc #16
+	tay
+	lda enemyX,x
+	adc #8
+	tax
+	lda #$04
+	jsr initializeEnemyBullet
+	pla
+	tax
+	pha
+	clc
+	lda enemyY,x
+	adc #16
+	tay
+	lda enemyX,x
+	adc #8
+	tax
+	lda #$06
+	jsr initializeEnemyBullet
+	pla
+	tax
+	pha
+	clc
+	lda enemyY,x
+	adc #16
+	tay
+	lda enemyX,x
+	adc #8
+	tax
+	lda #$08
+	jsr initializeEnemyBullet
+	pla
+	tax
+	pha
+	clc
+	lda enemyY,x
+	adc #16
+	tay
+	lda enemyX,x
+	adc #8
+	tax
+	lda #$0a
+	jsr initializeEnemyBullet
+	pla
+	tax
+	pha
+	clc
+	lda enemyY,x
+	adc #16
+	tay
+	lda enemyX,x
+	adc #8
+	tax
+	lda #$0c
+	jsr initializeEnemyBullet
+	pla
+	tax
+	pha
+	clc
+	lda enemyY,x
+	adc #16
+	tay
+	lda enemyX,x
+	adc #8
+	tax
+	lda #$0e
+	jsr initializeEnemyBullet
+	pla
+	tax
+	pha
+	clc
+	lda enemyY,x
+	adc #16
+	tay
+	lda enemyX,x
+	adc #8
+	tax
+	lda #$10
+	jsr initializeEnemyBullet
+	pla
+	rts
+
+
+
+;;;;;;;;;;;;;;;;;;
+;Bullet Behaviors;
+;;;;;;;;;;;;;;;;;;
+EXTRA_SLOW_H=0
+EXTRA_SLOW_L=128
+SLOW_H=1
+SLOW_L=0
+
+.macro slowQuad4	yPixelsH, yPixelsL, xPixelsH, xPixelsL
+	pla
+	tax
+	clc
+	lda yPixelsL
+	adc enemyBulletYL,x
+	sta enemyBulletYL,x
+	lda yPixelsH
+	adc enemyBulletYH,x
+	bcs @clearBullet
+	sta enemyBulletYH,x
+	lda xPixelsL
+	adc enemyBulletXL,x
+	sta enemyBulletXL,x
+	lda xPixelsH
+	adc enemyBulletXH,x
+	bcs @clearBullet
+	sta enemyBulletXH,x
+	jsr wasPlayerHit
+	bcs @hitDetected
 	rts
 @hitDetected:
 	lda #TRUE
-	sta isEnemyHit,y
+	sta playerStatus
 	rts
+@clearBullet:
+	lda #FALSE
+	sta isEnemyBulletActive,x
+	rts
+.endmacro
+bullet0:
+	slowQuad4 #1, #0, #0, #0
+bullet1:
+bullet2:
+	slowQuad4	#1, #0, #0, #56
+bullet3:
+bullet4:
+	slowQuad4	#0, #248, #0, #112
+bullet5:
+bullet6:
+	slowQuad4	#0, #232, #0, #160
+bullet7:
+bullet8:
+	slowQuad4	#0, #200, #0, #200
+bullet9:
+bulletA:
+	slowQuad4	#0, #160, #0, #232
+bulletB:
+bulletC:
+	slowQuad4	#0, #112, #0, #248
+bulletD:
+bulletE:
+	slowQuad4	#0, #56, #1,#0
+bulletF:
+bullet10:
+	slowQuad4	#0,#0,#1,#0
 
 .segment "VECTORS"
 .word nmi

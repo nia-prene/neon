@@ -4,16 +4,18 @@
 ;;;Scenes;;; 
 ;;;;;;;;;;;;;;;;
 screenTile:
-	.byte $0
+	.byte BEACH_SCREEN
 paletteCollection:
 	.byte BEACH_PALETTE
-
+levelWave:
+	.byte BEACH_WAVES
 ;;;;;;;;;;;
 ;;;tiles;;;
 ;;;;;;;;;;;
 ;screens;
 ;256x256;
 ;;;;;;;;;
+BEACH_SCREEN=0
 topLeft256:
 	.byte $00
 bottomLeft256:
@@ -108,11 +110,6 @@ palette3:
 ;;;;;;;;;;;;;
 ;;;sprites;;;
 ;;;;;;;;;;;;;
-romHitboxY1:
-	.byte 02, 03
-romHitboxY2:
-	.byte 06, 10
-
 ;;;;;;;;;;;;;
 ;metasprites;
 ;;;;;;;;;;;;;
@@ -127,10 +124,11 @@ romHitboxY2:
 PLAYER_SPRITE = 0
 TARGET_SPRITE = 1
 PLAYER_MAIN_BULLET = 2
+BULLET_SPRITE_0=3
 spriteTile0:
-	.byte $00, $60, $20
+	.byte $00, $60, $20, $24
 spriteAttribute0:
-	.byte %00000000, %00000010, %00000000
+	.byte %00000000, %00000010, %00000000, %00000000
 spriteTile1:
 	.byte $02, $60
 spriteAttribute1:
@@ -138,7 +136,7 @@ spriteAttribute1:
 spriteTile2:
 	.byte $04, $60
 spriteAttribute2:
-	.byte %00000001, %00000010
+	.byte %00000000, %00000010
 spriteTile3:
 	.byte $06, $60
 spriteAttribute3:
@@ -153,9 +151,13 @@ romEnemyBehaviorH:
 	.byte NULL, >targetBehavior
 romEnemyBehaviorL:
 	.byte NULL, <targetBehavior-1
+romEnemyMetasprite:
+	.byte NULL, TARGET_SPRITE, TARGET_SPRITE
+romEnemyHP:
+	.byte NULL, 10, 10
 ;the type determines the width, height, and how it is built in oam
 romEnemyType: 
-	.byte NULL, 01 
+	.byte NULL, 01, 01
 romEnemyWidth:
 	.byte 8, 16, 16, 32
 romEnemyHeight:
@@ -166,35 +168,76 @@ romEnemyHitboxX2:
 	.byte 6, 12, 12, 30
 romEnemyHitboxY2:
 	.byte 14, 14, 30, 14
-enemySlot0:
-	.byte $01
-enemySlot1:
-enemySlot2:
-enemySlot3:
-enemySlot4:
-enemySlot5:
-enemySlot6:
-enemySlot7:
-enemySlot8:
-enemySlot9:
-;;;;;;;;;;;;;;;;;;;;;;;
-;enemy slot coordinate;
-;;;;;;;;;;;;;;;;;;;;;;;
-slotX:
-	.byte 00
-slotY:
-	.byte 00
+
+;;;;;;;;;;;;;
+;enemy waves;
+;;;;;;;;;;;;;
+BEACH_WAVES=0
+levelWavesH:
+	.byte >beachWaves
+levelWavesL:
+	.byte <beachWaves
+;waves for each level as index to pointers
+beachWaves:
+	.byte 0, 1, 0, 1
+;pointers to individual enemy waves (below)
+wavePointerH:
+	.byte >wave0, >wave1
+wavePointerL:
+	.byte <wave0, <wave1
+;individual enemy waves
+wave0:
+	.byte 1, 12, $ff
+wave1:
+	.byte 1, 15, 1, 05, 1, 25, $ff
+;wave starting coordinates
+waveX:
+	.byte $04, $0c, $14, $1c, $24, $2c, $34, $3c, $44, $4c, $54, $5c, $64, $6c, $74, $7c
+	.byte $84, $8c, $94, $9c, $a4, $ac, $b4, $bc, $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc
+	.byte $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byte $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+	.byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+	.byte $04, $0c, $14, $1c, $24, $2c, $34, $3c, $44, $4c, $54, $5c, $64, $6c, $74, $7c
+	.byte $84, $8c, $94, $9c, $a4, $ac, $b4, $bc, $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc
+waveY:
+	.byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+	.byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+	.byte $04, $0c, $14, $1c, $24, $2c, $34, $3c, $44, $4c, $54, $5c, $64, $6c, $74, $7c
+	.byte $84, $8c, $94, $9c, $a4, $ac, $b4, $bc, $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc
+	.byte $04, $0c, $14, $1c, $24, $2c, $34, $3c, $44, $4c, $54, $5c, $64, $6c, $74, $7c
+	.byte $84, $8c, $94, $9c, $a4, $ac, $b4, $bc, $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc
+	.byte $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byte $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+
+;;;;;;;;;;;;;
+;;;Bullets;;;
+;;;;;;;;;;;;;
+romEnemyBulletBehaviorH:
+	.byte >bullet0, >bullet1, >bullet2, >bullet3, >bullet4, >bullet5, >bullet6, >bullet7, >bullet8, >bullet9, >bulletA, >bulletB, >bulletC, >bulletD, >bulletE, >bulletF, >bullet10
+romEnemyBulletBehaviorL:
+	.byte <bullet0-1, <bullet1-1, <bullet2-1, <bullet3-1, <bullet4-1, <bullet5-1, <bullet6-1, <bullet7-1, <bullet8-1, <bullet9-1, <bulletA-1, <bulletB-1, <bulletC-1, <bulletD-1, <bulletE-1, <bulletF-1, <bullet10-1
+romEnemyBulletType:
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+;type determines all future attributes, so sprites and hitboxes can be reused
+romEnemyBulletWidth:
+	.byte 8
+romEnemyBulletHitboxY1:
+	.byte 6
+romEnemyBulletHitboxY2:
+	.byte 5
+romEnemyBulletHitboxX1:
+	.byte 2
+romEnemyBulletHitboxX2:
+	.byte 04
+romEnemyBulletMetasprite:
+	.byte BULLET_SPRITE_0
 ;;;;;;;;;;;;;;;;
 ;;;animations;;;
 ;;;;;;;;;;;;;;;;
-playerIdleAnimation:
-playerLeftAnimation:
-playerRightAnimation:
 ;;;;;;;;;;;;;;;;;;
 ;;;color cycles;;;
 ;;;;;;;;;;;;;;;;;;
-playerHitbox:
-	.byte $05, $15, $25, $35, $30, $35, $25, $15 
 ;;;;;;;;;;;;;;;;;;;
 ;;;lookup tables;;;
 ;;;;;;;;;;;;;;;;;;;
