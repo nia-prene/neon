@@ -214,11 +214,33 @@ waveY:
 ;;;Bullets;;;
 ;;;;;;;;;;;;;
 romEnemyBulletBehaviorH:
-	.byte >bullet0, >bullet1, >bullet2, >bullet3, >bullet4, >bullet5, >bullet6, >bullet7, >bullet8, >bullet9, >bulletA, >bulletB, >bulletC, >bulletD, >bulletE, >bulletF, >bullet10
+	.byte >bullet0, >bullet1, >bullet2, >bullet3, >bullet4, >bullet5, >bullet6, >bullet7, >bullet8, >bullet9, >bulletA, >bulletB, >bulletC, >bulletD, >bulletE, >bulletF
+	.byte >bullet10, >bullet11, >bullet12, >bullet13, >bullet14, >bullet15, >bullet16, >bullet17, >bullet18, >bullet19, >bullet1A, >bullet1B, >bullet1C, >bullet1D, >bullet1E, >bullet1F
+	.byte >bullet20, >bullet21, >bullet22, >bullet23, >bullet24, >bullet25, >bullet26, >bullet27, >bullet28, >bullet29, >bullet2A, >bullet2B, >bullet2C, >bullet2D, >bullet2E, >bullet2F
+	.byte >bullet30, >bullet31, >bullet32, >bullet33, >bullet34, >bullet35, >bullet36, >bullet37, >bullet38, >bullet39, >bullet3A, >bullet3B, >bullet3C, >bullet3D, >bullet3E, >bullet3F
+	.byte >bullet40, >bullet41, >bullet42, >bullet43, >bullet44, >bullet45, >bullet46, >bullet47, >bullet48, >bullet49, >bullet4A, >bullet4B, >bullet4C, >bullet4D, >bullet4E, >bullet4F
+	.byte >bullet50, >bullet51, >bullet52, >bullet53, >bullet54, >bullet55, >bullet56, >bullet57, >bullet58, >bullet59, >bullet5A, >bullet5B, >bullet5C, >bullet5D, >bullet5E, >bullet5F
+	.byte >bullet60, >bullet61, >bullet62, >bullet63, >bullet64, >bullet65, >bullet66, >bullet67, >bullet68, >bullet69, >bullet6A, >bullet6B, >bullet6C, >bullet6D, >bullet6E, >bullet6F
+	.byte >bullet70, >bullet71, >bullet72, >bullet73, >bullet74, >bullet75, >bullet76, >bullet77, >bullet78, >bullet79, >bullet7A, >bullet7B, >bullet7C, >bullet7D, >bullet7E, >bullet7F
 romEnemyBulletBehaviorL:
-	.byte <bullet0-1, <bullet1-1, <bullet2-1, <bullet3-1, <bullet4-1, <bullet5-1, <bullet6-1, <bullet7-1, <bullet8-1, <bullet9-1, <bulletA-1, <bulletB-1, <bulletC-1, <bulletD-1, <bulletE-1, <bulletF-1, <bullet10-1
+	.byte <bullet0-1, <bullet1-1, <bullet2-1, <bullet3-1, <bullet4-1, <bullet5-1, <bullet6-1, <bullet7-1, <bullet8-1, <bullet9-1, <bulletA-1, <bulletB-1, <bulletC-1, <bulletD-1, <bulletE-1, <bulletF-1
+	.byte <bullet10-1, <bullet11-1, <bullet12-1, <bullet13-1, <bullet14-1, <bullet15-1, <bullet16-1, <bullet17-1, <bullet18-1, <bullet19-1, <bullet1A-1, <bullet1B-1, <bullet1C-1, <bullet1D-1, <bullet1E-1, <bullet1F-1
+	.byte <bullet20-1, <bullet21-1, <bullet22-1, <bullet23-1, <bullet24-1, <bullet25-1, <bullet26-1, <bullet27-1, <bullet28-1, <bullet29-1, <bullet2A-1, <bullet2B-1, <bullet2C-1, <bullet2D-1, <bullet2E-1, <bullet2F-1
+	.byte <bullet30-1, <bullet31-1, <bullet32-1, <bullet33-1, <bullet34-1, <bullet35-1, <bullet36-1, <bullet37-1, <bullet38-1, <bullet39-1, <bullet3A-1, <bullet3B-1, <bullet3C-1, <bullet3D-1, <bullet3E-1, <bullet3F-1
+	.byte <bullet40-1, <bullet41-1, <bullet42-1, <bullet43-1, <bullet44-1, <bullet45-1, <bullet46-1, <bullet47-1, <bullet48-1, <bullet49-1, <bullet4A-1, <bullet4B-1, <bullet4C-1, <bullet4D-1, <bullet4E-1, <bullet4F-1
+	.byte <bullet50-1, <bullet51-1, <bullet52-1, <bullet53-1, <bullet54-1, <bullet55-1, <bullet56-1, <bullet57-1, <bullet58-1, <bullet59-1, <bullet5A-1, <bullet5B-1, <bullet5C-1, <bullet5D-1, <bullet5E-1, <bullet5F-1
+	.byte <bullet60-1, <bullet61-1, <bullet62-1, <bullet63-1, <bullet64-1, <bullet65-1, <bullet66-1, <bullet67-1, <bullet68-1, <bullet69-1, <bullet6A-1, <bullet6B-1, <bullet6C-1, <bullet6D-1, <bullet6E-1, <bullet6F-1
+	.byte <bullet70-1, <bullet71-1, <bullet72-1, <bullet73-1, <bullet74-1, <bullet75-1, <bullet76-1, <bullet77-1, <bullet78-1, <bullet79-1, <bullet7A-1, <bullet7B-1, <bullet7C-1, <bullet7D-1, <bullet7E-1, <bullet7F-1
+	
 romEnemyBulletType:
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 ;type determines all future attributes, so sprites and hitboxes can be reused
 romEnemyBulletWidth:
 	.byte 8

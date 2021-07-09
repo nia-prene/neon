@@ -70,7 +70,7 @@ oam: .res 256
 ;;;;;;;;;
 ;Bullets;
 ;;;;;;;;;
-MAX_ENEMY_BULLETS=50
+MAX_ENEMY_BULLETS=56
 enemyBulletHitboxX1: .res MAX_ENEMY_BULLETS
 enemyBulletHitboxX2: .res MAX_ENEMY_BULLETS
 enemyBulletHitboxY1: .res MAX_ENEMY_BULLETS
