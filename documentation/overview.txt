@@ -15,11 +15,12 @@ Section
 		3.2 Rendering Backgrounds
 		3.3 Palettes
 		3.4 Sprites
-		3.5 Object Data
-		3.6 Collections of Objects
-		3.7 Setting up a Scene
-		3.8 Game Loop
-		3.9 Coding Standards
+		3.5 ROM Object Data
+		3.6 RAM Object Data
+		3.7 The Big 4 Objects
+		3.8 Setting up a Scene
+		3.9 Game Loop
+		3.10 Coding Standards
 
 Overview
 
@@ -339,7 +340,7 @@ $3F1D-$3F1F 	Sprite palette 3
 Engine Specific
 
 	3.0 Scope
-This project is a single screen, vertical shooter bullet hell. It will utilize a standard NROM cartridge configured to vertical mirroring. It will consist of a main menu, an arcade mode with 4 consecutive levels, and a short mode with a level selection.
+This project is a single screen, vertical shooter bullet hell. It will utilize a standard NROM cartridge configured to vertical mirroring. It will consist of a main menu, an arcade mode with 4 consecutive levels, and a short mode allowing the player to play any single level from a selection scree.
 
 	3.1 Tile Compression
 
@@ -403,12 +404,12 @@ bottomRight256:
 
 	3.2 Rendering Backgrounds
 
-This game only uses only one screen, rendered in nametable A. Each tile is written to VRAM as 32x32 pixel tiles. Since each background is stored as one byte 
+This game only uses one screen per scene, rendered in nametable A. Each tile is written to VRAM as 32x32 pixel tiles. Since each background is stored as one byte 
 
 screenTile:
-	.byte foo ;represents an offset in the previous table
+	.byte foo 
 
-and the tiles are rendered as 32x32 tiles, first we must unzip these tiles.
+and the tiles are rendered as 32x32 tiles, first we must unzip these tiles, from the 256x256 tile screenTile, to 4 128x128 tiles, to 16 64x64 tiles to 64 32x32 tiles
 
 The initial tile is unzipped into tiles128 in RAM, from top to bottom, left to right as tiles128 is a 2d array
 
@@ -474,90 +475,83 @@ Copying these tiles to WRAM OAM is a 3 step process.
 	2. Their member function will place a metasprite, an x coordinate, and a y coordinate in the WRAM OAM que.
 	3. buildOAM will cycle through the entire que and find active sprites. it will then take that x and y coordinate and unzip all tiles in into WRAM OAM. it will then set that index flag to deactive.
 
-	3.5 Object Data
+	3.5 ROM Object Data
 
-Every logical relationship in this program is represented by parallel arrays. To learn more about parallel arrays, read parallel-arrays.pdf in the /documentation folder
+There are several ROM "Objects" in this program. All object names are for semantic use only and do not appear in the code except when used in comments. All data is stored and used as a parallel array, where an array index represents that object (read parallel-arrays.pdf in the /documentation folder)
 
-There are several "Classes/Structs" in this program. All object names are for semantic use only and do not appear in the code except when used in comments. All data is stored and used as a parallel array, where an array index represents that object
+ Object        	Fields              Description
 
-Object/Description		Variables/functions		found in
+ Palette		romColor0		Palettes Used for backgrounds
+				romColor1		and sprites
+				romColor2		
+ 
+ Palette		palette0		A collection of 4 palettes
+ Collection		palette1		grouped together so that a screen	
+				palette2		can use one byte for all palettes
+				palette3
 
+ Screen Tile	topLeft256		The 256x256 screen tiles and the
+				bottomLeft256	4 128x128 tiles that make up the
+				topRight256		quadrants of the tile
+				bottomRight256
 
-Palette:				color0					ram.s
-hex color data 			color1
-for all palettes		color2
+ 128x128 tile	topLeft128		The 128x128 tiles and the
+				bottomLeft128	4 64x64 tiles that make up the
+				topRight128		quadrants of the tile
+				bottomRight128
 
-Palette:				romColor0				data.s
-copied in ram			romColor1
-from previous			romColor2
-object for current
-screen during screen
-loading
+ 64x64 tile		topLeft64		The 64x64 tiles and the
+				bottomLeft64	4 32x32 tiles that make up the
+				topRight64		quadrants of the tile
+				bottomRight64
 
-PaletteCollection		palette0				data.s
-used to store			palette1
-all backgrounds			palette2
-palettes for screen 	palette3
-in one byte
+ 32x32 tile		topLeft32		The 32x32 tiles and the
+				bottomLeft32	4 16x16 tiles that make up the
+				topRight32		quadrants of the tile. the 
+				bottomRight32	attribute is stored at this level
+				attributeByte 
 
-Screen:    				screenTile				data.s
-all data used			paletteCollection
-to render a screen
+ 16x16 tile		topLeft16		The 16x16 tiles and the
+				bottomLeft16	4 8x8 tiles that make up the
+				topRight16		quadrants of the tile. the 8x8
+				bottomRight16	tiles are found in graphics.chr
 
-Metasprite 				tileTotal				data.s	
-tile data grouped		tileWidth	
-together to form		tile0
-larger, more 			attribute0
-usable sprites			tile1
-						attribute1
-						tile2
-						attribute2
-						tile3
-						attribute3
-
-clock					seconds					ram.s
-updated during			minutes
-interrupt to			hours
-allow for 
-rudimentary 
-timekeeping
-
-player					playerX					ram.s
-all variables			playerY
-relating to the			metasprite
-player
-
-playerBullets			playerBulletX			ram.s
-all the bullets			playerBulletY
-the player can shoot
-
-enemies					enemyBehaviorH			todo
-things the player		enemyBehaviorL
-shoots					enemyX
-						enemyY
-
-enemyBullets			bulletBehaviorH			todo
-bullets the				bulletBehaviorL
-player dodges			enemyBulletX
-						enemyBulletY
-
-	3.6 Collections of Objects
-
-To allow for faster and more comprehensive program execution, this program divides all objects in the playfield into 4 groups; the player, the players bullets, enemies, and enemy bullets. This allows for an easy distinction when making comparisons. For example, the player's bullets will have hit detection when compared agains the enemies, but the player's bullets will never need to be compared to the player, as the player cannot shoot themselves. This is a visual representation of all the groups of data
-
-Player
-
-PlayerBullets[MAX_PLAYER_BULLETS]
-
-Enemies[MAX_NUMBER_OF_ENEMIES]
-
-EnemyBullets[MAX_NUMBER_OF_ENEMY_BULLETS]
-
-Note that in assembly, all these values are represented by parallel arrays, where each field of these objects exist in separate arrays, and the index of that array correspond to the object.
+ Metasprite 	tile0			Collections of character data
+				attribute0		stitched together to form
+				tile1			larger, more usable sprites
+				attribute1
+				tile2
+				attribute2
+				tile3
+				attribute3
 
 
+	3.6 RAM Object Data
 
-	3.7 Setting up a Scene
+	todo
+
+
+	3.7 The Big 4 Objects
+
+To allow for faster and more comprehensive program execution, this program divides all objects in the playfield into 4 groups; the player, the players bullets, enemies, and enemy bullets. This allows for an easy distinction when making comparisons. For example, the player's bullets will have hit detection when compared agains the enemies, but the player's bullets will never need to be compared to the player, as the player cannot shoot themselves. This is a visual representation of all the groups of data and their relationships to one another. "Access" refers to the ability of each object to construct, change, and reference another object's attributes.
+
+Object				Relationship				Access
+
+Player				shoots Player Bullets		inits player bullets
+
+Player Bullets		no active relationships		none
+
+Enemies 			shoots enemy Bullets		inits enemy bullets	
+					gets hit by Player Bullets 	hit detection routine
+												against player bullets
+												modify player bullets
+
+Enemy Bullets		hits player					hit detection routine
+												against player
+												modify player if hit
+
+
+	3.8 Setting up a Scene
 
 A scene is the collection of all the parts of a "level." This includes the background, the player, the palettes, and the waves of enemies. Each scene can be represented by one hexadecimal index into a parallel array of every attribute of the scene:
 
@@ -577,7 +571,7 @@ Here are the tasks to set up a scene, this can be found in main.s
 	   VRAM
 	6. Turn PPU back on 			(enableRendering)
 
-	3.8 Game Loop
+	3.9 Game Loop
 
 This is the simplified overview of the game loop
 	Step/Description				
@@ -586,12 +580,20 @@ This is the simplified overview of the game loop
 	3. Update the player object
 	4. Update the player bullets
 	5. Update the enemies
+		5a. Each enemy calls a hit detection routine against player bullets, responds
+		6b. hit detections are culled by distance to enemy vs enemy radius
+		6c. if distance between objects < radius of enemy, full hit detection routine called
+		6d. enemy reacts to being hit / missed
 	6. Update the enemy bullets
-	7. Check to see if enemy was hit by player bullet
-	8. Check to see if player was hit by enemy bullet
+		6a. Each enemy bullet calls hit detection routine
+		6b. hit detections are culled by distance to player vs objects radius
+		6c. if distance between objects < radius of objects, full hit detection routine called
+		6d. bullet reacts to hit or miss
 	9. Build OAM
 	10. Jump back to gave loop
-	3.9 Coding Standards
+
+
+	3.10 Coding Standards
 The primary goal with this program is to maintain human-readable code. Therefore a few standards must be maintained.
 
 First, comment every piece of code that may be considered a single unit
@@ -637,53 +639,72 @@ MAX_FOO = 3
 Variables should not be changed outside of their scope
 
 This is a no
-
+	
+	inc fooBar;fooBar is at this scope
 	lda foo
-	sta bar
-	jsr getFooBar
+	jsr calculateFooBar
+	
 
-getFooBar
-	lda barbar
-	sta bar
+calculateFooBar:
+	adc bar
+	sta fooBar; fooBar is changed at this scope
 	rts
 
 Instead do this
-
+	inc fooBar; fooBar is at this scope
 	lda foo
-	sta bar
-	jsr getFooBar
-;getFooBar returns
+	jsr calculateFooBar
+;returns
 ;a - barbar
-	sta bar
+	sta fooBar; fooBar is changed at this scope
 
-getFooBar
+calculateFooBar
+;arguments
+;a - foo
 ;returns 
-;a - barbar
-	lda barbar
+;a - fooBar
+	adc bar
 	rts
 
-The ONLY exceptions to this rule are member functions of objects, which can modify their variables, and functions with more than 3 parameters, in which case a new parameter variable must be created. This is exceptionally rare, and has not occoured as of yet
+The ONLY exceptions to this rule are member functions of objects, which can modify their variables and occasionally the values of others when they interact, for example, a bullet calling a hit detection routine may cnage the status of the player if contact is made. Functions with more than 3 parameters will also require modification of variables outside of scope where a new parameter variable must be created. This is exceptionally rare, and has not occoured as of yet, and should only be implemented if absolutely necessary
 
-To reduce spagetti code, no single use functions are allowed
+To reduce spagetti code, minimal single use functions are preferred.
 
 for example, this is a not acceptable
 
 	lda currentScene
 	jsr loadScene
 
-since loading a scene is such a massive task, and is only used once, it is far more benificial to put every task at surface level. It is easy to have a game loop that looks like this
+Instead we pull all the individual functions to surface level
+
+	jsr disableRendering
+	jsr unzipTiles
+	jsr otherLoadingRoutines
+
+since loading a scene is 
+	1) such a massive task, 
+	2) it is only used once, and 
+	3) it is primarily comprised of other functions, 
+it is far more benificial to put every task at surface level. It is easy to have a game loop that looks like this
 
 gameLoop:
 	jsr updatePlayer
 	jsr updatePlayerBullets
 	jsr updateEnemies
 	jsr updateEnemyBullets
-	jsr checkPlayerCollision
-	jsr checkEnemyCollision
+	jsr buildOam
 	jmp gameloop
 
-but this ensures spagetti code. 
+or the even more egregious 
 
-There is a place for a simplified semantic game loop, but it does not belong in the code itself. It belongs in the previous section regarding the game loop. A general rule, if the 4 major collections of object data are being modified or accessed, this needs to be done at the main level.
+main:
+	jsr loadScene
+gameLoop:
+	jsr updateGameLoop
+	jmp gameLoop
+
+This may be bordering on satiricle, but I have watched youtube videos with these kinds of loops, and they fill me with dread thinking about unraveling that spaghetti.
+
+There is a place for a simplified semantic game loop, but it does not belong in the code itself. It belongs in the previous section regarding the game loop
 
 
