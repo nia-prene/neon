@@ -1,0 +1,128 @@
+bulletC0:
+	mainFib 3, #3, #0, #0, #0 
+bulletC1:
+	mainFib 3, #2, #252, #0, #75 
+bulletC2:
+	mainFib 3, #2, #241, #0, #150 
+bulletC3:
+	mainFib 3, #2, #223, #0, #223 
+bulletC4:
+	mainFib 3, #2, #198, #1, #38 
+bulletC5:
+	mainFib 3, #2, #165, #1, #106 
+bulletC6:
+	mainFib 3, #2, #127, #1, #171 
+bulletC7:
+	mainFib 3, #2, #82, #1, #231 
+bulletC8:
+	mainFib 3, #2, #31, #2, #31 
+bulletC9:
+	mainFib 3, #1, #231, #2, #82 
+bulletCA:
+	mainFib 3, #1, #171, #2, #127 
+bulletCB:
+	mainFib 3, #1, #106, #2, #165 
+bulletCC:
+	mainFib 3, #1, #38, #2, #198 
+bulletCD:
+	mainFib 3, #0, #223, #2, #223 
+bulletCE:
+	mainFib 3, #0, #150, #2, #241 
+bulletCF:
+	mainFib 3, #0, #75, #2, #252 
+bulletD0:
+	mainFib 4, #0, #0, #3, #0 
+bulletD1:
+	mainFib 4, #0, #75, #2, #252 
+bulletD2:
+	mainFib 4, #0, #150, #2, #241 
+bulletD3:
+	mainFib 4, #0, #223, #2, #223 
+bulletD4:
+	mainFib 4, #1, #38, #2, #198 
+bulletD5:
+	mainFib 4, #1, #106, #2, #165 
+bulletD6:
+	mainFib 4, #1, #171, #2, #127 
+bulletD7:
+	mainFib 4, #1, #231, #2, #82 
+bulletD8:
+	mainFib 4, #2, #31, #2, #31 
+bulletD9:
+	mainFib 4, #2, #82, #1, #231 
+bulletDA:
+	mainFib 4, #2, #127, #1, #171 
+bulletDB:
+	mainFib 4, #2, #165, #1, #106 
+bulletDC:
+	mainFib 4, #2, #198, #1, #38 
+bulletDD:
+	mainFib 4, #2, #223, #0, #223 
+bulletDE:
+	mainFib 4, #2, #241, #0, #150 
+bulletDF:
+	mainFib 4, #2, #252, #0, #75 
+bulletE0:
+	mainFib 1, #3, #0, #0, #0 
+bulletE1:
+	mainFib 1, #2, #252, #0, #75 
+bulletE2:
+	mainFib 1, #2, #241, #0, #150 
+bulletE3:
+	mainFib 1, #2, #223, #0, #223 
+bulletE4:
+	mainFib 1, #2, #198, #1, #38 
+bulletE5:
+	mainFib 1, #2, #165, #1, #106 
+bulletE6:
+	mainFib 1, #2, #127, #1, #171 
+bulletE7:
+	mainFib 1, #2, #82, #1, #231 
+bulletE8:
+	mainFib 1, #2, #31, #2, #31 
+bulletE9:
+	mainFib 1, #1, #231, #2, #82 
+bulletEA:
+	mainFib 1, #1, #171, #2, #127 
+bulletEB:
+	mainFib 1, #1, #106, #2, #165 
+bulletEC:
+	mainFib 1, #1, #38, #2, #198 
+bulletED:
+	mainFib 1, #0, #223, #2, #223 
+bulletEE:
+	mainFib 1, #0, #150, #2, #241 
+bulletEF:
+	mainFib 1, #0, #75, #2, #252 
+bulletF0:
+	mainFib 2, #0, #0, #3, #0 
+bulletF1:
+	mainFib 2, #0, #75, #2, #252 
+bulletF2:
+	mainFib 2, #0, #150, #2, #241 
+bulletF3:
+	mainFib 2, #0, #223, #2, #223 
+bulletF4:
+	mainFib 2, #1, #38, #2, #198 
+bulletF5:
+	mainFib 2, #1, #106, #2, #165 
+bulletF6:
+	mainFib 2, #1, #171, #2, #127 
+bulletF7:
+	mainFib 2, #1, #231, #2, #82 
+bulletF8:
+	mainFib 2, #2, #31, #2, #31 
+bulletF9:
+	mainFib 2, #2, #82, #1, #231 
+bulletFA:
+	mainFib 2, #2, #127, #1, #171 
+bulletFB:
+	mainFib 2, #2, #165, #1, #106 
+bulletFC:
+	mainFib 2, #2, #198, #1, #38 
+bulletFD:
+	mainFib 2, #2, #223, #0, #223 
+bulletFE:
+	mainFib 2, #2, #241, #0, #150 
+bulletFF:
+	mainFib 2, #2, #252, #0, #75 

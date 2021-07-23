@@ -3,6 +3,7 @@
 .include "header.s"
 .include "ram.s"
 .include "data.s"
+.include "bullets.s"
 .segment "STARTUP"
 .include "init.s"
 .segment "CODE"
@@ -1374,8 +1375,10 @@ initializeEnemy:
 	sta enemyBehaviorL,x
 	lda romEnemyMetasprite,y
 	sta enemyMetasprite,x
-	lda romEnemyHP,y
-	sta enemyHP,x
+	lda romEnemyHPH,y
+	sta enemyHPH,x
+	lda romEnemyHPL,y
+	sta enemyHPL,x
 	lda #0
 ;clear variables
 	sta i,x
@@ -1561,9 +1564,6 @@ MAX_DOWN = 209
 
 initializePlayerBullet:
 ;arguments - none
-;constants
-PLAYER_BULLET_X_OFFSET = 4
-PLAYER_BULLET_Y_OFFSET = 8
 
 ;find empty bullet starting with slot 0
 	ldx #0
@@ -1578,13 +1578,9 @@ PLAYER_BULLET_Y_OFFSET = 8
 ;no empty bullet
 	rts
 @initializeBullet:
-	clc
 	lda playerXH
-	adc #PLAYER_BULLET_X_OFFSET
 	sta playerBulletX,x
-	sec
 	lda playerYH
-	sbc #PLAYER_BULLET_Y_OFFSET 
 	sta playerBulletY,x
 	lda #TRUE
 	sta isPlayerBulletActive,x
@@ -1859,20 +1855,13 @@ initializeEnemyBullet:
 ;a - bullet ida
 ;save bullet
 	pha
-;save y
-	tya
-	pha
-;save x
-	txa
-	pha
 	jsr getAvailableEnemyBullet
 ;returns x - offset of bullet object
 	bcc @bulletsFull
-;retrieve x
-	pla
+;store x and y
+	lda quickBulletX
 	sta enemyBulletXH,x
-;retrieve y
-	pla
+	lda quickBulletY
 	sta enemyBulletYH,x
 ;zero out low bit
 	lda #0
@@ -1913,8 +1902,6 @@ initializeEnemyBullet:
 @bulletsFull:
 ;pull x, y, id
 	pla
-	pla
-	pla
 	rts
 
 getAvailableEnemyBullet:
@@ -1940,6 +1927,40 @@ getAvailableEnemyBullet:
 	sec
 	rts
 
+aimBullet:
+;arguments:
+;x - enemy x
+;y - enemy y
+;returns:
+;a - degree from 0-256 to shoot bullet. use this degree to fetch correct bullet
+	sec
+	lda playerXH
+	sbc quickBulletX
+	bcs *+4
+	eor #$ff
+	tax
+	rol octant
+	lda playerYH
+	sec
+	sbc quickBulletY
+	bcs *+4
+	eor #$ff
+	tay
+	rol octant
+	sec
+	lda log2_tab,x
+	sbc log2_tab,y
+	bcc *+4
+	eor #$ff
+	tax
+	lda octant
+	rol
+	and #%111
+	tay
+	lda atan_tab,x
+	eor octant_adjust,y
+	rts
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;;Sprite Behaviors;;;
 ;;;;;;;;;;;;;;;;;;;;;;
@@ -1953,22 +1974,32 @@ targetBehavior:
 	pha
 	lda #128
 	sta enemyX,x
-	lda #64
+	lda #32
 	sta enemyY,x
 	lda seconds
-	and #%00000001
+	and #%00000011
 	bne @skip
 	clc
 	lda enemyY,x
 	adc #16
-	tay
+	sta quickBulletY
 	lda enemyX,x
 	adc #8
-	tax
+	sta quickBulletX
 	lda i,x
-	adc #31
+	adc #9
 	sta i,x
+	pha
+	asl
 	and #%01111111
+	jsr initializeEnemyBullet
+	pla
+	and #%00111111
+	ora #%10000000
+	pha
+	jsr initializeEnemyBullet
+	pla
+	ora #%11000000
 	jsr initializeEnemyBullet
 @skip:
 	pla
@@ -1979,331 +2010,10 @@ targetBehavior:
 	sta enemyStatus,x
 	rts
 @hitDetected:
-	dec enemyHP,x
+	dec enemyHPL,x
 	lda #TRUE
 	sta enemyStatus,x
 	rts
-
-
-
-;;;;;;;;;;;;;;;;;;
-;Bullet Behaviors;
-;;;;;;;;;;;;;;;;;;
-
-.macro mainFib quadrant, yPixelsH, yPixelsL, xPixelsH, xPixelsL
-	pla
-	tax
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))
-	sec
-	lda enemyBulletYL,x
-	sbc yPixelsL
-.elseif (.xmatch ({quadrant}, 3) .or .xmatch ({quadrant}, 4))
-	clc
-	lda enemyBulletYL,x
-	adc yPixelsL
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletYL,x
-	lda enemyBulletYH,x
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))
-	sbc yPixelsH
-	bcc @clearBullet
-.elseif (.xmatch ({quadrant}, 3) .or .xmatch ({quadrant}, 4))
-	adc yPixelsH
-	bcs @clearBullet
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletYH,x
-	lda enemyBulletXL,x
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 4))
-	adc xPixelsL
-.elseif (.xmatch ({quadrant}, 2) .or .xmatch ({quadrant}, 3))
-	sbc xPixelsL
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletXL,x
-	lda enemyBulletXH,x
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 4))
-	adc xPixelsH
-	bcs @clearBullet
-.elseif (.xmatch ({quadrant}, 2) .or .xmatch ({quadrant}, 3))
-	sbc xPixelsH
-	bcc @clearBullet
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletXH,x
-	jsr wasPlayerHit
-	bcs @hitDetected
-	rts
-@hitDetected:
-	lda #TRUE
-	sta playerStatus
-	rts
-@clearBullet:
-	lda #FALSE
-	sta isEnemyBulletActive,x
-	rts
-.endmacro
-bullet0:
-	mainFib 1, #2, #0, #0, #0
-bullet1:
-	mainFib 1, #1, #255, #0, #22
-bullet2:
-	mainFib 1, #1, #253, #0, #45
-bullet3:
-	mainFib 1, #1, #251, #0, #67
-bullet4:
-	mainFib 1, #1, #249, #0, #90
-bullet5:
-	mainFib 1, #1, #243, #0, #112
-bullet6:
-	mainFib 1, #1, #237, #0, #135
-bullet7:
-	mainFib 1, #1, #230, #0, #157
-bullet8:
-	mainFib 1, #1, #223, #0, #180
-bullet9:
-	mainFib 1, #1, #214, #0, #202
-bulletA:
-	mainFib 1, #1, #204, #0, #225
-bulletB:
-	mainFib 1, #1, #192, #0, #247
-bulletC:
-	mainFib 1, #1, #176, #1, #14
-bulletD:
-	mainFib 1, #1, #162, #1, #36
-bulletE:
-	mainFib 1, #1, #146, #1, #60
-bulletF:
-	mainFib 1, #1, #126, #1, #82
-bullet10:
-	mainFib 1, #1, #106, #1, #106
-bullet11:
-	mainFib 1, #1, #82, #1, #126
-bullet12:
-	mainFib 1, #1, #60, #1, #146
-bullet13:
-	mainFib 1, #1, #36, #1, #162
-bullet14:
-	mainFib 1, #1, #14, #1, #176
-bullet15:
-	mainFib 1, #0, #247, #1, #192
-bullet16:
-	mainFib 1, #0, #225, #1, #204
-bullet17:
-	mainFib 1, #0, #202, #1, #214
-bullet18:
-	mainFib 1, #0, #180, #1, #223
-bullet19:
-	mainFib 1, #0, #157, #1, #230
-bullet1A:
-	mainFib 1, #0, #135, #1, #237
-bullet1B:
-	mainFib 1, #0, #112, #1, #243
-bullet1C:
-	mainFib 1, #0, #90, #1, #249
-bullet1D:
-	mainFib 1, #0, #67, #1, #251
-bullet1E:
-	mainFib 1, #0, #45, #1, #253
-bullet1F:
-	mainFib 1, #0, #22, #1, #255
-bullet20:
-	mainFib 4, #0, #0, #2, #0
-bullet21:
-	mainFib 4, #0, #22, #1, #255
-bullet22:
-	mainFib 4, #0, #45, #1, #253
-bullet23:
-	mainFib 4, #0, #67, #1, #251
-bullet24:
-	mainFib 4, #0, #90, #1, #249
-bullet25:
-	mainFib 4, #0, #112, #1, #243
-bullet26:
-	mainFib 4, #0, #135, #1, #237
-bullet27:
-	mainFib 4, #0, #157, #1, #230
-bullet28:
-	mainFib 4, #0, #180, #1, #223
-bullet29:
-	mainFib 4, #0, #202, #1, #214
-bullet2A:
-	mainFib 4, #0, #225, #1, #204
-bullet2B:
-	mainFib 4, #0, #247, #1, #192
-bullet2C:
-	mainFib 4, #1, #14, #1, #176
-bullet2D:
-	mainFib 4, #1, #36, #1, #162
-bullet2E:
-	mainFib 4, #1, #60, #1, #146
-bullet2F:
-	mainFib 4, #1, #82, #1, #126
-bullet30:
-	mainFib 4, #1, #106, #1, #106
-bullet31:
-	mainFib 4, #1, #126, #1, #82
-bullet32:
-	mainFib 4, #1, #146, #1, #60
-bullet33:
-	mainFib 4, #1, #162, #1, #36
-bullet34:
-	mainFib 4, #1, #176, #1, #14
-bullet35:
-	mainFib 4, #1, #192, #0, #247
-bullet36:
-	mainFib 4, #1, #204, #0, #225
-bullet37:
-	mainFib 4, #1, #214, #0, #202
-bullet38:
-	mainFib 4, #1, #223, #0, #180
-bullet39:
-	mainFib 4, #1, #230, #0, #157
-bullet3A:
-	mainFib 4, #1, #237, #0, #135
-bullet3B:
-	mainFib 4, #1, #243, #0, #112
-bullet3C:
-	mainFib 4, #1, #249, #0, #90
-bullet3D:
-	mainFib 4, #1, #251, #0, #67
-bullet3E:
-	mainFib 4, #1, #253, #0, #45
-bullet3F:
-	mainFib 4, #1, #255, #0, #22
-bullet40:
-	mainFib 3, #2, #0, #0, #0
-bullet41:
-	mainFib 3, #1, #255, #0, #22
-bullet42:
-	mainFib 3, #1, #253, #0, #45
-bullet43:
-	mainFib 3, #1, #251, #0, #67
-bullet44:
-	mainFib 3, #1, #249, #0, #90
-bullet45:
-	mainFib 3, #1, #243, #0, #112
-bullet46:
-	mainFib 3, #1, #237, #0, #135
-bullet47:
-	mainFib 3, #1, #230, #0, #157
-bullet48:
-	mainFib 3, #1, #223, #0, #180
-bullet49:
-	mainFib 3, #1, #214, #0, #202
-bullet4A:
-	mainFib 3, #1, #204, #0, #225
-bullet4B:
-	mainFib 3, #1, #192, #0, #247
-bullet4C:
-	mainFib 3, #1, #176, #1, #14
-bullet4D:
-	mainFib 3, #1, #162, #1, #36
-bullet4E:
-	mainFib 3, #1, #146, #1, #60
-bullet4F:
-	mainFib 3, #1, #126, #1, #82
-bullet50:
-	mainFib 3, #1, #106, #1, #106
-bullet51:
-	mainFib 3, #1, #82, #1, #126
-bullet52:
-	mainFib 3, #1, #60, #1, #146
-bullet53:
-	mainFib 3, #1, #36, #1, #162
-bullet54:
-	mainFib 3, #1, #14, #1, #176
-bullet55:
-	mainFib 3, #0, #247, #1, #192
-bullet56:
-	mainFib 3, #0, #225, #1, #204
-bullet57:
-	mainFib 3, #0, #202, #1, #214
-bullet58:
-	mainFib 3, #0, #180, #1, #223
-bullet59:
-	mainFib 3, #0, #157, #1, #230
-bullet5A:
-	mainFib 3, #0, #135, #1, #237
-bullet5B:
-	mainFib 3, #0, #112, #1, #243
-bullet5C:
-	mainFib 3, #0, #90, #1, #249
-bullet5D:
-	mainFib 3, #0, #67, #1, #251
-bullet5E:
-	mainFib 3, #0, #45, #1, #253
-bullet5F:
-	mainFib 3, #0, #22, #1, #255
-bullet60:
-	mainFib 2, #0, #0, #2, #0
-bullet61:
-	mainFib 2, #0, #22, #1, #255
-bullet62:
-	mainFib 2, #0, #45, #1, #253
-bullet63:
-	mainFib 2, #0, #67, #1, #251
-bullet64:
-	mainFib 2, #0, #90, #1, #249
-bullet65:
-	mainFib 2, #0, #112, #1, #243
-bullet66:
-	mainFib 2, #0, #135, #1, #237
-bullet67:
-	mainFib 2, #0, #157, #1, #230
-bullet68:
-	mainFib 2, #0, #180, #1, #223
-bullet69:
-	mainFib 2, #0, #202, #1, #214
-bullet6A:
-	mainFib 2, #0, #225, #1, #204
-bullet6B:
-	mainFib 2, #0, #247, #1, #192
-bullet6C:
-	mainFib 2, #1, #14, #1, #176
-bullet6D:
-	mainFib 2, #1, #36, #1, #162
-bullet6E:
-	mainFib 2, #1, #60, #1, #146
-bullet6F:
-	mainFib 2, #1, #82, #1, #126
-bullet70:
-	mainFib 2, #1, #106, #1, #106
-bullet71:
-	mainFib 2, #1, #126, #1, #82
-bullet72:
-	mainFib 2, #1, #146, #1, #60
-bullet73:
-	mainFib 2, #1, #162, #1, #36
-bullet74:
-	mainFib 2, #1, #176, #1, #14
-bullet75:
-	mainFib 2, #1, #192, #0, #247
-bullet76:
-	mainFib 2, #1, #204, #0, #225
-bullet77:
-	mainFib 2, #1, #214, #0, #202
-bullet78:
-	mainFib 2, #1, #223, #0, #180
-bullet79:
-	mainFib 2, #1, #230, #0, #157
-bullet7A:
-	mainFib 2, #1, #237, #0, #135
-bullet7B:
-	mainFib 2, #1, #243, #0, #112
-bullet7C:
-	mainFib 2, #1, #249, #0, #90
-bullet7D:
-	mainFib 2, #1, #251, #0, #67
-bullet7E:
-	mainFib 2, #1, #253, #0, #45
-bullet7F:
-	mainFib 2, #1, #255, #0, #22
 
 .segment "VECTORS"
 .word nmi

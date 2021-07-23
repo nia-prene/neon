@@ -128,7 +128,7 @@ BULLET_SPRITE_0=3
 spriteTile0:
 	.byte $00, $60, $20, $24
 spriteAttribute0:
-	.byte %00000000, %00000010, %00000000, %00000000
+	.byte %00000000, %00000010, %00000000, %00000011
 spriteTile1:
 	.byte $02, $60
 spriteAttribute1:
@@ -153,7 +153,9 @@ romEnemyBehaviorL:
 	.byte NULL, <targetBehavior-1
 romEnemyMetasprite:
 	.byte NULL, TARGET_SPRITE, TARGET_SPRITE
-romEnemyHP:
+romEnemyHPH:
+	.byte NULL, 10, 10
+romEnemyHPL:
 	.byte NULL, 10, 10
 ;the type determines the width, height, and how it is built in oam
 romEnemyType: 
@@ -210,50 +212,7 @@ waveY:
 	.byte $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 	.byte $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 
-;;;;;;;;;;;;;
-;;;Bullets;;;
-;;;;;;;;;;;;;
-romEnemyBulletBehaviorH:
-	.byte >bullet0, >bullet1, >bullet2, >bullet3, >bullet4, >bullet5, >bullet6, >bullet7, >bullet8, >bullet9, >bulletA, >bulletB, >bulletC, >bulletD, >bulletE, >bulletF
-	.byte >bullet10, >bullet11, >bullet12, >bullet13, >bullet14, >bullet15, >bullet16, >bullet17, >bullet18, >bullet19, >bullet1A, >bullet1B, >bullet1C, >bullet1D, >bullet1E, >bullet1F
-	.byte >bullet20, >bullet21, >bullet22, >bullet23, >bullet24, >bullet25, >bullet26, >bullet27, >bullet28, >bullet29, >bullet2A, >bullet2B, >bullet2C, >bullet2D, >bullet2E, >bullet2F
-	.byte >bullet30, >bullet31, >bullet32, >bullet33, >bullet34, >bullet35, >bullet36, >bullet37, >bullet38, >bullet39, >bullet3A, >bullet3B, >bullet3C, >bullet3D, >bullet3E, >bullet3F
-	.byte >bullet40, >bullet41, >bullet42, >bullet43, >bullet44, >bullet45, >bullet46, >bullet47, >bullet48, >bullet49, >bullet4A, >bullet4B, >bullet4C, >bullet4D, >bullet4E, >bullet4F
-	.byte >bullet50, >bullet51, >bullet52, >bullet53, >bullet54, >bullet55, >bullet56, >bullet57, >bullet58, >bullet59, >bullet5A, >bullet5B, >bullet5C, >bullet5D, >bullet5E, >bullet5F
-	.byte >bullet60, >bullet61, >bullet62, >bullet63, >bullet64, >bullet65, >bullet66, >bullet67, >bullet68, >bullet69, >bullet6A, >bullet6B, >bullet6C, >bullet6D, >bullet6E, >bullet6F
-	.byte >bullet70, >bullet71, >bullet72, >bullet73, >bullet74, >bullet75, >bullet76, >bullet77, >bullet78, >bullet79, >bullet7A, >bullet7B, >bullet7C, >bullet7D, >bullet7E, >bullet7F
-romEnemyBulletBehaviorL:
-	.byte <bullet0-1, <bullet1-1, <bullet2-1, <bullet3-1, <bullet4-1, <bullet5-1, <bullet6-1, <bullet7-1, <bullet8-1, <bullet9-1, <bulletA-1, <bulletB-1, <bulletC-1, <bulletD-1, <bulletE-1, <bulletF-1
-	.byte <bullet10-1, <bullet11-1, <bullet12-1, <bullet13-1, <bullet14-1, <bullet15-1, <bullet16-1, <bullet17-1, <bullet18-1, <bullet19-1, <bullet1A-1, <bullet1B-1, <bullet1C-1, <bullet1D-1, <bullet1E-1, <bullet1F-1
-	.byte <bullet20-1, <bullet21-1, <bullet22-1, <bullet23-1, <bullet24-1, <bullet25-1, <bullet26-1, <bullet27-1, <bullet28-1, <bullet29-1, <bullet2A-1, <bullet2B-1, <bullet2C-1, <bullet2D-1, <bullet2E-1, <bullet2F-1
-	.byte <bullet30-1, <bullet31-1, <bullet32-1, <bullet33-1, <bullet34-1, <bullet35-1, <bullet36-1, <bullet37-1, <bullet38-1, <bullet39-1, <bullet3A-1, <bullet3B-1, <bullet3C-1, <bullet3D-1, <bullet3E-1, <bullet3F-1
-	.byte <bullet40-1, <bullet41-1, <bullet42-1, <bullet43-1, <bullet44-1, <bullet45-1, <bullet46-1, <bullet47-1, <bullet48-1, <bullet49-1, <bullet4A-1, <bullet4B-1, <bullet4C-1, <bullet4D-1, <bullet4E-1, <bullet4F-1
-	.byte <bullet50-1, <bullet51-1, <bullet52-1, <bullet53-1, <bullet54-1, <bullet55-1, <bullet56-1, <bullet57-1, <bullet58-1, <bullet59-1, <bullet5A-1, <bullet5B-1, <bullet5C-1, <bullet5D-1, <bullet5E-1, <bullet5F-1
-	.byte <bullet60-1, <bullet61-1, <bullet62-1, <bullet63-1, <bullet64-1, <bullet65-1, <bullet66-1, <bullet67-1, <bullet68-1, <bullet69-1, <bullet6A-1, <bullet6B-1, <bullet6C-1, <bullet6D-1, <bullet6E-1, <bullet6F-1
-	.byte <bullet70-1, <bullet71-1, <bullet72-1, <bullet73-1, <bullet74-1, <bullet75-1, <bullet76-1, <bullet77-1, <bullet78-1, <bullet79-1, <bullet7A-1, <bullet7B-1, <bullet7C-1, <bullet7D-1, <bullet7E-1, <bullet7F-1
-	
-romEnemyBulletType:
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-;type determines all future attributes, so sprites and hitboxes can be reused
-romEnemyBulletWidth:
-	.byte 8
-romEnemyBulletHitboxY1:
-	.byte 6
-romEnemyBulletHitboxY2:
-	.byte 5
-romEnemyBulletHitboxX1:
-	.byte 2
-romEnemyBulletHitboxX2:
-	.byte 04
-romEnemyBulletMetasprite:
-	.byte BULLET_SPRITE_0
+
 ;;;;;;;;;;;;;;;;
 ;;;animations;;;
 ;;;;;;;;;;;;;;;;
@@ -263,6 +222,87 @@ romEnemyBulletMetasprite:
 ;;;;;;;;;;;;;;;;;;;
 ;;;lookup tables;;;
 ;;;;;;;;;;;;;;;;;;;
+
+
+octant_adjust:
+	.byte %11000000		;; x+,y-,|x|>|y|
+	.byte %11111111		;; x+,y-,|x|<|y|
+	.byte %00111111		;; x+,y+,|x|>|y|
+	.byte %00000000		;; x+,y+,|x|<|y|
+	.byte %10111111		;; x-,y-,|x|>|y|
+	.byte %10000000		;; x-,y-,|x|<|y|
+	.byte %01000000		;; x-,y+,|x|>|y|
+	.byte %01111111		;; x-,y+,|x|<|y|
+
+;;;;;;;; atan(2^(x/32))*128/pi ;;;;;;;;
+atan_tab:
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$00,$00,$00
+	.byte $00,$00,$00,$00,$00,$01,$01,$01
+	.byte $01,$01,$01,$01,$01,$01,$01,$01
+	.byte $01,$01,$01,$01,$01,$01,$01,$01
+	.byte $01,$01,$01,$01,$01,$01,$01,$01
+	.byte $01,$01,$01,$01,$01,$02,$02,$02
+	.byte $02,$02,$02,$02,$02,$02,$02,$02
+	.byte $02,$02,$02,$02,$02,$02,$02,$02
+	.byte $03,$03,$03,$03,$03,$03,$03,$03
+	.byte $03,$03,$03,$03,$03,$04,$04,$04
+	.byte $04,$04,$04,$04,$04,$04,$04,$04
+	.byte $05,$05,$05,$05,$05,$05,$05,$05
+	.byte $06,$06,$06,$06,$06,$06,$06,$06
+	.byte $07,$07,$07,$07,$07,$07,$08,$08
+	.byte $08,$08,$08,$08,$09,$09,$09,$09
+	.byte $09,$0a,$0a,$0a,$0a,$0b,$0b,$0b
+	.byte $0b,$0c,$0c,$0c,$0c,$0d,$0d,$0d
+	.byte $0d,$0e,$0e,$0e,$0e,$0f,$0f,$0f
+	.byte $10,$10,$10,$11,$11,$11,$12,$12
+	.byte $12,$13,$13,$13,$14,$14,$15,$15
+	.byte $15,$16,$16,$17,$17,$17,$18,$18
+	.byte $19,$19,$19,$1a,$1a,$1b,$1b,$1c
+	.byte $1c,$1c,$1d,$1d,$1e,$1e,$1f,$1f
+
+;;;;;;;; log2(x)*32 ;;;;;;;;
+log2_tab:	
+	.byte $00,$00,$20,$32,$40,$4a,$52,$59
+	.byte $60,$65,$6a,$6e,$72,$76,$79,$7d
+	.byte $80,$82,$85,$87,$8a,$8c,$8e,$90
+	.byte $92,$94,$96,$98,$99,$9b,$9d,$9e
+	.byte $a0,$a1,$a2,$a4,$a5,$a6,$a7,$a9
+	.byte $aa,$ab,$ac,$ad,$ae,$af,$b0,$b1
+	.byte $b2,$b3,$b4,$b5,$b6,$b7,$b8,$b9
+	.byte $b9,$ba,$bb,$bc,$bd,$bd,$be,$bf
+	.byte $c0,$c0,$c1,$c2,$c2,$c3,$c4,$c4
+	.byte $c5,$c6,$c6,$c7,$c7,$c8,$c9,$c9
+	.byte $ca,$ca,$cb,$cc,$cc,$cd,$cd,$ce
+	.byte $ce,$cf,$cf,$d0,$d0,$d1,$d1,$d2
+	.byte $d2,$d3,$d3,$d4,$d4,$d5,$d5,$d5
+	.byte $d6,$d6,$d7,$d7,$d8,$d8,$d9,$d9
+	.byte $d9,$da,$da,$db,$db,$db,$dc,$dc
+	.byte $dd,$dd,$dd,$de,$de,$de,$df,$df
+	.byte $df,$e0,$e0,$e1,$e1,$e1,$e2,$e2
+	.byte $e2,$e3,$e3,$e3,$e4,$e4,$e4,$e5
+	.byte $e5,$e5,$e6,$e6,$e6,$e7,$e7,$e7
+	.byte $e7,$e8,$e8,$e8,$e9,$e9,$e9,$ea
+	.byte $ea,$ea,$ea,$eb,$eb,$eb,$ec,$ec
+	.byte $ec,$ec,$ed,$ed,$ed,$ed,$ee,$ee
+	.byte $ee,$ee,$ef,$ef,$ef,$ef,$f0,$f0
+	.byte $f0,$f1,$f1,$f1,$f1,$f1,$f2,$f2
+	.byte $f2,$f2,$f3,$f3,$f3,$f3,$f4,$f4
+	.byte $f4,$f4,$f5,$f5,$f5,$f5,$f5,$f6
+	.byte $f6,$f6,$f6,$f7,$f7,$f7,$f7,$f7
+	.byte $f8,$f8,$f8,$f8,$f9,$f9,$f9,$f9
+	.byte $f9,$fa,$fa,$fa,$fa,$fa,$fb,$fb
+	.byte $fb,$fb,$fb,$fc,$fc,$fc,$fc,$fc
+	.byte $fd,$fd,$fd,$fd,$fd,$fd,$fe,$fe
+	.byte $fe,$fe,$fe,$ff,$ff,$ff,$ff,$ff
 
 nameTableConversionH:
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23

@@ -1,4 +1,9 @@
 .segment "ZEROPAGE"
+x1:.res 1
+x2:.res 1
+y1:.res 1
+y2:.res 1
+
 test: .res 1
 playerStatus: .res 1
 iFrames: .res 1
@@ -28,6 +33,9 @@ waveRate: .res 1
 ;highest level flags
 hasFrameBeenRendered: .res 1
 ;local variables
+quickBulletX: .res 1
+quickBulletY: .res 1
+octant: .res 1
 enemyIndex: .res 1
 waveIndex: .res 1
 sprite1LeftOrTop: .res 1
@@ -92,7 +100,8 @@ MAX_ENEMIES = 8
 enemyClock: .res MAX_ENEMIES
 enemyX: .res MAX_ENEMIES
 enemyY: .res MAX_ENEMIES
-enemyHP: .res MAX_ENEMIES
+enemyHPH: .res MAX_ENEMIES
+enemyHPL: .res MAX_ENEMIES
 i: .res MAX_ENEMIES
 j: .res MAX_ENEMIES
 enemyType: .res MAX_ENEMIES
