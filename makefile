@@ -1,10 +1,10 @@
 TARGET = neon.nes
 OBJECTS = neon.o
-SOURCE = main.s
-DEBUGDIR = ~/nes/neon/dbg/
-INCLUDE = etc
+SOURCE = src/main.s
+BUILDDIR = build/
+INCLUDE = src
 OUTPUT = neon.nes
-CONFIGFILE = ${INCLUDE}/neon.cfg
+CONFIGFILE = neon.cfg
 DEBUGFILE = neon.dbg
 EMULATOR = ~/programs/fceux/fceux.exe
 CLEANFILES = *.o *.dbg *.nes
@@ -13,21 +13,21 @@ LD = ld65
 AS = ca65
 WINE = wine
 
-ASFLAGS = -o ${DEBUGDIR}${OBJECTS} -I ${INCLUDE} --debug-info
+ASFLAGS = -o ${BUILDDIR}${OBJECTS} -I ${INCLUDE} --debug-info
 
-LDFLAGS = -o ${DEBUGDIR}${OUTPUT} -C ${CONFIGFILE} --dbgfile ${DEBUGDIR}${DEBUGFILE}
+LDFLAGS = -o ${BUILDDIR}${OUTPUT} -C ${CONFIGFILE} --dbgfile ${BUILDDIR}${DEBUGFILE}
 
 all: assemble link test
 
 assemble: ${SOURCE}
 	${AS} ${SOURCE} ${ASFLAGS}
 
-link: ${DEBUGDIR}${OBJECTS}
-	${LD} ${DEBUGDIR}${OBJECTS} ${LDFLAGS}
+link: ${BUILDDIR}${OBJECTS}
+	${LD} ${BUILDDIR}${OBJECTS} ${LDFLAGS}
 
-test: ${DEBUGDIR}${TARGET}
-	${WINE} ${EMULATOR} ${DEBUGDIR}${TARGET}
+test: ${BUILDDIR}${TARGET}
+	${WINE} ${EMULATOR} ${BUILDDIR}${TARGET}
 
 clean:
-	rm -r ${DEBUGDIR}
-	mkdir ${DEBUGDIR}
+	rm -r ${BUILDDIR}
+	mkdir ${BUILDDIR}
