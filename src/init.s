@@ -1,3 +1,4 @@
+.segment "STARTUP"
 reset:
     sei        ; ignore IRQs
     cld        ; disable decimal mode
@@ -49,9 +50,10 @@ reset:
     bpl @vblankwait2
 	;enable vertical blanking irq
 	lda #PPU_SETTINGS
-	sta PPUCTRL
 	;save ppu settings
+	sta PPUCTRL
 	sta currentPPUSettings
+	;initialize mask settings
 	lda #MASK_SETTINGS
 	sta currentMaskSettings
 

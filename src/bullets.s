@@ -1,40 +1,20 @@
 .segment "BULLETS"
 ;;;;;;;;;;;;;
 ;;;Bullets;;;
-;;;;;;;;;;;;;	
-romEnemyBulletType:
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-;type determines all future attributes, so sprites and hitboxes can be reused
+;;;;;;;;;;;;;
+;the following attributes are the bullets type. The bullet type is stored with the enemy wave, so that each bullet can change sprite, width, etc throughout gameplay at the beginning of each enemy wave, where it will remain constant until the next enemy wave is loaded.
 romEnemyBulletWidth:
-	.byte 8
+	.byte 8, 16
 romEnemyBulletHitboxY1:
-	.byte 7
+	.byte 7, 6
 romEnemyBulletHitboxY2:
-	.byte 2
+	.byte 2, 4
 romEnemyBulletHitboxX1:
-	.byte 3
+	.byte 3, 6
 romEnemyBulletHitboxX2:
-	.byte 02
+	.byte 02, 4
 romEnemyBulletMetasprite:
-	.byte BULLET_SPRITE_0
-;;;;;;;;;;;;;;;;;;
-;Bullet Behaviors;
-;;;;;;;;;;;;;;;;;;
+	.byte BULLET_SPRITE_0, BULLET_SPRITE_1
 
 .macro mainFib quadrant, xPixelsH, xPixelsL, yPixelsH, yPixelsL
 	pla
@@ -86,14 +66,14 @@ romEnemyBulletMetasprite:
 	bcs @hitDetected
 	rts
 @hitDetected:
-	lda #TRUE
-	sta playerStatus
+	rol playerStatus
 	rts
 @clearBullet:
 	lda #FALSE
 	sta isEnemyBulletActive,x
 	rts
 .endmacro
+.byte 0
 bullet00:
 	mainFib 3, #2, #0, #0, #0 
 bullet01:
@@ -351,261 +331,261 @@ bullet7E:
 bullet7F:
 	mainFib 2, #1, #255, #0, #25 
 bullet80:
-	mainFib 3, #2, #128, #0, #0 
-bullet81:
-	mainFib 3, #2, #125, #0, #63 
-bullet82:
-	mainFib 3, #2, #116, #0, #125 
-bullet83:
-	mainFib 3, #2, #100, #0, #186 
-bullet84:
-	mainFib 3, #2, #79, #0, #245 
-bullet85:
-	mainFib 3, #2, #52, #1, #46 
-bullet86:
-	mainFib 3, #2, #20, #1, #100 
-bullet87:
-	mainFib 3, #1, #239, #1, #150 
-bullet88:
-	mainFib 3, #1, #197, #1, #197 
-bullet89:
-	mainFib 3, #1, #150, #1, #239 
-bullet8A:
-	mainFib 3, #1, #100, #2, #20 
-bullet8B:
-	mainFib 3, #1, #46, #2, #52 
-bullet8C:
-	mainFib 3, #0, #245, #2, #79 
-bullet8D:
-	mainFib 3, #0, #186, #2, #100 
-bullet8E:
-	mainFib 3, #0, #125, #2, #116 
-bullet8F:
-	mainFib 3, #0, #63, #2, #125 
-bullet90:
-	mainFib 4, #0, #0, #2, #128 
-bullet91:
-	mainFib 4, #0, #63, #2, #125 
-bullet92:
-	mainFib 4, #0, #125, #2, #116 
-bullet93:
-	mainFib 4, #0, #186, #2, #100 
-bullet94:
-	mainFib 4, #0, #245, #2, #79 
-bullet95:
-	mainFib 4, #1, #46, #2, #52 
-bullet96:
-	mainFib 4, #1, #100, #2, #20 
-bullet97:
-	mainFib 4, #1, #150, #1, #239 
-bullet98:
-	mainFib 4, #1, #197, #1, #197 
-bullet99:
-	mainFib 4, #1, #239, #1, #150 
-bullet9A:
-	mainFib 4, #2, #20, #1, #100 
-bullet9B:
-	mainFib 4, #2, #52, #1, #46 
-bullet9C:
-	mainFib 4, #2, #79, #0, #245 
-bullet9D:
-	mainFib 4, #2, #100, #0, #186 
-bullet9E:
-	mainFib 4, #2, #116, #0, #125 
-bullet9F:
-	mainFib 4, #2, #125, #0, #63 
-bulletA0:
-	mainFib 1, #2, #128, #0, #0 
-bulletA1:
-	mainFib 1, #2, #125, #0, #63 
-bulletA2:
-	mainFib 1, #2, #116, #0, #125 
-bulletA3:
-	mainFib 1, #2, #100, #0, #186 
-bulletA4:
-	mainFib 1, #2, #79, #0, #245 
-bulletA5:
-	mainFib 1, #2, #52, #1, #46 
-bulletA6:
-	mainFib 1, #2, #20, #1, #100 
-bulletA7:
-	mainFib 1, #1, #239, #1, #150 
-bulletA8:
-	mainFib 1, #1, #197, #1, #197 
-bulletA9:
-	mainFib 1, #1, #150, #1, #239 
-bulletAA:
-	mainFib 1, #1, #100, #2, #20 
-bulletAB:
-	mainFib 1, #1, #46, #2, #52 
-bulletAC:
-	mainFib 1, #0, #245, #2, #79 
-bulletAD:
-	mainFib 1, #0, #186, #2, #100 
-bulletAE:
-	mainFib 1, #0, #125, #2, #116 
-bulletAF:
-	mainFib 1, #0, #63, #2, #125 
-bulletB0:
-	mainFib 2, #0, #0, #2, #128 
-bulletB1:
-	mainFib 2, #0, #63, #2, #125 
-bulletB2:
-	mainFib 2, #0, #125, #2, #116 
-bulletB3:
-	mainFib 2, #0, #186, #2, #100 
-bulletB4:
-	mainFib 2, #0, #245, #2, #79 
-bulletB5:
-	mainFib 2, #1, #46, #2, #52 
-bulletB6:
-	mainFib 2, #1, #100, #2, #20 
-bulletB7:
-	mainFib 2, #1, #150, #1, #239 
-bulletB8:
-	mainFib 2, #1, #197, #1, #197 
-bulletB9:
-	mainFib 2, #1, #239, #1, #150 
-bulletBA:
-	mainFib 2, #2, #20, #1, #100 
-bulletBB:
-	mainFib 2, #2, #52, #1, #46 
-bulletBC:
-	mainFib 2, #2, #79, #0, #245 
-bulletBD:
-	mainFib 2, #2, #100, #0, #186 
-bulletBE:
-	mainFib 2, #2, #116, #0, #125 
-bulletBF:
-	mainFib 2, #2, #125, #0, #63 
-bulletC0:
 	mainFib 3, #3, #0, #0, #0 
-bulletC1:
+bullet81:
 	mainFib 3, #2, #252, #0, #75 
-bulletC2:
+bullet82:
 	mainFib 3, #2, #241, #0, #150 
-bulletC3:
+bullet83:
 	mainFib 3, #2, #223, #0, #223 
-bulletC4:
+bullet84:
 	mainFib 3, #2, #198, #1, #38 
-bulletC5:
+bullet85:
 	mainFib 3, #2, #165, #1, #106 
-bulletC6:
+bullet86:
 	mainFib 3, #2, #127, #1, #171 
-bulletC7:
+bullet87:
 	mainFib 3, #2, #82, #1, #231 
-bulletC8:
+bullet88:
 	mainFib 3, #2, #31, #2, #31 
-bulletC9:
+bullet89:
 	mainFib 3, #1, #231, #2, #82 
-bulletCA:
+bullet8A:
 	mainFib 3, #1, #171, #2, #127 
-bulletCB:
+bullet8B:
 	mainFib 3, #1, #106, #2, #165 
-bulletCC:
+bullet8C:
 	mainFib 3, #1, #38, #2, #198 
-bulletCD:
+bullet8D:
 	mainFib 3, #0, #223, #2, #223 
-bulletCE:
+bullet8E:
 	mainFib 3, #0, #150, #2, #241 
-bulletCF:
+bullet8F:
 	mainFib 3, #0, #75, #2, #252 
-bulletD0:
+bullet90:
 	mainFib 4, #0, #0, #3, #0 
-bulletD1:
+bullet91:
 	mainFib 4, #0, #75, #2, #252 
-bulletD2:
+bullet92:
 	mainFib 4, #0, #150, #2, #241 
-bulletD3:
+bullet93:
 	mainFib 4, #0, #223, #2, #223 
-bulletD4:
+bullet94:
 	mainFib 4, #1, #38, #2, #198 
-bulletD5:
+bullet95:
 	mainFib 4, #1, #106, #2, #165 
-bulletD6:
+bullet96:
 	mainFib 4, #1, #171, #2, #127 
-bulletD7:
+bullet97:
 	mainFib 4, #1, #231, #2, #82 
-bulletD8:
+bullet98:
 	mainFib 4, #2, #31, #2, #31 
-bulletD9:
+bullet99:
 	mainFib 4, #2, #82, #1, #231 
-bulletDA:
+bullet9A:
 	mainFib 4, #2, #127, #1, #171 
-bulletDB:
+bullet9B:
 	mainFib 4, #2, #165, #1, #106 
-bulletDC:
+bullet9C:
 	mainFib 4, #2, #198, #1, #38 
-bulletDD:
+bullet9D:
 	mainFib 4, #2, #223, #0, #223 
-bulletDE:
+bullet9E:
 	mainFib 4, #2, #241, #0, #150 
-bulletDF:
+bullet9F:
 	mainFib 4, #2, #252, #0, #75 
-bulletE0:
+bulletA0:
 	mainFib 1, #3, #0, #0, #0 
-bulletE1:
+bulletA1:
 	mainFib 1, #2, #252, #0, #75 
-bulletE2:
+bulletA2:
 	mainFib 1, #2, #241, #0, #150 
-bulletE3:
+bulletA3:
 	mainFib 1, #2, #223, #0, #223 
-bulletE4:
+bulletA4:
 	mainFib 1, #2, #198, #1, #38 
-bulletE5:
+bulletA5:
 	mainFib 1, #2, #165, #1, #106 
-bulletE6:
+bulletA6:
 	mainFib 1, #2, #127, #1, #171 
-bulletE7:
+bulletA7:
 	mainFib 1, #2, #82, #1, #231 
-bulletE8:
+bulletA8:
 	mainFib 1, #2, #31, #2, #31 
-bulletE9:
+bulletA9:
 	mainFib 1, #1, #231, #2, #82 
-bulletEA:
+bulletAA:
 	mainFib 1, #1, #171, #2, #127 
-bulletEB:
+bulletAB:
 	mainFib 1, #1, #106, #2, #165 
-bulletEC:
+bulletAC:
 	mainFib 1, #1, #38, #2, #198 
-bulletED:
+bulletAD:
 	mainFib 1, #0, #223, #2, #223 
-bulletEE:
+bulletAE:
 	mainFib 1, #0, #150, #2, #241 
-bulletEF:
+bulletAF:
 	mainFib 1, #0, #75, #2, #252 
-bulletF0:
+bulletB0:
 	mainFib 2, #0, #0, #3, #0 
-bulletF1:
+bulletB1:
 	mainFib 2, #0, #75, #2, #252 
-bulletF2:
+bulletB2:
 	mainFib 2, #0, #150, #2, #241 
-bulletF3:
+bulletB3:
 	mainFib 2, #0, #223, #2, #223 
-bulletF4:
+bulletB4:
 	mainFib 2, #1, #38, #2, #198 
-bulletF5:
+bulletB5:
 	mainFib 2, #1, #106, #2, #165 
-bulletF6:
+bulletB6:
 	mainFib 2, #1, #171, #2, #127 
-bulletF7:
+bulletB7:
 	mainFib 2, #1, #231, #2, #82 
-bulletF8:
+bulletB8:
 	mainFib 2, #2, #31, #2, #31 
-bulletF9:
+bulletB9:
 	mainFib 2, #2, #82, #1, #231 
-bulletFA:
+bulletBA:
 	mainFib 2, #2, #127, #1, #171 
-bulletFB:
+bulletBB:
 	mainFib 2, #2, #165, #1, #106 
-bulletFC:
+bulletBC:
 	mainFib 2, #2, #198, #1, #38 
-bulletFD:
+bulletBD:
 	mainFib 2, #2, #223, #0, #223 
-bulletFE:
+bulletBE:
 	mainFib 2, #2, #241, #0, #150 
-bulletFF:
+bulletBF:
 	mainFib 2, #2, #252, #0, #75 
+bulletC0:
+	mainFib 3, #4, #0, #0, #0 
+bulletC1:
+	mainFib 3, #3, #251, #0, #100 
+bulletC2:
+	mainFib 3, #3, #236, #0, #200 
+bulletC3:
+	mainFib 3, #3, #212, #1, #41 
+bulletC4:
+	mainFib 3, #3, #178, #1, #136 
+bulletC5:
+	mainFib 3, #3, #135, #1, #227 
+bulletC6:
+	mainFib 3, #3, #83, #2, #57 
+bulletC7:
+	mainFib 3, #3, #24, #2, #138 
+bulletC8:
+	mainFib 3, #2, #212, #2, #212 
+bulletC9:
+	mainFib 3, #2, #138, #3, #24 
+bulletCA:
+	mainFib 3, #2, #57, #3, #83 
+bulletCB:
+	mainFib 3, #1, #227, #3, #135 
+bulletCC:
+	mainFib 3, #1, #136, #3, #178 
+bulletCD:
+	mainFib 3, #1, #41, #3, #212 
+bulletCE:
+	mainFib 3, #0, #200, #3, #236 
+bulletCF:
+	mainFib 3, #0, #100, #3, #251 
+bulletD0:
+	mainFib 4, #0, #0, #4, #0 
+bulletD1:
+	mainFib 4, #0, #100, #3, #251 
+bulletD2:
+	mainFib 4, #0, #200, #3, #236 
+bulletD3:
+	mainFib 4, #1, #41, #3, #212 
+bulletD4:
+	mainFib 4, #1, #136, #3, #178 
+bulletD5:
+	mainFib 4, #1, #227, #3, #135 
+bulletD6:
+	mainFib 4, #2, #57, #3, #83 
+bulletD7:
+	mainFib 4, #2, #138, #3, #24 
+bulletD8:
+	mainFib 4, #2, #212, #2, #212 
+bulletD9:
+	mainFib 4, #3, #24, #2, #138 
+bulletDA:
+	mainFib 4, #3, #83, #2, #57 
+bulletDB:
+	mainFib 4, #3, #135, #1, #227 
+bulletDC:
+	mainFib 4, #3, #178, #1, #136 
+bulletDD:
+	mainFib 4, #3, #212, #1, #41 
+bulletDE:
+	mainFib 4, #3, #236, #0, #200 
+bulletDF:
+	mainFib 4, #3, #251, #0, #100 
+bulletE0:
+	mainFib 1, #4, #0, #0, #0 
+bulletE1:
+	mainFib 1, #3, #251, #0, #100 
+bulletE2:
+	mainFib 1, #3, #236, #0, #200 
+bulletE3:
+	mainFib 1, #3, #212, #1, #41 
+bulletE4:
+	mainFib 1, #3, #178, #1, #136 
+bulletE5:
+	mainFib 1, #3, #135, #1, #227 
+bulletE6:
+	mainFib 1, #3, #83, #2, #57 
+bulletE7:
+	mainFib 1, #3, #24, #2, #138 
+bulletE8:
+	mainFib 1, #2, #212, #2, #212 
+bulletE9:
+	mainFib 1, #2, #138, #3, #24 
+bulletEA:
+	mainFib 1, #2, #57, #3, #83 
+bulletEB:
+	mainFib 1, #1, #227, #3, #135 
+bulletEC:
+	mainFib 1, #1, #136, #3, #178 
+bulletED:
+	mainFib 1, #1, #41, #3, #212 
+bulletEE:
+	mainFib 1, #0, #200, #3, #236 
+bulletEF:
+	mainFib 1, #0, #100, #3, #251 
+bulletF0:
+	mainFib 2, #0, #0, #4, #0 
+bulletF1:
+	mainFib 2, #0, #100, #3, #251 
+bulletF2:
+	mainFib 2, #0, #200, #3, #236 
+bulletF3:
+	mainFib 2, #1, #41, #3, #212 
+bulletF4:
+	mainFib 2, #1, #136, #3, #178 
+bulletF5:
+	mainFib 2, #1, #227, #3, #135 
+bulletF6:
+	mainFib 2, #2, #57, #3, #83 
+bulletF7:
+	mainFib 2, #2, #138, #3, #24 
+bulletF8:
+	mainFib 2, #2, #212, #2, #212 
+bulletF9:
+	mainFib 2, #3, #24, #2, #138 
+bulletFA:
+	mainFib 2, #3, #83, #2, #57 
+bulletFB:
+	mainFib 2, #3, #135, #1, #227 
+bulletFC:
+	mainFib 2, #3, #178, #1, #136 
+bulletFD:
+	mainFib 2, #3, #212, #1, #41 
+bulletFE:
+	mainFib 2, #3, #236, #0, #200 
+bulletFF:
+	mainFib 2, #3, #251, #0, #100 
 
 romEnemyBulletBehaviorH:
 	.byte >bullet00

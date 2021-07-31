@@ -1,10 +1,13 @@
 .include "constants.s"
-.segment "HEADER"
 .include "header.s"
 .include "ram.s"
-.include "data.s"
+.include "tables.s"
+.include "scenes.s"
+.include "tiles.s"
+.include "palettes.s"
+.include "sprites.s"
 .include "bullets.s"
-.segment "STARTUP"
+.include "enemies.s"
 .include "init.s"
 .segment "CODE"
 ;after the init code, we jump here
@@ -19,19 +22,18 @@ main:
 	lda #NULL
 ;currently no scene is loaded
 	sta currentScene
-;there is no frame that needs renderas we haven't begun gameloop
-	lda #TRUE
-	sta hasFrameBeenRendered
-;initialize player	
-;reset the clock to 0
-	jsr resetClock;()
-;load in target and palette
+;there is no frame that needs renderso set to TRUE
+	sec
+	rol hasFrameBeenRendered
+;load in test palettes
 	ldx #TARGET_PALETTE
 	ldy #6
-	jsr setPalette
+	jsr setPalette;(x,y)
 	ldx #PURPLE_BULLET
 	ldy #7
-	jsr setPalette
+	jsr setPalette;(x,y)
+;reset the clock to 0
+	jsr resetClock;()
 
 gameLoop:
 ;while(!hasFrameBeenRendered)
@@ -48,25 +50,16 @@ gameLoop:
 		jsr disableRendering;(a, x)
 	;returns new mask settings
 		sta currentMaskSettings
-		jsr initializePlayer
+		jsr initializePlayer;()
 		lda nextScene
 		jsr unzipAllTiles;(a)
 		ldx nextScene
 		jsr setPaletteCollection;(x)
 	;we are in forced blank so we can call these two rendering routines
-		jsr renderAllTiles
-		jsr renderAllPalettes
-	;start on 0th wave, 0th enemy
+		jsr renderAllTiles;()
+		jsr renderAllPalettes;()
 		ldx nextScene
-		lda levelWavesL,x
-		sta levelWavePointer
-		lda levelWavesH,x
-		sta levelWavePointer+1
-		lda #0
-		sta enemyIndex
-		sta waveIndex
-		lda #NULL
-		sta waveRate
+		jsr setupEnemies;(x)
 	;set current to next
 		lda seconds
 		ldx currentMaskSettings
@@ -78,6 +71,7 @@ gameLoop:
 		jsr resetClock;()
 ;update the scroll
 @updateScroll:
+;todo legitimate scroll routine
 	ldx yScroll
 	dex
 	cpx #$ff 
@@ -88,9 +82,9 @@ gameLoop:
 	jsr updatePlayer
 ;move player bullets
 	jsr updatePlayerBullets
-;isolate bit 3 of clock
+;isolate bit 4 of clock
 	lda seconds
-	and #%0001000
+	and #%00010000
 ;if bit 3 of clock has changed
 	cmp waveRate
 	beq @skipWave
@@ -712,6 +706,26 @@ renderAllTiles:
 	bcc	@renderScreenLoop
 	rts
 
+setupEnemies:
+;sets up the level's enemy wave system
+;arguments
+;x - current scene
+;returns void
+
+;get the address of the collection of enemy waves from the scene object and copy it in ram 
+	lda levelWavesL,x
+	sta levelWavePointer
+	lda levelWavesH,x
+	sta levelWavePointer+1
+;start on 0th wave, 0th enemy
+	lda #0
+	sta enemyIndex
+	sta waveIndex
+;set this rate to known $ff value so it executes on first frame
+	lda #NULL
+	sta waveRate
+	rts
+
 buildPlayerHitboxOam:
 ;renders glowing hitbox above everything else, so that player can be beneath bullets but hitbox wont flicker
 ;arguments
@@ -1014,10 +1028,10 @@ buildType0:
 ;save x
 	txa
 	pha
-	lda enemyY,x
+	lda enemyYH,x
 	sta oam,y
 	iny
-	lda enemyX,x
+	lda enemyXH,x
 	sta buildX1
 	lda enemyMetasprite,x
 	tax
@@ -1039,9 +1053,9 @@ buildType1:
 ;save x
 	txa
 	pha
-	lda enemyY,x
+	lda enemyYH,x
 	sta buildY1
-	lda enemyX,x
+	lda enemyXH,x
 	sta buildX1
 	clc
 	adc #08
@@ -1086,7 +1100,7 @@ buildType2:
 ;save x
 	txa
 	pha
-	lda enemyY,x
+	lda enemyYH,x
 	sta buildY1
 	clc
 	adc #16
@@ -1094,7 +1108,7 @@ buildType2:
 	lda #$ff
 @storeY:
 	sta buildY2
-	lda enemyX,x
+	lda enemyXH,x
 	sta buildX1
 	clc
 	adc #08
@@ -1166,9 +1180,9 @@ buildType3:
 ;save x
 	txa
 	pha
-	lda enemyY,x
+	lda enemyYH,x
 	sta buildY1
-	lda enemyX,x
+	lda enemyXH,x
 	sta buildX1
 	clc
 	adc #08
@@ -1325,8 +1339,6 @@ initializeEnemyWave:
 	sta enemyIndex
 	rts
 @newWave:
-	tya
-	pha
 	ldy waveIndex
 	lda (levelWavePointer),y
 	tax
@@ -1336,9 +1348,20 @@ initializeEnemyWave:
 	sta wavePointer+1
 	iny
 	sty waveIndex
-	pla
-	tay
-	jmp @resume
+	ldy enemyIndex
+;get the bullets
+	lda (wavePointer),y
+	sta bulletType
+	sta bulletType+1
+	iny
+	lda (wavePointer),y
+	sta bulletType+2
+	iny
+	lda (wavePointer),y
+	sta bulletType+3
+	iny
+	sty enemyIndex
+	rts
 
 initializeEnemy:
 ;places enemy from slot onto enemy array and screen coordinates
@@ -1362,10 +1385,10 @@ initializeEnemy:
 ;retains y, enemy
 ;get y coordinate
 	pla
-	sta enemyY,x
+	sta enemyYH,x
 ;get x coordinate
 	pla
-	sta enemyX,x
+	sta enemyXH,x
 ;copy data from rom
 	pla
 	tay
@@ -1383,8 +1406,10 @@ initializeEnemy:
 ;clear variables
 	sta i,x
 	sta j,x
-;zero out the clock
-	sta enemyClock,x
+	sta k,x
+;zero out low byte
+	sta enemyXL,x
+	sta enemyYL,x
 ;get enemy type
 	lda romEnemyType,y
 	sta enemyType,x
@@ -1402,6 +1427,9 @@ initializeEnemy:
 	sta enemyHeight,x
 	rts
 @enemiesFull:
+	pla
+	pla
+	pla
 	rts
 
 getAvailableEnemy:
@@ -1447,8 +1475,8 @@ updatePlayer:
 FAST_MOVEMENT_H = 3
 FAST_MOVEMENT_L = 128
 ;pixel per frame when moving slow
-SLOW_MOVEMENT_H = 0
-SLOW_MOVEMENT_L = 128
+SLOW_MOVEMENT_H = 1
+SLOW_MOVEMENT_L = 0
 RAPID_FIRE = %00000001
 STANDARD_FIRE=%00000011
 ;furthest right player can go
@@ -1479,10 +1507,11 @@ MAX_DOWN = 209
 	lda #RAPID_FIRE
 	sta playerRateOfFire
 @updateMovement:
-	lda #%00000001
-	bit controller1
-	beq @notRight
+	lda controller1
+	ror
+	bcc @notRight
 ;if bit 0 set then move right
+	pha
 	clc
 	lda playerXL
 	adc playerSpeedL
@@ -1494,11 +1523,12 @@ MAX_DOWN = 209
 	lda #MAX_RIGHT
 @storeRight:
 	sta playerXH
+	pla
 @notRight:
-	lda #%00000010
-	bit controller1
-	beq @notLeft
+	ror
 ;if bit 1 set then move left 
+	bcc @notLeft
+	pha
 	sec
 	lda playerXL
 	sbc playerSpeedL
@@ -1510,11 +1540,12 @@ MAX_DOWN = 209
 	lda #MAX_LEFT
 @storeLeft:
 	sta playerXH
+	pla
 @notLeft:
-	lda #%00000100
-	bit controller1
-	beq @notDown
 ;if bit 2 set then move down
+	ror
+	bcc @notDown
+	pha
 	clc
 	lda playerYL
 	adc playerSpeedL
@@ -1526,11 +1557,12 @@ MAX_DOWN = 209
 	lda #MAX_DOWN
 @storeDown:
 	sta playerYH
+	pla
 @notDown:
-	lda #%00001000
-	bit controller1
-	beq @notUp
 ;if bit 3 set then move down
+	ror
+	bcc @notUp
+	pha
 	sec
 	lda playerYL
 	sbc playerSpeedL
@@ -1542,14 +1574,14 @@ MAX_DOWN = 209
 	lda #MAX_UP
 @storeUp:
 	sta playerYH
+	pla
 @notUp:
-	lda #%01000000
-	bit controller1
+	lda controller1
+	and #%01000000
 	beq @notShooting
 	inc pressingShoot
 	lda pressingShoot
 	and playerRateOfFire
-	cmp #%00000001
 	bne @getMetatile
 	jsr initializePlayerBullet
 	jmp @getMetatile
@@ -1678,7 +1710,7 @@ wasEnemyHit:
 @cullX:
 	sec
 	lda playerBulletX,y
-	sbc enemyX,x
+	sbc enemyXH,x
 	bcs @playerGreaterX
 	eor #%11111111
 @playerGreaterX:
@@ -1689,7 +1721,7 @@ wasEnemyHit:
 @cullY:
 	sec
 	lda playerBulletY,y
-	sbc enemyY,x
+	sbc enemyYH,x
 	bcs @playerGreaterY
 	eor #%11111111
 @playerGreaterY:
@@ -1703,7 +1735,7 @@ wasEnemyHit:
 	sta sprite1LeftOrTop
 	adc #08
 	sta sprite1RightOrBottom
-	lda enemyX,x
+	lda enemyXH,x
 	adc enemyHitboxX1,x
 	sta sprite2LeftOrTop
 	adc enemyHitboxX2,x
@@ -1718,7 +1750,7 @@ wasEnemyHit:
 	sta sprite1LeftOrTop
 	adc #02
 	sta sprite1RightOrBottom
-	lda enemyY,x
+	lda enemyYH,x
 	sta sprite2LeftOrTop
 	adc enemyHitboxY2,x
 	sta sprite2RightOrBottom
@@ -1808,12 +1840,14 @@ checkCollision:
 	lda sprite1LeftOrTop
 	cmp sprite2LeftOrTop
 	bmi @check2
+;if sprite 1 is on the right and sprite 2's right side is greater than sprite 1's left side
 	cmp sprite2RightOrBottom
 	bmi @insideBoundingBox
 @notInBoundingBox:
 	clc
 	rts
 @check2:
+	;if sprite 2 is on the right and sprite 2's left side is less than sprite 1's right side
 	lda sprite2LeftOrTop
 	cmp sprite1RightOrBottom
 	bpl @notInBoundingBox
@@ -1869,6 +1903,7 @@ initializeEnemyBullet:
 	sta enemyBulletYL,x
 ;retrieve bullet id
 	pla
+	pha
 ;y is now the id
 	tay
 ;copy function pointer
@@ -1877,7 +1912,14 @@ initializeEnemyBullet:
 	lda romEnemyBulletBehaviorL,y
 	sta enemyBulletBehaviorL,x
 ;get the type
-	lda romEnemyBulletType,y
+	pla
+;isolate bit 7 and 8
+	rol
+	rol
+	rol
+	and #%00000011
+	tay
+	lda bulletType,y
 ;y is now type, copy values on type
 	tay
 ;copy metasprite
@@ -1895,12 +1937,9 @@ initializeEnemyBullet:
 	sta enemyBulletHitboxY1,x
 	lda romEnemyBulletHitboxY2,y
 	sta enemyBulletHitboxY2,x
-;reset clock
-	lda #$ff
-	sta enemyBulletClock,x
 	rts
 @bulletsFull:
-;pull x, y, id
+;pull id
 	pla
 	rts
 
@@ -1929,8 +1968,8 @@ getAvailableEnemyBullet:
 
 aimBullet:
 ;arguments:
-;x - enemy x
-;y - enemy y
+;quickBulletX
+;quickBulletY
 ;returns:
 ;a - degree from 0-256 to shoot bullet. use this degree to fetch correct bullet
 	sec
@@ -1941,6 +1980,7 @@ aimBullet:
 	tax
 	rol octant
 	lda playerYH
+	adc #10
 	sec
 	sbc quickBulletY
 	bcs *+4
@@ -1961,59 +2001,6 @@ aimBullet:
 	eor octant_adjust,y
 	rts
 
-;;;;;;;;;;;;;;;;;;;;;;
-;;;Sprite Behaviors;;;
-;;;;;;;;;;;;;;;;;;;;;;
-;Enemy Behaviors;
-;;;;;;;;;;;;;;;;;
-
-;to reference sprite.self, use x register
-targetBehavior:
-	pla
-	tax
-	pha
-	lda #128
-	sta enemyX,x
-	lda #32
-	sta enemyY,x
-	lda seconds
-	and #%00000011
-	bne @skip
-	clc
-	lda enemyY,x
-	adc #16
-	sta quickBulletY
-	lda enemyX,x
-	adc #8
-	sta quickBulletX
-	lda i,x
-	adc #9
-	sta i,x
-	pha
-	asl
-	and #%01111111
-	jsr initializeEnemyBullet
-	pla
-	and #%00111111
-	ora #%10000000
-	pha
-	jsr initializeEnemyBullet
-	pla
-	ora #%11000000
-	jsr initializeEnemyBullet
-@skip:
-	pla
-	tax
-	jsr wasEnemyHit;(x)
-	bcs @hitDetected
-	lda #FALSE
-	sta enemyStatus,x
-	rts
-@hitDetected:
-	dec enemyHPL,x
-	lda #TRUE
-	sta enemyStatus,x
-	rts
 
 .segment "VECTORS"
 .word nmi

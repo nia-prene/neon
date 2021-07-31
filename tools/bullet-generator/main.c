@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #define FILE_PATH "output.txt"
-#define RADIUS  3
+#define RADIUS  4
 #define SEGMENTS  64
 #define STARTING_BULLET 192
 #define PI 3.14159265

@@ -1,3 +1,4 @@
+.segment "HEADER"
 ;contains ines header 
 
 INES_MAPPER = 0 ; 0 = NROM

@@ -1,9 +1,4 @@
 .segment "ZEROPAGE"
-x1:.res 1
-x2:.res 1
-y1:.res 1
-y2:.res 1
-
 test: .res 1
 playerStatus: .res 1
 iFrames: .res 1
@@ -30,11 +25,13 @@ currentScene: .res 1
 currentPPUSettings: .res 1
 currentMaskSettings: .res 1
 waveRate: .res 1
+mathTemp: .res 2
 ;highest level flags
 hasFrameBeenRendered: .res 1
 ;local variables
 quickBulletX: .res 1
 quickBulletY: .res 1
+bulletType: .res 4
 octant: .res 1
 enemyIndex: .res 1
 waveIndex: .res 1
@@ -83,7 +80,6 @@ enemyBulletHitboxX1: .res MAX_ENEMY_BULLETS
 enemyBulletHitboxX2: .res MAX_ENEMY_BULLETS
 enemyBulletHitboxY1: .res MAX_ENEMY_BULLETS
 enemyBulletHitboxY2: .res MAX_ENEMY_BULLETS
-enemyBulletClock: .res MAX_ENEMY_BULLETS
 enemyBulletBehaviorH: .res MAX_ENEMY_BULLETS
 enemyBulletBehaviorL: .res MAX_ENEMY_BULLETS
 enemyBulletXH: .res MAX_ENEMY_BULLETS
@@ -97,13 +93,15 @@ isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 ;Enemies;
 ;;;;;;;;;
 MAX_ENEMIES = 8
-enemyClock: .res MAX_ENEMIES
-enemyX: .res MAX_ENEMIES
-enemyY: .res MAX_ENEMIES
+enemyXH: .res MAX_ENEMIES
+enemyXL: .res MAX_ENEMIES
+enemyYH: .res MAX_ENEMIES
+enemyYL: .res MAX_ENEMIES
 enemyHPH: .res MAX_ENEMIES
 enemyHPL: .res MAX_ENEMIES
 i: .res MAX_ENEMIES
 j: .res MAX_ENEMIES
+k: .res MAX_ENEMIES
 enemyType: .res MAX_ENEMIES
 enemyBehaviorH: .res MAX_ENEMIES
 enemyBehaviorL: .res MAX_ENEMIES
@@ -134,7 +132,7 @@ days: .res 1
 ;;;;;;;;;;;;;;
 ;;;Palettes;;;
 ;;;;;;;;;;;;;;
-BACKGROUND_COLOR = $1D;black
+BACKGROUND_COLOR = $0f;black
 color1: .res 8
 color2: .res 8
 color3: .res 8
