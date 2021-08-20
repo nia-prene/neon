@@ -96,18 +96,20 @@ gameLoop:
 ;move enemies
 	jsr updateEnemies
 	jsr updateEnemyBullets
-;if playerStatus != 0, player hit
-	lda playerStatus
+;if player was hit recently
+	lda iFrames
 	bne @playerHarmed
-@playerUnharmed:
+;else check collision
+	jsr wasPlayerHit
+	bcs @playerHarmed
 ;else, build oam normally
-	ldy #0
-	jsr buildPlayerHitboxOam
-	jsr buildEnemyBulletsOam
-	jsr buildPlayerOam;(y)
-	jsr buildPlayerBulletOam;(y)
-	jsr buildEnemyOam;(y)
-	jsr clearRemainingOam;(y)
+@playerUnharmed:
+	ldx #0
+	jsr drawEnemyBullets
+	jsr drawPlayer
+	jsr drawPlayerBullets
+	jsr drawEnemies
+	jsr clearRemainingOam
 ;this frame is finished
 	lda #FALSE
 	sta hasFrameBeenRendered
@@ -121,20 +123,18 @@ gameLoop:
 	and seconds
 	bne @playerUnharmed
 ;else, build oam without player
-	ldy #0
-	jsr buildEnemyBulletsOam
-	jsr buildPlayerBulletOam;(y)
-	jsr buildEnemyOam;(y)
-	jsr clearRemainingOam;(y)
+	ldx #0
+	jsr drawEnemyBullets
+	jsr drawPlayerBullets
+	jsr drawEnemies
+	jsr clearRemainingOam;(x)
 	lda #FALSE
 	sta hasFrameBeenRendered
 	jmp gameLoop
 @resetIFrame:
 	lda #0
-	sta playerStatus
 	sta iFrames
 	jmp @playerUnharmed
-
 
 ;;;;;;;;;;;;;;;;
 ;;;Interrupts;;;
@@ -726,555 +726,157 @@ setupEnemies:
 	sta waveRate
 	rts
 
-buildPlayerHitboxOam:
-;renders glowing hitbox above everything else, so that player can be beneath bullets but hitbox wont flicker
-;arguments
-;y - oam position
-;returns
-;y - new oam position
-	clc
-	lda playerYH
-	adc #16
-	sta oam,y
-	iny
-	lda #%00010000
-	bit seconds
-	bne @frame2
-	lda #06
-	sta oam,y
-	iny
-	lda #0
-	sta oam,y
-	iny
-	lda playerXH
-	sta oam,y
-	iny
-	rts
-@frame2:
-	lda #08
-	sta oam,y
-	iny
-	lda #0
-	sta oam,y
-	iny
-	lda playerXH
-	sta oam,y
-	iny
-	rts
-
-buildEnemyBulletsOam:
-	ldx #MAX_ENEMY_BULLETS-1
-@bulletLoop:
-	lda isEnemyBulletActive,x
-	bne @buildBullet
-	dex
-	bpl @bulletLoop
-	rts
-@buildBullet:
-;width is either 8px or 10px. cleared carry denotes 2 tiles
-	lda enemyBulletWidth,x
-	cmp #10
-	bcs @buildBullet2
-	jsr buildBullet0
-	dex
-	bpl @bulletLoop
-	rts
-@buildBullet2:
-	jsr buildBullet1
-	dex
-	bpl @bulletLoop
-	rts
-
-buildBullet0:
-	lda enemyBulletYH,x
-	sta oam,y
-	iny
-	lda enemyBulletXH,x
-	sta buildX1
-	txa
+drawEnemyBullets:
+	lda #NULL;terminate
 	pha
-	lda enemyBulletMetasprite,x
-	tax
-	lda spriteTile0,x
-	sta oam,y
-	iny
-	lda spriteAttribute0,x
-	sta oam,y
-	iny
-	lda buildX1
-	sta oam,y
-	iny
-	pla
-	tax
-	rts
-
-buildBullet1:
-	lda enemyBulletYH,x
-	sta buildY1
-	sta oam,y
-	iny
-	lda enemyBulletXH,x
-	sta buildX1
-	clc
-	adc #08
-	sta buildX2
-	txa
+	ldy #MAX_ENEMY_BULLETS-1
+@enemyBulletLoop:
+	lda isEnemyBulletActive,y
+	beq @skipBullet
+	lda enemyBulletMetasprite,y
 	pha
-	lda enemyBulletMetasprite,x
-	tax
-	lda spriteTile0,x
-	sta oam,y
-	iny
-	lda spriteAttribute0,x
-	sta oam,y
-	iny
-	lda buildX1
-	sta oam,y
-	iny
-	lda buildY1
-	sta oam,y
-	iny
-	lda spriteTile1,x
-	sta oam,y
-	iny
-	lda spriteAttribute1,x
-	sta oam,y
-	iny
-	lda buildX2
-	sta oam,y
-	iny
-	pla
-	tax
-	rts
+	lda enemyBulletYH,y
+	pha
+	lda enemyBulletXH,y
+	pha
+	lda #0; palette
+	pha
+@skipBullet:
+	dey
+	bpl @enemyBulletLoop
+	jmp drawSprites
 
-buildPlayerOam:
-;arguments
-;y - oam offset
+drawPlayer:
+;prepares player sprite for drawing
+;first push a null to terminate 
+;then push sprite, y, x, palette
+	lda #NULL;terminator
+	pha
 	lda playerMetasprite
-;x is now metasprite data
-	tax
-	lda playerYH
-;store y of tile 0
-	sta oam,y
-	iny
-	clc
-	adc #16
-	sta buildY1
-	lda spriteTile0,x
-;store tile 0
-	sta oam,y
-	iny
-	lda spriteAttribute0,x
-;store attribute 0
-	sta oam,y
-	iny
-	lda playerXH
-;store x tile 0
-	sta oam,y
-	iny
-	adc #08
-	sta buildX1
-	lda playerYH
-;store y tile 1
-	sta oam,y
-	iny
-;store tile 1
-	lda spriteTile1,x
-	sta oam,y
-	iny
-;store attribute tile 1
-	lda spriteAttribute1,x
-	sta oam,y
-	iny
-;store x tile 1
-	lda buildX1
-	sta oam,y
-	iny
-;store y tile 2
-	lda buildY1
-	sta oam,y
-	iny
-;store tile 2
-	lda spriteTile2,x
-	sta oam,y
-	iny
-;store attribute tile 2
-	lda spriteAttribute2,x
-	sta oam,y
-	iny
-;store x tile 2
-	lda playerXH
-	sta oam,y
-	iny
-	rts
-
-buildPlayerBulletOam:
-	ldx #0
-@buildLoop:
-;while x < max bullets
-	cpx #MAX_PLAYER_BULLETS
-	bcs @endLoop
-;if active is TRUE
-	lda isPlayerBulletActive,x
-;update
-	bne @updateBullet
-;x++
-	inx
-	jmp @buildLoop
-@endLoop:
-	rts
-@updateBullet:
-;save x
-	txa
 	pha
-	lda playerBulletY,x
-	sta oam,y
-	iny
-	lda playerBulletMetasprite,x
-;x is now metasprite
-	tax
-	lda spriteTile0,x
-	sta oam,y
-	iny
-	lda spriteAttribute0,x
-	sta oam,y
-	iny
-	pla
-	tax
-	lda playerBulletX,x
-	sta oam,y
-	iny
-	inx
-	jmp @buildLoop
+	lda playerYH
+	pha
+	lda playerXH
+	pha
+	lda #0;palette
+	pha
+	jmp drawSprites
 
-buildEnemyOam:
-;cycles through enemies in oam and draws them to the screen. function uses two loops, one indexing forward, one backward, alternating every frame to produce sprite flicker instead of masking consistent sprites
-;arguments
-;y - oam offset
+drawPlayerBullets:
+	lda #NULL;terminate
+	pha
+	ldy #MAX_PLAYER_BULLETS-1
+@drawLoop:
+	lda isPlayerBulletActive,y
+	beq @skipBullet
+	lda playerBulletMetasprite,y
+	pha
+	lda playerBulletY,y
+	pha
+	lda playerBulletX,y
+	pha
+	lda #0;palette
+	pha
+@skipBullet:
+	dey
+	bpl @drawLoop
+	jmp drawSprites
+
+drawEnemies:
+	lda #NULL
+	pha
+	ldy #MAX_ENEMIES-1
+@enemyLoop:
+	lda isEnemyActive,y
+	beq @skipEnemy
+	lda enemyMetasprite,y
+	pha
+	lda enemyYH,y
+	pha
+	lda enemyXH,y
+	pha
+	lda enemyStatus,y
+	pha
+@skipEnemy:
+	dey
+	bpl @enemyLoop
+	jmp drawSprites
+
+drawSprites:
+;draws collections of sprites
+;push tile, y, x, palette
+;pull and use in reverse order
 ;returns
-;y - new oam offset
-	lda #%00000001
-	bit seconds
-	bne @loop1
-	ldx #0
-@enemyOamLoop0:
-;while x < max enemies
-	cpx #MAX_ENEMIES
-	bcs @endLoop
-;if enemy active, build oam entry
-	lda isEnemyActive,x
-	bne @enemyActive
-;x++
-	inx
-	jmp @enemyOamLoop0
-@endLoop:
-	rts
-@enemyActive:
-	jsr buildEnemy
-	inx
-	jmp @enemyOamLoop0
-
-@loop1:
-	ldx #MAX_ENEMIES-1
-@enemyOamLoop1:
-;if enemy active, build oam entry
-	lda isEnemyActive,x
-	bne @enemyActive1
-;x++
-	dex
-	bmi @endLoop1
-	jmp @enemyOamLoop1
-@endLoop1:
-	rts
-@enemyActive1:
-	jsr buildEnemy
-	dex
-	bmi @endLoop1
-	jmp @enemyOamLoop1
-
-buildEnemy:
-;save x
-	txa
-	pha
-	lda enemyStatus,x
-;hit information held in bit 1. this will flash palette
-	and #%00000001
-	sta buildAttribute
-	lda enemyType,x
-	tax
-;x is now type
-	bne @checkType1
+;x - current OAM position
 	pla
-	tax
-	jmp buildType0
-@checkType1:
-	dex
-	bne @checkType2
+	cmp #NULL
+	beq @noSprites
+@metaspriteLoop:
+	sta buildPalette
 	pla
-	tax
-	jmp buildType1
-@checkType2:
-	dex
-	bne @type3
+	sta buildX
 	pla
-	tax
-	jmp buildType2
-@type3:
+	sta buildY
 	pla
-	tax
-	jmp buildType3
-
-buildType0:
-;save x
-	txa
-	pha
-	lda enemyYH,x
-	sta oam,y
-	iny
-	lda enemyXH,x
-	sta buildX1
-	lda enemyMetasprite,x
-	tax
-	lda spriteTile0,x
-	sta oam,y
-	iny
-	lda spriteAttribute0,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX1
-	sta oam,y
-	iny
-	pla
-	tax
-	rts
-
-buildType1:
-;save x
-	txa
-	pha
-	lda enemyYH,x
-	sta buildY1
-	lda enemyXH,x
-	sta buildX1
+	tay
+	lda spritesL,y
+	sta spritePointer
+	lda spritesH,y
+	sta spritePointer+1
+	ldy #0
 	clc
-	adc #08
-	bcc @storeX
-	lda #$ff
-@storeX:
-	sta buildX2
-	lda buildY1
-	lda enemyMetasprite,x
-	tax
-	lda buildY1
-	sta oam,y
-	iny
-	lda spriteTile0,x
-	sta oam,y
-	iny
-	lda spriteAttribute0,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX1
-	sta oam,y
-	iny
-	lda buildY1
-	sta oam,y
-	iny
-	lda spriteTile1,x
-	sta oam,y
-	iny
-	lda spriteAttribute1,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX2
-	sta oam,y
-	iny
+	lda (spritePointer),y
+	@tileLoop:
+		adc buildY
+		bcs @yOverflow
+	@returnY:
+		sta oam,x
+		inx
+		iny
+		lda (spritePointer),y
+		sta oam,x
+		inx
+		iny
+		lda (spritePointer),y
+		ora buildPalette
+		sta oam,x
+		inx
+		iny
+		lda (spritePointer),y
+		adc buildX
+		bcs @xOverflow
+	@returnX:
+		sta oam,x
+		inx
+		iny
+		lda (spritePointer),y
+		cmp #NULL
+		bne @tileLoop
 	pla
-	tax
+	cmp #NULL
+	bne @metaspriteLoop
+@noSprites:
 	rts
-
-buildType2:
-;save x
-	txa
-	pha
-	lda enemyYH,x
-	sta buildY1
+@yOverflow:
 	clc
-	adc #16
-	bcc @storeY
 	lda #$ff
-@storeY:
-	sta buildY2
-	lda enemyXH,x
-	sta buildX1
+	jmp @returnY
+@xOverflow:
 	clc
-	adc #08
-	bcc @storeX
 	lda #$ff
-@storeX:
-	sta buildX2
-	lda buildY1
-	lda enemyMetasprite,x
-	tax
-
-	lda buildY1
-	sta oam,y
-	iny
-	lda spriteTile0,x
-	sta oam,y
-	iny
-	lda spriteAttribute0,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX1
-	sta oam,y
-	iny
-	lda buildY1
-	sta oam,y
-	iny
-	lda spriteTile1,x
-	sta oam,y
-	iny
-	lda spriteAttribute1,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX2
-	sta oam,y
-	iny
-	lda buildY2
-	sta oam,y
-	iny
-	lda spriteTile2,x
-	sta oam,y
-	iny
-	lda spriteAttribute2,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX1
-	sta oam,y
-	iny
-	lda buildY2
-	sta oam,y
-	iny
-	lda spriteTile3,x
-	sta oam,y
-	iny
-	lda spriteAttribute3,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX2
-	sta oam,y
-	iny
-	pla
-	tax
-	rts
-
-buildType3:
-;save x
-	txa
-	pha
-	lda enemyYH,x
-	sta buildY1
-	lda enemyXH,x
-	sta buildX1
-	clc
-	adc #08
-	bcs @overflowX2
-	sta buildX2
-	adc #08
-	bcs @overflowX3
-	sta buildX3
-	adc #08
-	bcs @overflowX4
-	sta buildX4
-	jmp @noOverflow
-@overflowX2:
-	lda #$ff
-	sta buildX2
-@overflowX3:
-	lda #$ff
-	sta buildX3
-@overflowX4:
-	lda #$ff
-	sta buildX4
-@noOverflow:
-	lda buildY1
-	lda enemyMetasprite,x
-	tax
-	lda buildY1
-	sta oam,y
-	iny
-	lda spriteTile0,x
-	sta oam,y
-	iny
-	lda spriteAttribute0,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX1
-	sta oam,y
-	iny
-	lda buildY1
-	sta oam,y
-	iny
-	lda spriteTile1,x
-	sta oam,y
-	iny
-	lda spriteAttribute1,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX2
-	sta oam,y
-	iny
-	lda buildY1
-	sta oam,y
-	iny
-	lda spriteTile2,x
-	sta oam,y
-	iny
-	lda spriteAttribute2,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX3
-	sta oam,y
-	iny
-	lda buildY1
-	sta oam,y
-	iny
-	lda spriteTile3,x
-	sta oam,y
-	iny
-	lda spriteAttribute3,x
-	ora buildAttribute
-	sta oam,y
-	iny
-	lda buildX4
-	sta oam,y
-	iny
-	pla
-	tax
-	rts
+	jmp @returnX
 
 clearRemainingOam:
 ;arguments
-;y-starting point to clear
+;x-starting point to clear
 	lda #$ff
 @clearOAM:
-	sta oam,y
-	iny
-	iny
-	iny
-	sta oam,y
-	iny
+	sta oam,x
+	inx
+	inx
+	inx
+	sta oam,x
+	inx
 	bne @clearOAM
 	rts
 
@@ -1596,17 +1198,15 @@ MAX_DOWN = 209
 
 initializePlayerBullet:
 ;arguments - none
-
 ;find empty bullet starting with slot 0
-	ldx #0
+	ldx #MAX_PLAYER_BULLETS-1
 @findEmptyBullet:
 	lda isPlayerBulletActive,x
 ;if bullet inactive initialize here
 	beq @initializeBullet
-	inx
-;while x < max bullets
-	cpx #MAX_PLAYER_BULLETS
-	bcc @findEmptyBullet
+	dex
+;while x >=0 
+	bpl @findEmptyBullet
 ;no empty bullet
 	rts
 @initializeBullet:
@@ -1764,10 +1364,11 @@ wasEnemyHit:
 	rts
 
 wasPlayerHit:
-;arguments
-;x - enemy bullet offset
-@cullX:
-;find the distance between x values
+	ldx #MAX_ENEMY_BULLETS-1
+@bulletLoop:
+	lda isEnemyBulletActive,x
+	beq @nextBullet
+;if active
 	sec
 	lda enemyBulletXH,x
 	sbc playerXH
@@ -1775,13 +1376,9 @@ wasPlayerHit:
 ;twos compliment if negative
 	eor #%11111111
 @bulletGreaterX:
-;compare to bullet width, proceed if distance less than width
+;compare to bullet width
 	cmp enemyBulletWidth,x
-	bcc @cullY
-;mark false and return
-	clc
-	rts
-@cullY:
+	bcs @nextBullet
 ;find distance between Y coordinates
 	sec
 	lda enemyBulletYH,x
@@ -1790,13 +1387,16 @@ wasPlayerHit:
 ;twos compliment if negative
 	eor #%11111111
 @bulletGreaterY:
-;compare to distance from y to player hitbox (alwas greater than bullet height)
+;compare distance from y to player hitbox
 	cmp #24
 ;check collision distance less
 	bcc @checkCollision
-;mark false and return
+@nextBullet:
+	dex
+	bpl @bulletLoop
 	clc
 	rts
+
 @checkCollision:
 	clc
 	lda playerXH
@@ -1810,10 +1410,7 @@ wasPlayerHit:
 	adc enemyBulletHitboxX2,x
 	sta sprite2RightOrBottom
 	jsr checkCollision
-	bcs @checkY
-	clc
-	rts
-@checkY:
+	bcc @nextBullet
 	clc
 	lda playerYH
 	adc #19
@@ -1826,10 +1423,8 @@ wasPlayerHit:
 	adc enemyBulletHitboxY2,x
 	sta sprite2RightOrBottom
 	jsr checkCollision
-	bcs @hitDetected
-	clc
-	rts
-@hitDetected:
+	bcc @nextBullet
+;else hit detected
 	sec
 	rts
 

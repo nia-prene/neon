@@ -62,15 +62,10 @@ romEnemyBulletMetasprite:
 .error "Must Supply Valid Quadrant"
 .endif
 	sta enemyBulletXH,x
-	jsr wasPlayerHit
-	bcs @hitDetected
-	rts
-@hitDetected:
-	rol playerStatus
 	rts
 @clearBullet:
-	lda #FALSE
-	sta isEnemyBulletActive,x
+;shift bit out
+	lsr isEnemyBulletActive,x
 	rts
 .endmacro
 .byte 0

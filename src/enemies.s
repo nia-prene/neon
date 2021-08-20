@@ -7,6 +7,7 @@ levelWavesL:
 	.byte <beachWaves
 ;waves for each level as index to pointers
 beachWaves:
+	.byte 1, 0, 1, 0, 1, 0, 1, 0, 1
 	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0
 ;pointers to individual enemy waves (below)
 wavePointerH:
@@ -16,12 +17,12 @@ wavePointerL:
 ;individual enemy waves
 wave0:
 ;first 3 bytes are bullet types
-	.byte 0, 1, 0
+	.byte 0, 1, 1
 ;format string is (enemy, location) 0 is skip, null is terminate
 	.byte 2, 16, 2, 20, 2, 12, NULL
 wave1:
-	.byte 0, 0, 0
-	.byte 1, 15, 1, 05, 1, 25, $ff
+	.byte 0, 1, 1
+	.byte 1, 13, 1, 10, 1, 17, NULL
 ;wave starting coordinates
 
 ;first byte is a burner byte so we can use zero flag to denote empty slot
@@ -34,7 +35,7 @@ romEnemyMetasprite:
 romEnemyHPH:
 	.byte NULL, 00, 00
 romEnemyHPL:
-	.byte NULL, 10, 10
+	.byte NULL, 5, 5
 ;the type determines the width, height, and how it is built in oam
 romEnemyType: 
 	.byte NULL, 01, 01
@@ -56,7 +57,7 @@ enemy01:
 	clc
 ;move down at a rate of 1.5 px per frame
 	lda enemyYL,x
-	adc #32
+	adc #16
 	sta enemyYL,x
 	lda enemyYH,x
 	adc #01
@@ -65,10 +66,14 @@ enemy01:
 	sta enemyYH,x
 ;save y value
 	pha
+	and #%11111110
+	cmp #%00010000
+	beq @shoot
+@returnFromShoot:
 ;isolate bit 7, shift to bit 0
-	and #%10000000
 	rol
 	rol
+	and #%00000001
 ;save on y
 	tay
 ;retrieve 
@@ -84,12 +89,48 @@ enemy01:
 	bcs @clearEnemy
 	sta enemyXH,x
 	jsr wasEnemyHit
-	bcs @clearEnemy
+	bcs @enemyHit
+	lda #0
+	sta enemyStatus,x
+	rts
+@enemyHit:
+	lda #%11
+	sta enemyStatus,x
+	dec enemyHPL,x
+	beq @clearEnemy
 	rts
 @clearEnemy:
 	lda #FALSE
 	sta isEnemyActive,x
 	rts
+@shoot:
+	adc #10
+	sta quickBulletY
+	lda enemyXH,x
+	adc #8
+	sta quickBulletX
+;save the x
+	txa
+	pha
+	jsr aimBullet
+	lsr
+	pha
+	lsr
+	ora #%10000000
+	jsr initializeEnemyBullet
+	pla
+	adc #4
+	pha
+	jsr initializeEnemyBullet
+	pla
+	sbc #8
+	jsr initializeEnemyBullet
+;restore x
+	pla
+	tax
+	pla
+	pha
+	jmp @returnFromShoot
 
 enemy02:
 	pla
@@ -97,7 +138,7 @@ enemy02:
 ;move down at a rate of 1.5 px per frame
 	clc
 	lda enemyYL,x
-	adc #128
+	adc #16
 	sta enemyYL,x
 	lda enemyYH,x
 	adc #01
@@ -106,6 +147,7 @@ enemy02:
 	sta enemyYH,x
 ;save y value
 	pha
+	and #%11111110
 	cmp #%00010000
 	beq @shoot
 @returnFromShoot:
@@ -128,7 +170,15 @@ enemy02:
 	sta enemyXH,x
 ;check if shot
 	jsr wasEnemyHit
-	bcs @clearEnemy
+	bcs @enemyHit
+	lda #0
+	sta enemyStatus,x
+	rts
+@enemyHit:
+	lda #%11
+	sta enemyStatus,x
+	dec enemyHPL,x
+	beq @clearEnemy
 	rts
 @clearEnemy:
 	lda #FALSE
@@ -136,7 +186,7 @@ enemy02:
 	rts
 @shoot:
 ;save the x
-	adc #16
+	adc #10
 	sta quickBulletY
 	lda enemyXH,x
 	adc #8

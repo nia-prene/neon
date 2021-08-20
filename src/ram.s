@@ -1,6 +1,5 @@
 .segment "ZEROPAGE"
 test: .res 1
-playerStatus: .res 1
 iFrames: .res 1
 playerXH: .res 1
 playerXL: .res 1
@@ -16,7 +15,6 @@ playerBulletX: .res MAX_PLAYER_BULLETS
 playerBulletY: .res MAX_PLAYER_BULLETS 
 isPlayerBulletActive: .res MAX_PLAYER_BULLETS
 playerBulletMetasprite: .res MAX_PLAYER_BULLETS
-bulletToUpdate: .res 1
 ;highes level variables/arguments
 xScroll: .res 1
 yScroll: .res 1
@@ -39,13 +37,9 @@ sprite1LeftOrTop: .res 1
 sprite1RightOrBottom: .res 1
 sprite2LeftOrTop: .res 1
 sprite2RightOrBottom: .res 1
-buildX1: .res 1
-buildX2: .res 1
-buildX3: .res 1
-buildX4: .res 1
-buildY1: .res 1
-buildY2: .res 1
-buildAttribute: .res 1
+buildX: .res 1
+buildY: .res 1
+buildPalette: .res 1
 currentNameTable: .res 2
 tile16a: .res 1
 tile16b: .res 1
@@ -61,6 +55,7 @@ controllers:
 	controller1: .res 1
 	controller2: .res 1
 ;pointers
+spritePointer: .res 2
 levelWavePointer: .res 2
 wavePointer: .res 2
 .segment "OAM"
