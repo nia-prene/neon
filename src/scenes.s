@@ -1,8 +1,13 @@
-.segment "SCENES"
+.include "scenes.h"
 
-screenTile:
+.include "tiles.h"
+.include "palettes.h"
+.include "waves.h"
+
+.rodata
+Scenes_tile:
 	.byte BEACH_SCREEN
-paletteCollection:
+Scenes_palettes:
 	.byte BEACH_PALETTE
 levelWave:
-	.byte BEACH_WAVES
+	.byte BEACH

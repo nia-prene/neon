@@ -1,5 +1,8 @@
-.segment "STARTUP"
-reset:
+.include "init.h"
+.include "main.h"
+
+.code
+Init_reset:
     sei        ; ignore IRQs
     cld        ; disable decimal mode
     ldx #$40
@@ -41,20 +44,4 @@ reset:
     sta $700,x
     inx
     bne @clrmem
-
-    ; Other things you can do between vblank waits are set up audio
-    ; or set up other mapper registers.
-	bit PPUSTATUS
-@vblankwait2:
-    bit PPUSTATUS
-    bpl @vblankwait2
-	;enable vertical blanking irq
-	lda #PPU_SETTINGS
-	;save ppu settings
-	sta PPUCTRL
-	sta currentPPUSettings
-	;initialize mask settings
-	lda #MASK_SETTINGS
-	sta currentMaskSettings
-
-	jmp main 
+	jmp main

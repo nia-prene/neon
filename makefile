@@ -1,33 +1,29 @@
-TARGET = neon.nes
-OBJECTS = neon.o
-SOURCE = src/main.s
-BUILDDIR = build/
-INCLUDE = src
-OUTPUT = neon.nes
-CONFIGFILE = neon.cfg
-DEBUGFILE = neon.dbg
+objects = bullets.o enemies.o gamepads.o init.o lib.o main.o oam.o palettes.o playerbullets.o player.o powerup.o ppu.o scenes.o sprites.o tiles.o waves.o
+game = neon.nes
+source = src/
+builddir = build/
+configfile = neon.cfg
+debugfile = neon.dbg
 EMULATOR = ~/programs/fceux/fceux.exe
-CLEANFILES = *.o *.dbg *.nes
+cleanfiles = *.o *.dbg *.nes
 
 LD = ld65
 AS = ca65
 WINE = wine
 
-ASFLAGS = -o ${BUILDDIR}${OBJECTS} -I ${INCLUDE} --debug-info
+ASflags =-o $(builddir)$@ --debug-info
+LDflags =-o $(builddir)$@ -C $(configfile) --dbgfile $(builddir)$(debugfile)
 
-LDFLAGS = -o ${BUILDDIR}${OUTPUT} -C ${CONFIGFILE} --dbgfile ${BUILDDIR}${DEBUGFILE}
+.PHONY all: $(objects) $(game) test
 
-all: assemble link test
+$(objects): %.o: $(source)%.s $(source)%.h
+	$(AS) $(ASflags) $<
 
-assemble: ${SOURCE}
-	${AS} ${SOURCE} ${ASFLAGS}
+$(game): $(objects)
+	$(LD) $(LDflags) $(builddir)*.o
 
-link: ${BUILDDIR}${OBJECTS}
-	${LD} ${BUILDDIR}${OBJECTS} ${LDFLAGS}
-
-test: ${BUILDDIR}${TARGET}
-	${WINE} ${EMULATOR} ${BUILDDIR}${TARGET}
+test: ${game}
+	${WINE} ${EMULATOR} ${builddir}${game}
 
 clean:
-	rm -r ${BUILDDIR}
-	mkdir ${BUILDDIR}
+	-rm $(builddir)*.o
