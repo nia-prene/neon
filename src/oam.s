@@ -31,8 +31,13 @@ OAM_build:;c (c)
 	inc o ;module iterator
 	ldx #0
 	bcs @buildWithoutPlayer
+;build hitbox if butt a is being pressed
+	and #%10000000
+	beq @skipHitbox
 	jsr buildHitbox
+@skipHitbox:
 	jsr buildEnemyBullets
+	bcc @oamFull
 	jsr buildPlayer
 	bcc @oamFull
 	jsr buildEnemies
@@ -59,6 +64,7 @@ OAM_build:;c (c)
 	rts;returns carry clear
 
 buildHitbox:
+PLAYER_HITBOX_Y_OFFSET=5
 	lda #NULL;terminate
 	pha
 	lda o
@@ -69,15 +75,17 @@ buildHitbox:
 	tay
 	lda @hitboxAnimation,y
 	pha
+	clc
 	lda playerY_H
+	adc #PLAYER_HITBOX_Y_OFFSET
 	pha
 	lda playerX_H
 	pha
 	lda #00
 	pha
-	jmp buildSprites
+	jmp buildSpritesShort
 @hitboxAnimation:
-	.byte HITBOX_SPRITE_1, HITBOX_SPRITE_2
+	.byte SPRITE06, SPRITE07
 
 buildEnemyBullets:
 	lda #NULL;terminate

@@ -19,7 +19,8 @@ speed_L: .res 1
 pressingShoot: .res 1
 playerSprite: .res 1
 playerHP: .res 1
-playerPowerLevel: .res 1
+Player_powerLevel: .res 1
+Player_killCount: .res 1
 
 .code
 Player_initialize:
@@ -33,7 +34,7 @@ Player_initialize:
 	lda #120
 	sta playerX_H 
 	lda #0
-	sta playerPowerLevel
+	sta Player_powerLevel
 	rts
 
 Player_move:;(controller) returns void
@@ -47,11 +48,11 @@ SLOW_MOVEMENT_L = 0
 ;furthest right player can go
 MAX_RIGHT = 249
 ;furthest left player can go
-MAX_LEFT = 08
+MAX_LEFT = 07
 ;furthest up player can go
 MAX_UP = 0
 ;furthest down player can go
-MAX_DOWN = 209
+MAX_DOWN = 215
 	rol;test bit 7 (A)
 	pha;save controller
 	bcs @goingSlow
@@ -145,7 +146,7 @@ B_BUTTON=%01000000
 	and #B_BUTTON
 	beq @notShooting
 		inc pressingShoot
-		ldy playerPowerLevel
+		ldy Player_powerLevel
 		@shotLoop:
 		;jump to all active shot types
 			lda @shotType_H,y
@@ -170,10 +171,10 @@ B_BUTTON=%01000000
 
 .align $100
 Player_isHit:;(void)
-PLAYER_HEIGHT=30
-HITBOX_X_OFFSET=2
-HITBOX_Y_OFFSET=19
-HITBOX_WIDTH=3
+PLAYER_HEIGHT=16
+HITBOX_X_OFFSET=3
+HITBOX_Y_OFFSET=12
+HITBOX_WIDTH=2
 HITBOX_HEIGHT=2
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
@@ -203,9 +204,9 @@ HITBOX_HEIGHT=2
 	sta sprite1RightOrBottom
 	;copy bullet x bounded box
 	lda enemyBulletXH,x
-	adc enemyBulletHitboxX1,x
+	adc enemyBulletHitbox1,x
 	sta sprite2LeftOrTop
-	adc enemyBulletHitboxX2,x
+	adc enemyBulletHitbox2,x
 	sta sprite2RightOrBottom
 	jsr checkCollision
 	bcc @nextBullet;if outside box
@@ -218,9 +219,9 @@ HITBOX_HEIGHT=2
 	sta sprite1RightOrBottom
 	;copy bullet y bounded box
 	lda enemyBulletYH,x
-	adc enemyBulletHitboxY1,x
+	adc enemyBulletHitbox1,x
 	sta sprite2LeftOrTop
-	adc enemyBulletHitboxY2,x
+	adc enemyBulletHitbox2,x
 	sta sprite2RightOrBottom
 	jsr checkCollision
 	bcc @nextBullet;if outsitde box

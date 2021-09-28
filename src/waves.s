@@ -11,9 +11,9 @@ wavePointer: .res 2 ;points to the current wave in use
 waveIndex: .res 1 ;keeps track of current wave in the collection
 enemyIndex: .res 1 ;keeps track of which enemy is next
 w: .res 1 ;iterator that counts frames and decides when to place enemies
-ENEMY_FREQUENCY=%00011111 ;how often should a new enemy be dispensed
+ENEMY_FREQUENCY=%00001111 ;how often should a new enemy be dispensed
 CONCURRENT=$FE ;signals that two enemies are to be dispensed this frame
-
+SKIP=0
 .code
 
 Waves_reset:;void(x)
@@ -132,34 +132,36 @@ levelWavesL:
 	.byte <beachWaves
 ;waves for each level as index to pointers
 beachWaves:
-	.byte 0, 1, 2, 3, 1, 2, 0, 1, 2
-	.byte 0, 1, 2, 0, 1, 2, 0, 1, 2
+	.byte 0, 1, 2, 3, 2, 5, 4, 1, 2
 ;pointers to individual enemy waves (below)
 wavePointerH:
-	.byte >wave00, >wave01, >wave02, >wave03, >wave04
+	.byte >wave00, >wave01, >wave02, >wave03, >wave04, >wave05
 wavePointerL:
-	.byte <wave00, <wave01, <wave02, <wave03, <wave04
+	.byte <wave00, <wave01, <wave02, <wave03, <wave04, <wave05
 
 ;individual enemy waves
 ;	.byte bulletType, bulletType, bulletType
 ;	.byte enemy, position, (skip), enemy, position ... NULL
 wave00:
 	.byte 0, 1, 1
-	.byte 2, 17, 2, 24, 2, 18, 2, 26, 2, 20, 2, 28, 2, 23, NULL
+	.byte 2, 14, SKIP, 2, 16, SKIP, 2, 18, SKIP, 2, 20, SKIP, 2, 22, NULL
 wave01:
 	.byte 0, 1, 1
-	.byte 1, 18, 1, 10, 1, 15, 1, 7, 1, 13, 1, 2, 1, 4, NULL
+	.byte 1, 18, SKIP, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, NULL
 wave02:
 	.byte 0, 1, 1
-	.byte 3, 70,  2, 12, 2, 16, 2, 21, 2, 25, 2, 21, 2, 17, 2, 13, 2, 9, NULL
+	.byte 2, 12, 2, 14, 2, 16, 2, 18, 2, 20, 2, 22, NULL
 wave03:
 	.byte 0, 1, 1
-	.byte 2, 23, 1, 8, 2, 25, 1, 6, 2, 21, 1, 10, 2, 23, 1, 8, 2, 25, 1, 6, 2, 21, 1, 10, 2, 23, 1, 8, NULL
+	.byte 3, 70, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, SKIP, 1, 08, NULL
 wave04:
 	.byte 0, 1, 1
-	.byte 5, 35, NULL
+	.byte 1, 20, 1, 18, 1, 16, 1, 14, 1, 12, 1, 10, NULL
 
-
+wave05:
+	.byte 0, 1, 1
+	.byte 5, 24, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, 1, 16, 1, 15, 1, 14, NULL
+;Coordinate Table
 ;x and y coordinate decoder table for enemy spawn locations
 waveX:
 	.byte $04, $0c, $14, $1c, $24, $2c, $34, $3c, $44, $4c, $54, $5c, $64, $6c, $74, $7c

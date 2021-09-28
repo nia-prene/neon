@@ -4,7 +4,8 @@
 .globalzp pressingShoot
 .globalzp playerSprite
 .globalzp playerHP
-.globalzp playerPowerLevel
+.globalzp Player_powerLevel
+.globalzp Player_killCount
 
 .global Player_initialize
 .global Player_move

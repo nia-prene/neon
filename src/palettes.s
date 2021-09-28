@@ -16,12 +16,13 @@ BEACH_1= 2
 BEACH_2= 3
 TARGET_PALETTE=4
 PURPLE_BULLET=5
+PALETTE06=6;blue drone palette
 romColor1:
-	.byte $07, $17, $2b, $01, $1d, $04
+	.byte $07, $17, $2b, $01, $1d, $04, $1d
 romColor2:
-	.byte $25, $19, $23, $21, $05, $24
+	.byte $25, $19, $23, $21, $05, $24, $21
 romColor3:
-	.byte $35, $29, $37, $31, $30, $34
+	.byte $35, $29, $37, $31, $30, $34, $31
 ;;;;;;;;;;;;;
 ;collections;
 ;;;;;;;;;;;;;

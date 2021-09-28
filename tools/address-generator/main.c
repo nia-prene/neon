@@ -16,7 +16,7 @@ int main(){
 	}
 	fprintf(outputFile, "%sH:\n",arrayName);	
 	for (i = 0; i < ADDRESS_COUNT; i++){
-		fprintf(outputFile, "\t.byte >%s%02X\n", objectName, i);
+		fprintf(outputFile, "\t.byte >(%s%02X-1)\n", objectName, i);
 	}
 	fprintf(outputFile, "%sL:\n",arrayName);	
 	for (i = 0; i < ADDRESS_COUNT; i++){

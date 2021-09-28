@@ -29,7 +29,8 @@ INES_SRAM   = 0 ; 1 = battery backed SRAM at $6000-7FFF
 checkCollision:
 ;checks if two bound boxes intersect
 ;returns
-;carry set if true, clear if false
+;c - set if true clear if false
+;first we are going to find which sprite is on the left and right
 	lda sprite1LeftOrTop
 	cmp sprite2LeftOrTop
 	bmi @check2

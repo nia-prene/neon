@@ -1,13 +1,15 @@
 .include "lib.h"
 .include "enemies.h"
+.include "player.h"
 .include "sprites.h"
 .include "playerbullets.h"
 .include "bullets.h"
+.include "pickups.h"
 
 .zeropage
 totalDamage: .res 1
 .data
-MAX_ENEMIES = 10
+MAX_ENEMIES = 16
 enemyXH: .res MAX_ENEMIES
 enemyXL: .res MAX_ENEMIES
 enemyYH: .res MAX_ENEMIES
@@ -55,29 +57,20 @@ initializeEnemy:;void (a,x,y)
 	;copy data from rom
 	pla
 	tay
+;copy function pointers
 	lda romEnemyBehaviorH,y
 	sta enemyBehaviorH,x
 	lda romEnemyBehaviorL,y
 	sta enemyBehaviorL,x
+;copy metasprites
 	lda romEnemyMetasprite,y
 	sta enemyMetasprite,x
+;copy hp
 	lda romEnemyHPH,y
 	sta enemyHPH,x
 	lda romEnemyHPL,y
 	sta enemyHPL,x
-	lda #0
-;clear variables
-	sta i,x
-;clear palette modifier
-	sta enemyPalette,x
-;set j to 128
-	sec
-	ror
-	sta j,x
-;get enemy type
-	lda romEnemyType,y
-;use enemy type to get hardcoded attributes
-	tay
+;copy hitboxes
 	lda romEnemyHitboxX1,y
 	sta enemyHitboxX1,x
 	lda romEnemyHitboxX2,y
@@ -86,6 +79,13 @@ initializeEnemy:;void (a,x,y)
 	sta enemyHitboxY2,x
 	lda romEnemyWidth,y
 	sta enemyWidth,x
+	lda #0
+;clear palette modifier
+	sta enemyPalette,x
+;it is helpful to have i at zero, and j at 128 so patterns can mirror
+	sta i,x
+	lda #128	
+	sta j,x
 	rts
 @enemiesFull:
 	pla
@@ -141,13 +141,15 @@ updateEnemies:
 	rts
 
 .align $100
-wasEnemyHit:
+Enemies_isAlive:
 ;compares enemies to the player bullets and determines if they overlap
 ;arguments
-;x - enemy to check
-;y is player bullet, start with 0
+;x - enemy to check'
+;y - player bullet
+;clear out total damage
 	lda #0
 	sta totalDamage
+	sta enemyPalette,x
 	ldy #MAX_PLAYER_BULLETS-1
 @bulletLoop:
 ;find an active bullet
@@ -158,6 +160,7 @@ wasEnemyHit:
 	lda bulletX,y
 	sbc enemyXH,x
 	bcs @playerGreaterX
+;twos compliment if negative number
 	eor #%11111111
 @playerGreaterX:
 ;continue if closer than enemy width
@@ -168,6 +171,7 @@ wasEnemyHit:
 	lda bulletY,y
 	sbc enemyYH,x
 	bcs @playerGreaterY
+;twos compliment if negative number
 	eor #%11111111
 @playerGreaterY:
 ;continue if closer than height
@@ -176,7 +180,7 @@ wasEnemyHit:
 ;calculate left and right side of player bullet
 	lda bulletX,y
 	sta sprite1LeftOrTop
-	adc #08
+	adc PlayerBullet_width,y
 	sta sprite1RightOrBottom
 ;calculate left and right side of enemy
 	lda enemyXH,x
@@ -184,69 +188,134 @@ wasEnemyHit:
 	sta sprite2LeftOrTop
 	adc enemyHitboxX2,x
 	sta sprite2RightOrBottom
+;check for overlap, continue if true
 	jsr checkCollision
 	bcc @nextBullet
 ;calculate top and bottom of player bullet
 	lda bulletY,y
 	sta sprite1LeftOrTop
-	adc #16
+	adc #16;height of all player bullets
 	sta sprite1RightOrBottom
 ;calculate top and bottom of enemy
 	lda enemyYH,x
 	sta sprite2LeftOrTop
 	adc enemyHitboxY2,x
 	sta sprite2RightOrBottom
+;check for overlap
 	jsr checkCollision
 	bcc @nextBullet
+;mark bit 1 so bullet is cleared next frame
 	lda #%11
 	sta isActive,y
+	sta enemyPalette,x
+;get a running total of the damage sustained
 	clc
-	lda totalDamage,y
+	lda PlayerBullet_damage,y
 	adc totalDamage
 	sta totalDamage
 @nextBullet:
 	dey
 	bpl @bulletLoop
-	lda totalDamage
+;if the result is negative, enemy is dead, carry is cleared
+	sec
+	lda enemyHPL,x
+	sbc totalDamage
+	sta enemyHPL,x
+	lda enemyHPH,x
+	sbc #0
+	sta enemyHPH,x
 	rts
 
+Enemies_explodeSmall:
+	pla
+	tax
+;lasts for 16 frames
+	lda i,x
+	cmp #16
+	bcs @clear
+;divide by 4 to find animation frame
+	lsr
+	lsr
+	tay
+	lda @animationFrames,y
+	sta enemyMetasprite,x
+	inc i,x
+	rts
+@clear:
+	lda j,x
+	bne @dropPowerup
+	lda #FALSE
+	sta isEnemyActive,x
+;pickup algo here
+	rts
+@dropPowerup:
+	lda #<(Pickups_movePowerup-1)
+	sta enemyBehaviorL,x
+	lda #>Pickups_movePowerup
+	sta enemyBehaviorH,x
+	rts
+@animationFrames:
+	.byte SPRITE0A, SPRITE0B ,SPRITE0C ,SPRITE0D
+
+
+.macro explode	size, powerUp
+	lda #0
+	sta enemyPalette,x
+	sta i,x
+	lda powerUp
+	sta j,x
+.if (.xmatch ({size}, 0))
+	lda #<(Enemies_explodeSmall-1)
+	sta enemyBehaviorL,x
+	lda #>Enemies_explodeSmall
+	sta enemyBehaviorH,x
+.else 
+	.error "explosion needs size"
+.endif
+	rts
+.endmacro
+ENEMY01=1
+ENEMY02=2
+ENEMY03=3
+ENEMY04=4
+ENEMY05=5
 .rodata
 ;first byte is a burner byte so we can use zero flag to denote empty slot
 romEnemyBehaviorH:
-	.byte NULL, >enemy01, >enemy02, >enemy03, >enemy04, >enemy05
+	.byte NULL, >(enemy01-1), >(enemy02-1), >(enemy03-1), >(enemy04-1), >(enemy05-1)
 romEnemyBehaviorL:
 	.byte NULL, <(enemy01-1), <(enemy02-1), <(enemy03-1), <(enemy04-1), <(enemy05-1)
 romEnemyMetasprite:
-	.byte NULL, TARGET_SPRITE, TARGET_SPRITE, TARGET_SPRITE, TARGET_SPRITE, TARGET_SPRITE
+	.byte NULL, SPRITE0F, SPRITE0F, SPRITE10, SPRITE10, SPRITE14
 romEnemyHPH:
-	.byte NULL, 00, 00, 0, 0
-romEnemyHPL: .byte NULL, 6, 6, 50, 50
+	.byte NULL, 00, 00, 00, 00, 00
+romEnemyHPL: 
+	.byte NULL, 02, 02, 25, 25, 192
 ;the type determines the width, height, and how it is built in oam
-romEnemyType: 
-	.byte NULL, 01, 01, 02, 02
-;TYPES:
 romEnemyWidth:
-	.byte 8, 16, 16, 32
+	.byte NULL, 16, 16, 16, 16, 16
 romEnemyHitboxX1:
-	.byte 1, 2, 2, 2
+	.byte NULL, 02, 02, 02, 02, 02
 romEnemyHitboxX2:
-	.byte 6, 12, 12, 30
+	.byte NULL, 12, 12, 12, 12, 12
 romEnemyHitboxY2:
-	.byte 14, 14, 30, 14
+	.byte NULL, 14, 14, 30, 30, 14
 
-enemy01:
+.proc enemy01
+SHOT_Y_OFFSET=16
+SHOT_X_OFFSET=4
+Y_SPEED_H=1
+Y_SPEED_L=128
 ;placed along top (y = 0), ascends and pulls slightly to the right
 	pla
 	tax
 	clc
 ;move down at a rate of 1.5 px per frame
 	lda enemyYL,x
-	adc #64
+	adc #Y_SPEED_L
 	sta enemyYL,x
 	lda enemyYH,x
-	adc #01
-;save
-	pha
+	adc #Y_SPEED_H
 ;clear if offscreen
 	bcs @clearEnemy
 	sta enemyYH,x
@@ -256,10 +325,7 @@ enemy01:
 	and #%00000001
 ;save on y
 	tay
-;retrieve 
-	pla
-;save for shooting
-	pha
+	lda enemyYH,x
 ;isolate bits 0-6, shift them left
 	asl
 	clc
@@ -270,53 +336,58 @@ enemy01:
 	adc enemyXH,x
 	bcs @clearEnemy
 	sta enemyXH,x
-	jsr wasEnemyHit
-	bne @enemyHit
-	lda #0
-	sta enemyPalette,x
-	pla
-	and #%11111111
-	cmp #%00010000
-	beq @shoot
+	jsr Enemies_isAlive 
+	bcc @enemyHit
+	lda i,x
+	bne @return
+	lda enemyYH,x
+	cmp #32
+	bcc @shoot
+@return:
 	rts
 @enemyHit:
+	explode	0, #FALSE
 @clearEnemy:
-	pla
 	lda #FALSE
 	sta isEnemyActive,x
 	rts
 @shoot:
-	adc #10
+	lda #TRUE
+	sta i,x
+	clc
+	lda enemyYH,x
+	adc #SHOT_Y_OFFSET
 	sta quickBulletY
 	lda enemyXH,x
-	adc #8
+	adc #SHOT_X_OFFSET
 	sta quickBulletX
-	jsr aimBullet;returns bullet angle
-	lda bulletAngle
+	jsr aimBullet
+	and #%11111100
 	ora #%00000001
-	and #%11111101
 	pha
-	lda bulletAngle
+	clc
 	adc #5
-	and #%11111110
 	pha
+	sec
 	sbc #8
-	and #%11111110
 	pha
 	lda #3
 	sta numberOfBullets
-	jmp initializeEnemyBullet
-
-enemy02:
+	jmp Enemy_Bullets
+.endproc
+.proc enemy02
+SHOT_Y_OFFSET=16
+SHOT_X_OFFSET=4
+Y_SPEED_H=1
+Y_SPEED_L=128
 	pla
 	tax
 	clc
 	lda enemyYL,x
-	adc #64
+	adc #Y_SPEED_L
 	sta enemyYL,x
 	lda enemyYH,x
-	adc #01
-	pha
+	adc #Y_SPEED_H
 ;clear if off screen
 	bcs @clearEnemy
 	sta enemyYH,x
@@ -324,8 +395,7 @@ enemy02:
 	rol
 	and #%00000001
 	sta mathTemp
-	pla
-	pha
+	lda enemyYH,x
 	asl
 	sta mathTemp+1
 ;X coordinate = x - |0000000y yyyyyyy0| created from y coordinate hibyte
@@ -339,75 +409,89 @@ enemy02:
 	bcc @clearEnemy
 	sta enemyXH,x
 ;check if shot
-	jsr wasEnemyHit
-	bne @enemyHit
-	pla
-	and #%11111111
-	cmp #%00010000
-	beq @shoot
+	jsr Enemies_isAlive 
+	bcc @enemyHit
+	lda i,x
+	bne @return
+	lda enemyYH,x
+	cmp #32
+	bcc @shoot
+@return:
 	rts
 @enemyHit:
+	explode	0, #FALSE
 @clearEnemy:
-	pla
 	lda #FALSE
 	sta isEnemyActive,x
 	rts
 @shoot:
-	adc #10
+	lda #TRUE
+	sta i,x
+	clc
+	lda enemyYH,x
+	adc #SHOT_Y_OFFSET
 	sta quickBulletY
 	lda enemyXH,x
-	adc #8
+	adc #SHOT_X_OFFSET
 	sta quickBulletX
-	jsr aimBullet;returns bullet angle
-	lda bulletAngle
+	jsr aimBullet
+;select bullet type 2
+	and #%11111100
 	ora #%00000001
-	and #%11111101
 	pha
-	lda bulletAngle
+;shoot two more bullets on side
+	clc
 	adc #5
-	and #%11111110
 	pha
+	sec
 	sbc #8
-	and #%11111110
 	pha
 	lda #3
 	sta numberOfBullets
-	jmp initializeEnemyBullet
+	jmp Enemy_Bullets
+.endproc
 
-
-enemy03:
+.proc enemy03
+SHOT_Y_OFFSET=24
+SHOT_X_OFFSET=4
+X_SPEED_H=0
+X_SPEED_L=32
+Y_SPEED_H=0
+Y_SPEED_L=4
 	pla
 	tax
+;move along x axis
 	clc
 	lda enemyXL,x
-	adc #32
+	adc #X_SPEED_L
 	sta enemyXL,x
 	lda enemyXH,x
-	adc #0
+	adc #X_SPEED_H
 	bcs @clearEnemy
 	sta enemyXH,x
+;move along y axis
 	sec
 	lda enemyYL,x
-	sbc #4
+	sbc #Y_SPEED_L
 	sta enemyYL,x
 	lda enemyYH,x
-	sbc #0
+	sbc #Y_SPEED_H
 	bcc @clearEnemy
+;get the animation frame (2 possible) tied to y position
 	sta enemyYH,x
-	jsr wasEnemyHit
-	bne @enemyHit
-	lda #%0
-	sta enemyPalette,x
+	and #%00000001
+	tay
+	lda @animationFrames,y
+	sta enemyMetasprite,x
+	jsr Enemies_isAlive 
+	bcc @enemyDestroyed
 	jmp @shoot
 @clearEnemy:
 	lda #FALSE
 	sta isEnemyActive,x
 	rts
-@enemyHit:
-	dec enemyHPL,x
-	beq @clearEnemy
-	lda #%11
-	sta enemyPalette,x
+@enemyDestroyed:
+	explode 0, #TRUE
 @shoot:
 	clc
 	lda j,x
@@ -419,53 +503,56 @@ enemy03:
 	rts
 @shooting:
 	clc
+	lda enemyYH,x
+	adc #SHOT_Y_OFFSET
+	pha
+	lda enemyXH,x
+	adc #SHOT_X_OFFSET
+	pha
+	clc
 	lda i,x
 	adc #4
 	sta i,x
 	pha
-	lda enemyYH,x
-	adc #16
-	sta quickBulletY
-	lda enemyXH,x
-	adc #8
-	sta quickBulletX
-	lda #1
-	sta numberOfBullets
-	jmp initializeEnemyBullet
+	jmp Enemy_Bullet
+@animationFrames:
+	.byte SPRITE10, SPRITE11
+.endproc
 
-enemy04:
+.proc enemy04
+SHOT_Y_OFFSET=24
+SHOT_X_OFFSET=4
+X_SPEED_H=0
+X_SPEED_L=32
+Y_SPEED_H=0
+Y_SPEED_L=4
 	pla
 	tax
 	sec
 	lda enemyXL,x
-	sbc #32
+	sbc #X_SPEED_L
 	sta enemyXL,x
 	lda enemyXH,x
-	sbc #0
+	sbc #X_SPEED_H
 	bcc @clearEnemy
 	sta enemyXH,x
 	sec
 	lda enemyYL,x
-	sbc #4
+	sbc #Y_SPEED_L
 	sta enemyYL,x
 	lda enemyYH,x
-	sbc #0
+	sbc #Y_SPEED_H
 	bcc @clearEnemy
 	sta enemyYH,x
-	jsr wasEnemyHit
-	bne @enemyHit
-	lda #%0
-	sta enemyPalette,x
+	jsr Enemies_isAlive 
+	bcc @enemyHit
 	jmp @shoot
 @clearEnemy:
 	lda #FALSE
 	sta isEnemyActive,x
 	rts
 @enemyHit:
-	dec enemyHPL,x
-	beq @clearEnemy
-	lda #%11
-	sta enemyPalette,x
+	explode 0, #TRUE
 @shoot:
 	clc
 	lda i,x
@@ -475,22 +562,102 @@ enemy04:
 	beq @shooting
 	rts
 @shooting:
+	sec	
+	lda enemyYH,x
+	adc #SHOT_Y_OFFSET
+	pha
+	lda enemyXH,x
+	adc #SHOT_X_OFFSET
+	pha
 	sec
 	lda j,x
 	sbc #4
 	sta j,x
-	lsr
 	pha
+	jmp Enemy_Bullet
+.endproc
+
+.proc enemy05
+	pla
+	tax
+	lda isEnemyActive,x
+	ror
+	ror
+	bcs @phase2
+	lda enemyYH,x
+	adc #2
+	sta enemyYH,x
+;when y is greater than 32, set phase 2
+	cmp #32
+	bcc @return
+	rol isEnemyActive,x
+@return:
+	rts
+@phase2:
+	ror
+	ror
+	bcs @phase3
+	lda i,x
+	adc #1
+	sta i,x
+	bmi @underWater
+	and #%01100000
+	lsr
+	lsr
+	lsr
+	lsr
+	lsr
+	tay
+	lda @emergingAnimation,y
+	sta enemyMetasprite,x
+	jsr Enemies_isAlive
+	bcc @destroyed
+	lda i,x
+	and #%00000001
+	bne @return
+	clc
 	lda enemyYH,x
 	adc #16
-	sta quickBulletY
+	pha
 	lda enemyXH,x
-	adc #8
-	bcc @noOverflow
-	lda #$ff
-@noOverflow:
-	sta quickBulletX
-	lda #1
-	sta numberOfBullets
-	jmp initializeEnemyBullet
-enemy05:
+	adc #4
+	pha
+	lda j,x
+	adc #36
+	sta j,x
+	and #%01111111
+	pha
+	jmp Enemy_Bullet
+@underWater:
+	and #%01100000
+	lsr
+	lsr
+	lsr
+	lsr
+	lsr
+	tay
+	lda @submergingAnimation,y
+	sta enemyMetasprite,x
+	lda #0
+	sta enemyPalette,x
+	lda i,x
+	cmp #192
+	bne @return
+	sec
+	rol isEnemyActive,x
+	rts
+@phase3:
+	lda enemyYH,x
+	adc #3
+	sta enemyYH,x
+	bcc @return
+	lda #FALSE
+	sta isEnemyActive,x
+	rts
+@destroyed:
+	explode 0, #TRUE
+@submergingAnimation:
+	.byte SPRITE13, SPRITE14, SPRITE14, SPRITE14 
+@emergingAnimation:
+	.byte SPRITE13, SPRITE12, SPRITE12, SPRITE12 
+.endproc

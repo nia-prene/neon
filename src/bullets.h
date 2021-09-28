@@ -10,10 +10,8 @@
 .globalzp bulletAngle
 
 ;attributes
-.global enemyBulletHitboxX1
-.global enemyBulletHitboxX2
-.global enemyBulletHitboxY1
-.global enemyBulletHitboxY2
+.global enemyBulletHitbox1
+.global enemyBulletHitbox2
 .global enemyBulletBehaviorH
 .global enemyBulletBehaviorL
 .global enemyBulletXH
@@ -25,7 +23,8 @@
 .global isEnemyBulletActive
 
 ;functions
+.global Enemy_Bullet
+.global Enemy_Bullets
 .global aimBullet
-.global initializeEnemyBullet 
 .global updateEnemyBullets
 

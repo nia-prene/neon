@@ -1,5 +1,4 @@
 .include "lib.h"
-.include "main.h"
 
 .include "scenes.h"
 .include "playerbullets.h"
@@ -11,11 +10,11 @@
 .include "player.h"
 .include "waves.h"
 .include "gamepads.h"
-.include "init.h"
 .include "oam.h"
 .include "ppu.h"
 .include "enemies.h"
-.include "powerup.h"
+.include "pickups.h"
+.include "init.s"
 
 .zeropage
 currentFrame: .res 1
@@ -26,6 +25,7 @@ hasFrameBeenRendered: .res 1
 
 .code
 main:
+	NES_init
 	jsr PPU_init
 	jsr PPU_resetScroll
 	lda #00
@@ -37,6 +37,9 @@ main:
 	sec
 	rol hasFrameBeenRendered
 ;load in test palettes
+	ldx #PALETTE06
+	ldy #5
+	jsr setPalette;(x,y)
 	ldx #TARGET_PALETTE
 	ldy #6
 	jsr setPalette;(x,y)
@@ -47,15 +50,14 @@ main:
 	jsr PPU_resetClock;()
 	lda #0
 	sta framesDropped
-
 gameLoop:
-;while(!hasFrameBeenRendered)
-	;hold here until previous frame was rendered
+;hold here until previous frame was rendered
 	lda hasFrameBeenRendered
 	beq gameLoop
-;if(nextScene != currentScene) 
+;get the current frame and save it to test for dropped frames
 	lda frame_L
 	sta currentFrame
+;load in a new level if the level has changed
 	lda nextScene
 	cmp currentScene
 	beq @sceneCurrent
@@ -87,22 +89,29 @@ gameLoop:
 ;move player
 	lda Gamepads_state
 	jsr Player_move;(a)
-;update bullets
+;move player bullets first to free up space for new ones
 	jsr PlayerBullets_move
+;shoot new bullets
 	lda Gamepads_state
-;shoot bullets
 	jsr Player_shoot;(a)
-	jsr dispenseEnemies
+	jsr updateEnemyBullets
 ;move enemies
 	jsr updateEnemies
-	jsr updateEnemyBullets
-	;if iframes>0
+;create a new enemy
+	jsr dispenseEnemies
+;if iframes>0, player harmed recently
 	lda playerIFrames
-	;player harmed recently
 	bne @playerHarmed
-	;if player unhit, build normal
+;if player unharmed, build normal
 	jsr Player_isHit
 	bcc @buildSprites
+;decrease hp and power level
+	dec Player_powerLevel
+	bpl @decreaseHP
+;dont let power level go negative
+	lda #0
+	sta Player_powerLevel
+@decreaseHP:
 	dec playerHP
 	bpl @playerHarmed
 	lda #4;gameover code here
@@ -119,7 +128,8 @@ gameLoop:
 	ror
 	ror
 @buildSprites:
-	jsr OAM_build;(c)
+	lda Gamepads_state
+	jsr OAM_build;(c,a)
 ;if frame differs from beginning 
 	lda frame_L
 	cmp currentFrame
@@ -164,7 +174,7 @@ nmi:
 
 .segment "VECTORS"
 .word nmi 	;jump here during vblank
-.word Init_reset;jump here on reset
+.word main;jump here on reset
 
 .segment "CHARS"
 .incbin "graphics.chr"

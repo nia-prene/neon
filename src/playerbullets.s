@@ -9,9 +9,10 @@
 MAX_PLAYER_BULLETS = 15
 bulletX: .res MAX_PLAYER_BULLETS 
 bulletY: .res MAX_PLAYER_BULLETS 
+PlayerBullet_width: .res MAX_PLAYER_BULLETS
 isActive: .res MAX_PLAYER_BULLETS
 bulletSprite: .res MAX_PLAYER_BULLETS
-playerBulletDamage: .res MAX_PLAYER_BULLETS
+PlayerBullet_damage: .res MAX_PLAYER_BULLETS
 
 .code
 getAvailableBullet:
@@ -66,6 +67,7 @@ BULLET_SPEED = 18
 Y_OFFSET=24
 X_OFFSET=4
 DAMAGE=3
+WIDTH=16
 	lda pressingShoot
 	and #%00000011
 	bne @return
@@ -81,7 +83,9 @@ DAMAGE=3
 	lda #LARGE_STAR
 	sta bulletSprite,x
 	lda #DAMAGE
-	sta playerBulletDamage,x
+	sta PlayerBullet_damage,x
+	lda #WIDTH
+	sta PlayerBullet_width,x
 @return:
 	rts
 @bulletOffscreen:
@@ -94,6 +98,7 @@ DAMAGE=3
 X_OFFSET=8
 Y_OFFSET=16
 DAMAGE=2
+WIDTH=8
 	lda pressingShoot
 	and #%00000011
 	bne @return
@@ -112,7 +117,9 @@ DAMAGE=2
 	lda #PLAYER_BEAM
 	sta bulletSprite,x;sprite
 	lda #DAMAGE
-	sta playerBulletDamage,x
+	sta PlayerBullet_damage,x
+	lda #WIDTH
+	sta PlayerBullet_width,x
 @bullet2:
 	jsr getAvailableBullet
 	bcc @return
@@ -128,7 +135,9 @@ DAMAGE=2
 	lda #PLAYER_BEAM
 	sta bulletSprite,x;sprite
 	lda #DAMAGE
-	sta playerBulletDamage,x
+	sta PlayerBullet_damage,x
+	lda #WIDTH
+	sta PlayerBullet_width,x
 @return:
 	rts
 @bullet1Offscreen:
@@ -145,6 +154,7 @@ DAMAGE=2
 X_OFFSET=14
 Y_OFFSET=04
 DAMAGE=1
+WIDTH=8
 	lda pressingShoot
 	and #%00000011
 	bne @return
@@ -162,7 +172,9 @@ DAMAGE=1
 	lda #SMALL_STAR
 	sta bulletSprite,x;sprite
 	lda #DAMAGE
-	sta playerBulletDamage,x
+	sta PlayerBullet_damage,x
+	lda #WIDTH
+	sta PlayerBullet_width,x
 @bullet2:	
 	jsr getAvailableBullet
 	bcc @return
@@ -178,7 +190,9 @@ DAMAGE=1
 	lda #SMALL_STAR
 	sta bulletSprite,x;sprite
 	lda #DAMAGE
-	sta playerBulletDamage,x
+	sta PlayerBullet_damage,x
+	lda #WIDTH
+	sta PlayerBullet_width,x
 @return:
 	rts
 @bullet1Offscreen:

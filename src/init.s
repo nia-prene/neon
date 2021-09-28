@@ -1,8 +1,5 @@
-.include "init.h"
-.include "main.h"
-
 .code
-Init_reset:
+.macro NES_init
     sei        ; ignore IRQs
     cld        ; disable decimal mode
     ldx #$40
@@ -44,4 +41,4 @@ Init_reset:
     sta $700,x
     inx
     bne @clrmem
-	jmp main
+.endmacro

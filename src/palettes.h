@@ -1,12 +1,13 @@
-;objects
+;palette objects
 .globalzp PLAYER_PALETTE
-.globalzp BEACH_PALETTE
 .globalzp BEACH_0
 .globalzp BEACH_1
 .globalzp BEACH_2
 .globalzp TARGET_PALETTE
 .globalzp PURPLE_BULLET
-
+.globalzp PALETTE06
+;palette collection objects
+.globalzp BEACH_PALETTE
 
 .globalzp BACKGROUND_COLOR
 .global backgroundColor
