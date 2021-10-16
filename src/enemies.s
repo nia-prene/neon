@@ -5,6 +5,7 @@
 .include "playerbullets.h"
 .include "bullets.h"
 .include "pickups.h"
+.include "score.h"
 
 .zeropage
 totalDamage: .res 1
@@ -16,6 +17,8 @@ enemyYH: .res MAX_ENEMIES
 enemyYL: .res MAX_ENEMIES
 enemyHPH: .res MAX_ENEMIES
 enemyHPL: .res MAX_ENEMIES
+Enemies_pointValue_H: .res MAX_ENEMIES
+Enemies_pointValue_L: .res MAX_ENEMIES
 i: .res MAX_ENEMIES
 j: .res MAX_ENEMIES
 enemyBehaviorH: .res MAX_ENEMIES
@@ -70,6 +73,11 @@ initializeEnemy:;void (a,x,y)
 	sta enemyHPH,x
 	lda romEnemyHPL,y
 	sta enemyHPL,x
+;copy points enemies are worth
+	lda pointValue_L,y
+	sta Enemies_pointValue_L,x
+	lda pointValue_H,y
+	sta Enemies_pointValue_H,x
 ;copy hitboxes
 	lda romEnemyHitboxX1,y
 	sta enemyHitboxX1,x
@@ -224,6 +232,20 @@ Enemies_isAlive:
 	lda enemyHPH,x
 	sbc #0
 	sta enemyHPH,x
+	bcs :+
+;if enemy died, add their points to the total
+		lda Enemies_pointValue_L,x
+		adc Score_frameTotal_L
+		sta Score_frameTotal_L
+		lda Enemies_pointValue_H,x
+		adc Score_frameTotal_H
+		sta Score_frameTotal_H
+		bcs @error
+:	rts
+@error:
+	lda #1
+	sta Lib_errorCode
+	clc
 	rts
 
 Enemies_explodeSmall:
@@ -279,18 +301,24 @@ ENEMY02=2
 ENEMY03=3
 ENEMY04=4
 ENEMY05=5
+ENEMY06=6;Ready?
+ENEMY07=7;Go!
 .rodata
 ;first byte is a burner byte so we can use zero flag to denote empty slot
 romEnemyBehaviorH:
-	.byte NULL, >(enemy01-1), >(enemy02-1), >(enemy03-1), >(enemy04-1), >(enemy05-1)
+	.byte NULL, >(enemy01-1), >(enemy02-1), >(enemy03-1), >(enemy04-1), >(enemy05-1), >(enemy06-1), >(enemy07-1)
 romEnemyBehaviorL:
-	.byte NULL, <(enemy01-1), <(enemy02-1), <(enemy03-1), <(enemy04-1), <(enemy05-1)
+	.byte NULL, <(enemy01-1), <(enemy02-1), <(enemy03-1), <(enemy04-1), <(enemy05-1), <(enemy06-1), <(enemy07-1)
 romEnemyMetasprite:
-	.byte NULL, SPRITE0F, SPRITE0F, SPRITE10, SPRITE10, SPRITE14
-romEnemyHPH:
-	.byte NULL, 00, 00, 00, 00, 00
+	.byte NULL, SPRITE0F, SPRITE0F, SPRITE10, SPRITE10, SPRITE14, SPRITE15, SPRITE16
 romEnemyHPL: 
 	.byte NULL, 02, 02, 25, 25, 192
+romEnemyHPH:
+	.byte NULL, 00, 00, 00, 00, 00
+pointValue_L:
+	.byte NULL, $19, $19, $32, $32, $64 
+pointValue_H:
+	.byte NULL, 00, 00, 00, 00, 00
 ;the type determines the width, height, and how it is built in oam
 romEnemyWidth:
 	.byte NULL, 16, 16, 16, 16, 16
@@ -660,4 +688,44 @@ Y_SPEED_L=4
 	.byte SPRITE13, SPRITE14, SPRITE14, SPRITE14 
 @emergingAnimation:
 	.byte SPRITE13, SPRITE12, SPRITE12, SPRITE12 
+.endproc
+.proc enemy06
+X_OFFSET=108
+Y_OFFSET=64
+CUTOFF=97
+	pla
+	tax
+	lda #Y_OFFSET
+	sta enemyYH,x
+	lda #X_OFFSET
+	sta enemyXH,x
+	clc
+	lda i,x
+	adc #1
+	sta i,x
+	cmp #CUTOFF
+	bne@return
+		lda #FALSE
+		sta isEnemyActive,x
+@return:
+	rts
+.endproc
+.proc enemy07
+X_OFFSET=116
+Y_OFFSET=64
+	pla
+	tax
+	lda #Y_OFFSET
+	sta enemyYH,x
+	lda #X_OFFSET
+	sta enemyXH,x
+	clc
+	lda i,x
+	adc #5
+	sta i,x
+	bcc @return
+		lda #FALSE
+		sta isEnemyActive,x
+@return:
+	rts
 .endproc

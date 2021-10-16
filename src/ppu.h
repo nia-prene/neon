@@ -1,4 +1,6 @@
 .globalzp frame_L
+.globalzp PPU_havePalettesChanged
+
 .global PPU_init
 .global PPU_resetClock
 .global PPU_advanceClock

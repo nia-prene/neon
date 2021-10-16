@@ -9,5 +9,7 @@ Scenes_tile:
 	.byte BEACH_SCREEN
 Scenes_palettes:
 	.byte BEACH_PALETTE
-levelWave:
-	.byte BEACH
+Scenes_backgroundColor:
+	.byte $0f
+Scenes_waveString:
+	.byte WAVESTRING00

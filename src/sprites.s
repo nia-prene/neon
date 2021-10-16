@@ -23,6 +23,18 @@ SPRITE11=$11;balloon cannon frame 1
 SPRITE12=$12;submarine above water
 SPRITE13=$13;submarine middle frame
 SPRITE14=$14;submarine below water
+SPRITE15=$15;Ready?
+SPRITE16=$16;Go!
+SPRITE17=$17;score 0
+SPRITE18=$18;score 1
+SPRITE19=$19;score 2
+SPRITE1A=$1a;score 3
+SPRITE1B=$1b;score 4
+SPRITE1C=$1c;score 5
+SPRITE1D=$1d;score 6
+SPRITE1E=$1e;score 7
+SPRITE1F=$1f;score 8
+SPRITE20=$20;score 9
 
 ;format
 ;name:
@@ -120,10 +132,55 @@ sprite14:
 	.byte 0, $70, %00000001, 0
 	.byte 0, $70, %01000001, 8
 	.byte NULL
+sprite15:
+	.byte 0, $e0, %00, 0
+	.byte 0, $e2, %00, 8
+	.byte 0, $e4, %00, 16
+	.byte 0, $e6, %00, 24
+	.byte 6, $e8, %00, 32
+	.byte 0, $ea, %00, 35
+	.byte NULL
+sprite16:
+	.byte 0, $ec, %00, 0
+	.byte 0, $ee, %00, 8
+	.byte 0, $f0, %00, 16
+	.byte NULL
+sprite17:
+	.byte 0, $d2, %0, 0
+	.byte NULL
+sprite18:
+	.byte 0, $C0, %0, 0
+	.byte NULL
+sprite19:
+	.byte 0, $c2, %0, 0
+	.byte NULL
+sprite1A:
+	.byte 0, $c4, %0, 0
+	.byte NULL
+sprite1B:
+	.byte 0, $c6, %0, 0
+	.byte NULL
+sprite1C:
+	.byte 0, $c8, %0, 0
+	.byte NULL
+sprite1D:
+	.byte 0, $ca, %0, 0
+	.byte NULL
+sprite1E:
+	.byte 0, $cc, %0, 0
+	.byte NULL
+sprite1F:
+	.byte 0, $ce, %0, 0
+	.byte NULL
+sprite20:
+	.byte 0, $d0, %0, 0
+	.byte NULL
 ;pointer table
 spritesH:
 	.byte >sprite00, >sprite01, >sprite02, >sprite03, >sprite04, >sprite05, >sprite06, >sprite07, >sprite08, >sprite09, >sprite0A, >sprite0B, >sprite0C, >sprite0D, >sprite0E, >sprite0F
-	.byte >sprite10, >sprite11, >sprite12, >sprite13, >sprite14
+	.byte >sprite10, >sprite11, >sprite12, >sprite13, >sprite14, >sprite15, >sprite16, >sprite17, >sprite18, >sprite19, >sprite1A, >sprite1B, >sprite1C, >sprite1D, >sprite1E, >sprite1F
+	.byte >sprite20
 spritesL:
 	.byte <sprite00, <sprite01, <sprite02, <sprite03, <sprite04, <sprite05, <sprite06, <sprite07, <sprite08, <sprite09, <sprite0A, <sprite0B, <sprite0C, <sprite0D, <sprite0E, <sprite0F
-	.byte <sprite10, <sprite11, <sprite12, <sprite13, <sprite14
+	.byte <sprite10, <sprite11, <sprite12, <sprite13, <sprite14, <sprite15, <sprite16, <sprite17, <sprite18, <sprite19, <sprite1A, <sprite1B, <sprite1C, <sprite1D, <sprite1E, <sprite1F
+	.byte <sprite20

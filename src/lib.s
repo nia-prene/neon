@@ -10,6 +10,7 @@ sprite1LeftOrTop: .res 1
 sprite1RightOrBottom: .res 1
 sprite2LeftOrTop: .res 1
 sprite2RightOrBottom: .res 1
+Lib_errorCode: .res 1
 
 .segment "HEADER"
 ;contains ines header 

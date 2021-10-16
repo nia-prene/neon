@@ -9,6 +9,7 @@
 .globalzp sprite2LeftOrTop
 .globalzp sprite2RightOrBottom
 .globalzp mathTemp
+.globalzp Lib_errorCode
 
 ;functions
 .global checkCollision

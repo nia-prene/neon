@@ -9,7 +9,6 @@
 ;palette collection objects
 .globalzp BEACH_PALETTE
 
-.globalzp BACKGROUND_COLOR
 .global backgroundColor
 .global color1
 .global color2
@@ -18,3 +17,4 @@
 ;functions
 .global setPalette
 .global setPaletteCollection
+.global Palettes_swapEnemyPalettes

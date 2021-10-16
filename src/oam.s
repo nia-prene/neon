@@ -3,6 +3,7 @@
 .include "oam.h"
 
 .include "sprites.h"
+.include "score.h"
 .include "player.h"
 .include "playerbullets.h"
 .include "enemies.h"
@@ -12,14 +13,15 @@ OAM_LOCATION = 02 ;located at $0200, expects hibyte
 OAMADDR = $2003;(aaaa aaaa) OAM read/write address
 OAMDATA = $2004;(dddd dddd)	OAM data read/write
 OAMDMA = $4014;(aaaa aaaa)OAM DMA high address
-
+MAX_OVERFLOW_FRAMES=8;
 .zeropage
 o: .res 1 	;general purpose iterator, increased once a frame
 buildX: .res 1
 buildY: .res 1
 buildPalette: .res 1
 spritePointer: .res 2
-
+OAM_overflowFrames: .res 1
+OAM_hideExcessSprites: .res 1
 .segment "OAM"
 oam: .res 256
 
@@ -31,37 +33,69 @@ OAM_build:;c (c)
 	inc o ;module iterator
 	ldx #0
 	bcs @buildWithoutPlayer
-;build hitbox if butt a is being pressed
+;build hitbox if button a is being pressed
 	and #%10000000
-	beq @skipHitbox
-	jsr buildHitbox
-@skipHitbox:
-	jsr buildEnemyBullets
-	bcc @oamFull
+	beq :+
+		jsr buildHitbox
+:	jsr buildEnemyBullets
+	bcs @oamFull
 	jsr buildPlayer
-	bcc @oamFull
+	bcs @oamFull
 	jsr buildEnemies
-	bcc @oamFull
-	jsr buildPlayerBullets
-	bcc @oamFull
-	jsr buildHearts
-	bcc @oamFull
-	jsr clearRemaining
-	sec
-	rts
+	bcs @oamFull
+;if there arent enough sprites, stop building scoreboard
+	lda OAM_hideExcessSprites
+	bne :+
+		jsr OAM_buildScore
+		bcs @oamFull
+:	jsr buildPlayerBullets
+	bcs @oamFull
+;if there arent enough sprites, stop building hearts
+	lda OAM_hideExcessSprites
+	bne :+
+		jsr buildHearts
+		bcs @oamFull
+:	jsr clearRemaining
+	jmp @allSPritesRendered
 @buildWithoutPlayer:
 	jsr buildEnemyBullets
-	bcc @oamFull
+	bcs @oamFull
 	jsr buildEnemies
-	bcc @oamFull
-	jsr buildPlayerBullets
-	bcc @oamFull
-	jsr buildHearts
-	bcc @oamFull
-	jsr clearRemaining
+	bcs @oamFull
+;if there arent enough sprites, stop building scoreboard
+	lda OAM_hideExcessSprites
+	bne :+
+		jsr OAM_buildScore
+		bcs @oamFull
+:	jsr buildPlayerBullets
+	bcs @oamFull
+;if there arent enough sprites, stop building hearts
+	lda OAM_hideExcessSprites
+	bne :+
+		jsr buildHearts
+		bcs @oamFull
+:	jsr clearRemaining
+@allSPritesRendered:
 	sec
+	lda OAM_overflowFrames
+	sbc #1
+	bpl :+
+		lda #0
+:	sta OAM_overflowFrames
+	lda #FALSE
+	sta OAM_hideExcessSprites
+	rts
 @oamFull:
-	rts;returns carry clear
+	clc
+	lda OAM_overflowFrames
+	adc #1
+	cmp #MAX_OVERFLOW_FRAMES+1
+	bcc :+
+		lda #MAX_OVERFLOW_FRAMES
+		lda #TRUE
+		sta OAM_hideExcessSprites
+:	sta OAM_overflowFrames
+	rts
 
 buildHitbox:
 PLAYER_HITBOX_Y_OFFSET=5
@@ -126,22 +160,42 @@ buildPlayer:
 buildPlayerBullets:
 	lda #NULL;terminate
 	pha
+	lda o
+	ror
+	bcs @buildLoop1
+@buildLoop0:
 	ldy #MAX_PLAYER_BULLETS-1
-@buildLoop:
+@loop0:
 	lda isActive,y
-	beq @skipBullet
-	lda bulletSprite,y
-	pha
-	lda bulletY,y
-	pha
-	lda bulletX,y
-	pha
-	lda #0;palette
-	pha
-@skipBullet:
-	dey
-	bpl @buildLoop
-	jmp buildSprites
+	beq :+
+		lda bulletSprite,y
+		pha
+		lda bulletY,y
+		pha
+		lda bulletX,y
+		pha
+		lda #0;palette
+		pha
+:	dey
+	bpl @loop0
+	jmp buildSpritesShort
+@buildLoop1:
+	ldy #0
+@loop1:
+	lda isActive,y
+	beq :+
+		lda bulletSprite,y
+		pha
+		lda bulletY,y
+		pha
+		lda bulletX,y
+		pha
+		lda #0;palette
+		pha
+:	iny
+	cpy #MAX_PLAYER_BULLETS
+	bcc @loop1
+	jmp buildSpritesShort
 
 buildEnemies:
 	lda #NULL
@@ -183,6 +237,23 @@ buildHearts:
 	jmp buildSpritesShort
 heartX:;location of hearts
 	.byte 10, 18, 26, 34, 42, 50, 58
+
+OAM_buildScore:
+	lda #NULL
+	pha
+	ldy #6
+@loop:
+	lda Score_displaySprites,y
+	pha
+	lda #8
+	pha
+	lda Score_xPositions,y
+	pha
+	lda #00
+	pha
+	dey
+	bpl @loop
+	jmp buildSpritesShort
 
 buildSprites:
 ;builds collections of sprites
@@ -239,7 +310,7 @@ buildSprites:
 	cmp #NULL
 	bne @metaspriteLoop
 @return:
-	sec;build successful
+	clc ;build successful
 	rts
 @yOverflow:
 	clc
@@ -258,7 +329,7 @@ buildSprites:
 	pla ;sprite
 	jmp @oamFull
 @returnFull:
-	clc ;set full
+	sec ;set full
 	rts
 
 buildSpritesShort:
@@ -313,7 +384,7 @@ buildSpritesShort:
 	cmp #NULL
 	bne @metaspriteLoop
 @return:
-	sec
+	clc
 	rts
 @xOverflow:
 	clc
@@ -328,7 +399,7 @@ buildSpritesShort:
 	pla ;sprite
 	jmp @oamFull
 @returnFull:
-	clc
+	sec
 	rts
 
 clearRemaining:

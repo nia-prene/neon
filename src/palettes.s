@@ -1,9 +1,10 @@
 .include "palettes.h"
 
+.include "lib.h"
 .include "scenes.h"
+.include "ppu.h"
 
 .data
-BACKGROUND_COLOR = $0f;black
 backgroundColor: .res 1
 color1: .res 8
 color2: .res 8
@@ -11,9 +12,9 @@ color3: .res 8
 
 .rodata
 PLAYER_PALETTE= 0
-BEACH_0= 1
-BEACH_1= 2
-BEACH_2= 3
+PALETTE01= 1
+PALETTE02= 2
+PALETTE03= 3
 TARGET_PALETTE=4
 PURPLE_BULLET=5
 PALETTE06=6;blue drone palette
@@ -23,18 +24,19 @@ romColor2:
 	.byte $25, $19, $23, $21, $05, $24, $21
 romColor3:
 	.byte $35, $29, $37, $31, $30, $34, $31
+
 ;;;;;;;;;;;;;
 ;collections;
 ;;;;;;;;;;;;;
 BEACH_PALETTE = 0
 palette0:
-	.byte BEACH_0
+	.byte PALETTE01
 palette1:
-	.byte BEACH_1
+	.byte PALETTE02
 palette2:
-	.byte BEACH_2
+	.byte PALETTE03
 palette3:
-	.byte BEACH_2
+	.byte 00
 
 .code
 setPalette:;(x, y)
@@ -57,6 +59,8 @@ setPaletteCollection:;(x)
 ;x - current scene
 ;returns void
 ;a is collection for the scene
+	lda Scenes_backgroundColor,x
+	sta backgroundColor
 	lda Scenes_palettes,x
 ;save it
 	pha
@@ -98,4 +102,19 @@ setPaletteCollection:;(x)
 	tax
 ;x is now the palette
 	ldy #03
+	jmp setPalette
+
+Palettes_swapEnemyPalettes:
+;sets new palettes for a new wave of enemies (does not render)
+;arguments
+;2 on stack, palettes to set
+	lda #TRUE
+	sta PPU_havePalettesChanged
+	pla
+	tax
+	ldy #5
+	jsr setPalette
+	pla
+	tax
+	ldy #6
 	jmp setPalette

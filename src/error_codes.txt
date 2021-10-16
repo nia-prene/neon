@@ -1,0 +1,4 @@
+A list of error codes written to Lib_errorCode (find location in build/neon.dbg
+emulator will halt if anything is written to this variable
+
+#1 point overflow - points added to Score_frameTally_H have overflowed. only will happen if too many points are added during a frame

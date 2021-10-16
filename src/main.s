@@ -14,6 +14,7 @@
 .include "ppu.h"
 .include "enemies.h"
 .include "pickups.h"
+.include "score.h"
 .include "init.s"
 
 .zeropage
@@ -22,6 +23,7 @@ framesDropped: .res 1
 currentScene: .res 1
 nextScene: .res 1
 hasFrameBeenRendered: .res 1
+currentPlayer: .res 1
 
 .code
 main:
@@ -30,22 +32,23 @@ main:
 	jsr PPU_resetScroll
 	lda #00
 	sta nextScene
+;player 0 starts
+	sta currentPlayer
 	lda #NULL
 ;currently no scene is loaded
 	sta currentScene
 ;there is no frame that needs renderso set to TRUE
 	sec
 	rol hasFrameBeenRendered
-;load in test palettes
-	ldx #PALETTE06
-	ldy #5
-	jsr setPalette;(x,y)
-	ldx #TARGET_PALETTE
-	ldy #6
-	jsr setPalette;(x,y)
+;load in bullet palettes
 	ldx #PURPLE_BULLET
 	ldy #7
 	jsr setPalette;(x,y)
+;reset the scores
+	ldx #0;player 1
+	jsr Score_clear;(x)
+	ldx #1;player 2
+	jsr Score_clear;(x)
 ;reset the clock to 0
 	jsr PPU_resetClock;()
 	lda #0
@@ -60,34 +63,43 @@ gameLoop:
 ;load in a new level if the level has changed
 	lda nextScene
 	cmp currentScene
-	beq @sceneCurrent
+	beq :+
 	;update the scene
-		;turn off rendering
+	;turn off rendering
 		jsr disableRendering;(a, x)
-		;set up the player
+	;set up the player
 		jsr Player_initialize;()
-		;get the tiles
+	;get the tiles
 		lda nextScene
 		jsr unzipAllTiles;(a)
-		;get the palettes
+	;get the palettes
 		ldx nextScene
 		jsr setPaletteCollection;(x)
-		;rendering is off so we can update video ram
+	;rendering is off so we can update video ram
 		jsr renderAllTiles;()
 		jsr renderAllPalettes;()
-		;reset the enemy wave dispenser
+	;reset the enemy wave dispenser
 		ldx nextScene
 		jsr Waves_reset;(x)
+	;move the scoreboard to the right position
+		jsr Score_setDefaultX
 		jsr enableRendering;(a, x)
-		;set current to next
+	;set current to next
 		lda nextScene
 		sta currentScene
 		jsr PPU_resetClock;()
-@sceneCurrent:
 ;update the scroll
-	jsr PPU_updateScroll
-;move player
+:	jsr PPU_updateScroll
+;if player is hoding A B SEL ST, reset the game
 	lda Gamepads_state
+	and #%11110000
+	cmp #%11110000
+	bne :+
+		jmp main
+;reset the score for this frame
+:	jsr Score_clearFrameTally
+	lda Gamepads_state
+;move player
 	jsr Player_move;(a)
 ;move player bullets first to free up space for new ones
 	jsr PlayerBullets_move
@@ -99,6 +111,9 @@ gameLoop:
 	jsr updateEnemies
 ;create a new enemy
 	jsr dispenseEnemies
+;add up all points earned this frame
+	lda currentPlayer
+	jsr Score_tallyFrame;(a)
 ;if iframes>0, player harmed recently
 	lda playerIFrames
 	bne @playerHarmed
@@ -133,11 +148,10 @@ gameLoop:
 ;if frame differs from beginning 
 	lda frame_L
 	cmp currentFrame
-	beq @notDropped
-;the frame was dropped
-	inc framesDropped
-@notDropped:
-	lda #FALSE
+	beq :+
+	;the frame was dropped
+		inc framesDropped
+:	lda #FALSE
 	sta hasFrameBeenRendered
 	jmp gameLoop
 
@@ -156,6 +170,10 @@ nmi:
 	pha
 	jsr PPU_advanceClock;()
 ;rendering code goes here
+	lda PPU_havePalettesChanged
+	beq @skipPalettes
+		jsr renderAllPalettes
+@skipPalettes:
 ;oamdma transfer
 	jsr OAM_beginDMA
 	jsr Gamepads_read

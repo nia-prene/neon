@@ -3,7 +3,9 @@
 .include "waves.h"
 
 .include "enemies.h"
+.include "scenes.h"
 .include "bullets.h"
+.include "palettes.h"
 
 .zeropage
 levelWavePointer: .res 2 ;points to the collection of waves for the level
@@ -15,15 +17,16 @@ ENEMY_FREQUENCY=%00001111 ;how often should a new enemy be dispensed
 CONCURRENT=$FE ;signals that two enemies are to be dispensed this frame
 SKIP=0
 .code
-
 Waves_reset:;void(x)
 ;sets up the level's enemy wave system
 ;arguments
 ;x - current scene
-	;get the pointer to the collection of waves for the current level
-	lda levelWavesL,x
+;get the string index from the scene
+	lda Scenes_waveString,x
+	tax
+	lda waveStrings_L,x
 	sta levelWavePointer
-	lda levelWavesH,x
+	lda waveStrings_H,x
 	sta levelWavePointer+1
 	;start on 0th wave, 0th enemy
 	lda #0
@@ -107,9 +110,16 @@ dispenseEnemies:
 	iny
 	lda (wavePointer),y
 	sta bulletType+3
+;get the palettes
+	iny
+	lda (wavePointer),y
+	pha
+	iny
+	lda (wavePointer),y
+	pha
 	iny
 	sty enemyIndex
-	rts
+	jmp Palettes_swapEnemyPalettes
 
 areEnemiesRemaining:
 	ldx #MAX_ENEMIES-1
@@ -125,42 +135,63 @@ areEnemiesRemaining:
 	rts
 	
 .rodata
-BEACH=0
-levelWavesH:
-	.byte >beachWaves
-levelWavesL:
-	.byte <beachWaves
 ;waves for each level as index to pointers
-beachWaves:
-	.byte 0, 1, 2, 3, 2, 5, 4, 1, 2
+WAVESTRING00=0
+waveStrings_H:
+	.byte >waveString00
+waveStrings_L:
+	.byte <waveString00
+waveString00:
+	.byte WAVE00, WAVE01, WAVE02, WAVE03, WAVE04, WAVE03, WAVE06, WAVE05, WAVE02, WAVE01
 ;pointers to individual enemy waves (below)
+
+WAVE00=$00;Ready? Go!
+WAVE01=$01;ligh drones moving left
+WAVE02=$02;ligh drones moving right
+WAVE03=$03;medium drones moving left
+WAVE04=$04;left baloon with light right moving drones
+WAVE05=$05
+WAVE06=$06
+WAVE07=$07
 wavePointerH:
-	.byte >wave00, >wave01, >wave02, >wave03, >wave04, >wave05
+	.byte >wave00, >wave01, >wave02, >wave03, >wave04, >wave05, >wave06, >wave07
 wavePointerL:
-	.byte <wave00, <wave01, <wave02, <wave03, <wave04, <wave05
+	.byte <wave00, <wave01, <wave02, <wave03, <wave04, <wave05, <wave06, <wave07
 
 ;individual enemy waves
+;	.byte PALETTE, PALETTE
 ;	.byte bulletType, bulletType, bulletType
 ;	.byte enemy, position, (skip), enemy, position ... NULL
 wave00:
-	.byte 0, 1, 1
-	.byte 2, 14, SKIP, 2, 16, SKIP, 2, 18, SKIP, 2, 20, SKIP, 2, 22, NULL
+	.byte 0, 0, 0
+	.byte PALETTE06, PALETTE06 
+	.byte 6, 62, SKIP, SKIP, SKIP, SKIP, SKIP, 7, 62, NULL
 wave01:
 	.byte 0, 1, 1
-	.byte 1, 18, SKIP, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, NULL
+	.byte PALETTE06, PALETTE06 
+	.byte 2, 14, SKIP, 2, 16, SKIP, 2, 18, SKIP, 2, 20, SKIP, 2, 22, NULL
 wave02:
 	.byte 0, 1, 1
-	.byte 2, 12, 2, 14, 2, 16, 2, 18, 2, 20, 2, 22, NULL
+	.byte PALETTE06, PALETTE06 
+	.byte 1, 18, SKIP, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, NULL
 wave03:
 	.byte 0, 1, 1
-	.byte 3, 70, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, SKIP, 1, 08, NULL
+	.byte PALETTE06, PALETTE06 
+	.byte 2, 12, 2, 14, 2, 16, 2, 18, 2, 20, 2, 22, NULL
 wave04:
 	.byte 0, 1, 1
-	.byte 1, 20, 1, 18, 1, 16, 1, 14, 1, 12, 1, 10, NULL
-
+	.byte PALETTE06, PALETTE06 
+	.byte 3, 70, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, SKIP, 1, 08, NULL
 wave05:
 	.byte 0, 1, 1
+	.byte PALETTE06, PALETTE06 
+	.byte 1, 20, 1, 18, 1, 16, 1, 14, 1, 12, 1, 10, NULL
+
+wave06:
+	.byte 0, 1, 1
+	.byte PALETTE06, PALETTE06 
 	.byte 5, 24, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, 1, 16, 1, 15, 1, 14, NULL
+wave07:
 ;Coordinate Table
 ;x and y coordinate decoder table for enemy spawn locations
 waveX:

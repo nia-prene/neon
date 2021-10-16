@@ -54,6 +54,7 @@ DISABLE_RENDERING = %11100111	; and
 DIM_SCREEN = %11100000			; or
 
 .zeropage
+PPU_havePalettesChanged: .res 1
 currentNameTable: .res 2
 currentPPUSettings: .res 1
 currentMaskSettings: .res 1
@@ -137,7 +138,7 @@ renderAllPalettes:
 	tax
 @storePalettes:
 ;store in PPUDATA
-	lda #BACKGROUND_COLOR
+	lda backgroundColor
 	sta PPUDATA
 	lda color1,x
 	sta PPUDATA
@@ -148,6 +149,8 @@ renderAllPalettes:
 	inx
 	cpx #$08;8 palettes
 	bne @storePalettes
+	lda #FALSE
+	sta PPU_havePalettesChanged
 	rts
 
 render32:;(a)
