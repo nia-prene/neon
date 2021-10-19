@@ -10,6 +10,7 @@
 .globalzp bulletAngle
 
 ;attributes
+.global isEnemyBulletActive
 .global enemyBulletHitbox1
 .global enemyBulletHitbox2
 .global enemyBulletBehaviorH
@@ -20,7 +21,6 @@
 .global enemyBulletYL
 .global enemyBulletMetasprite
 .global enemyBulletWidth
-.global isEnemyBulletActive
 
 ;functions
 .global Enemy_Bullet

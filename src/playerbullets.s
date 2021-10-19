@@ -10,11 +10,46 @@ MAX_PLAYER_BULLETS = 15
 bulletX: .res MAX_PLAYER_BULLETS 
 bulletY: .res MAX_PLAYER_BULLETS 
 PlayerBullet_width: .res MAX_PLAYER_BULLETS
-isActive: .res MAX_PLAYER_BULLETS
 bulletSprite: .res MAX_PLAYER_BULLETS
 PlayerBullet_damage: .res MAX_PLAYER_BULLETS
+isActive: .res MAX_PLAYER_BULLETS
+pressingShoot: .res 1
+i: .res 1 ;module iterator
 
 .code
+PlayerBullets_shoot:;(controller poll)
+B_BUTTON=%01000000
+	and #B_BUTTON
+	beq @notShooting
+		inc pressingShoot
+		lda pressingShoot
+		and #%00000011
+		bne @return
+			inc i;increase module iterator
+			ldy Player_powerLevel
+		@shotLoop:
+		;jump to all active shot types
+			lda @shotType_H,y
+			pha
+			lda @shotType_L,y
+			pha
+			dey
+			bpl @shotLoop
+			rts
+@notShooting:
+	lda #$ff
+	sta pressingShoot
+@return:
+	rts
+@shotType_L:
+	.byte <(shotType00-1)
+	.byte <(shotType01-1)
+	.byte <(shotType02-1)
+@shotType_H:
+	.byte >(shotType00-1)
+	.byte >(shotType01-1)
+	.byte >(shotType02-1)
+
 getAvailableBullet:
 ;returns
 ;x - available bullet
@@ -68,9 +103,6 @@ Y_OFFSET=24
 X_OFFSET=4
 DAMAGE=3
 WIDTH=16
-	lda pressingShoot
-	and #%00000011
-	bne @return
 	jsr getAvailableBullet
 	bcc @return
 	lda playerX_H
@@ -80,7 +112,10 @@ WIDTH=16
 	sbc #Y_OFFSET
 	bcc @bulletOffscreen
 	sta bulletY,x
-	lda #LARGE_STAR
+	lda i
+	and #%1
+	tay
+	lda @starSprites,y
 	sta bulletSprite,x
 	lda #DAMAGE
 	sta PlayerBullet_damage,x
@@ -92,6 +127,8 @@ WIDTH=16
 	lda #FALSE
 	sta isActive,x
 	rts
+@starSprites:
+	.byte LARGE_STAR, SPRITE21
 .endproc
 
 .proc shotType01
@@ -99,9 +136,6 @@ X_OFFSET=8
 Y_OFFSET=16
 DAMAGE=2
 WIDTH=8
-	lda pressingShoot
-	and #%00000011
-	bne @return
 ;start with left bullet
 	jsr getAvailableBullet
 	bcc @return
@@ -155,9 +189,6 @@ X_OFFSET=14
 Y_OFFSET=04
 DAMAGE=1
 WIDTH=8
-	lda pressingShoot
-	and #%00000011
-	bne @return
 ;start with left bullet
 	jsr getAvailableBullet
 	bcc @return

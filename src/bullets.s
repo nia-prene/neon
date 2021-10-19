@@ -12,8 +12,10 @@ octant: .res 1
 bulletAngle: .res 1
 numberOfBullets: .res 1
 
+
 .data
 MAX_ENEMY_BULLETS=56
+isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 enemyBulletHitbox1: .res MAX_ENEMY_BULLETS
 enemyBulletHitbox2: .res MAX_ENEMY_BULLETS
 enemyBulletBehaviorH: .res MAX_ENEMY_BULLETS
@@ -24,7 +26,6 @@ enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
 enemyBulletWidth: .res MAX_ENEMY_BULLETS
-isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 
 .code
 Enemy_Bullet:
@@ -190,9 +191,9 @@ aimBullet:
 romEnemyBulletWidth:
 	.byte 8, 16
 romEnemyBulletHitbox1:
-	.byte 3, 6
-romEnemyBulletHitbox2:
 	.byte 2, 4
+romEnemyBulletHitbox2:
+	.byte 4, 8
 romEnemyBulletMetasprite:
 	.byte BULLET_SPRITE_0, BULLET_SPRITE_1
 

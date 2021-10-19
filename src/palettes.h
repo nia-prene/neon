@@ -1,11 +1,13 @@
 ;palette objects
-.globalzp PLAYER_PALETTE
-.globalzp BEACH_0
-.globalzp BEACH_1
-.globalzp BEACH_2
+.globalzp PALETTE00
+.globalzp PALETTE01
+.globalzp PALETTE02
+.globalzp PALETTE03
 .globalzp TARGET_PALETTE
 .globalzp PURPLE_BULLET
 .globalzp PALETTE06
+.globalzp PALETTE07
+
 ;palette collection objects
 .globalzp BEACH_PALETTE
 

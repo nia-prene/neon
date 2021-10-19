@@ -164,7 +164,7 @@ wavePointerL:
 ;	.byte enemy, position, (skip), enemy, position ... NULL
 wave00:
 	.byte 0, 0, 0
-	.byte PALETTE06, PALETTE06 
+	.byte PALETTE00, PALETTE00 
 	.byte 6, 62, SKIP, SKIP, SKIP, SKIP, SKIP, 7, 62, NULL
 wave01:
 	.byte 0, 1, 1

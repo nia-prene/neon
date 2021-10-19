@@ -105,7 +105,7 @@ gameLoop:
 	jsr PlayerBullets_move
 ;shoot new bullets
 	lda Gamepads_state
-	jsr Player_shoot;(a)
+	jsr PlayerBullets_shoot;(a)
 	jsr updateEnemyBullets
 ;move enemies
 	jsr updateEnemies

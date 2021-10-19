@@ -162,6 +162,8 @@ buildPlayerBullets:
 	pha
 	lda o
 	ror
+	ror
+	ror
 	bcs @buildLoop1
 @buildLoop0:
 	ldy #MAX_PLAYER_BULLETS-1
@@ -241,8 +243,13 @@ heartX:;location of hearts
 OAM_buildScore:
 	lda #NULL
 	pha
+;alternate between building forward and backward for flicker
+	lda o
+	ror
+	bcs @loop2
+@loop1:
 	ldy #6
-@loop:
+:
 	lda Score_displaySprites,y
 	pha
 	lda #8
@@ -252,7 +259,22 @@ OAM_buildScore:
 	lda #00
 	pha
 	dey
-	bpl @loop
+	bpl :-
+	jmp buildSpritesShort
+@loop2:
+	ldy #0
+:
+	lda Score_displaySprites,y
+	pha
+	lda #8
+	pha
+	lda Score_xPositions,y
+	pha
+	lda #00
+	pha
+	iny
+	cpy #7
+	bcc :-
 	jmp buildSpritesShort
 
 buildSprites:

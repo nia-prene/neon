@@ -35,6 +35,7 @@ SPRITE1D=$1d;score 6
 SPRITE1E=$1e;score 7
 SPRITE1F=$1f;score 8
 SPRITE20=$20;score 9
+SPRITE21=$21;player large star bullet #2
 
 ;format
 ;name:
@@ -133,17 +134,17 @@ sprite14:
 	.byte 0, $70, %01000001, 8
 	.byte NULL
 sprite15:
-	.byte 0, $e0, %00, 0
-	.byte 0, $e2, %00, 8
-	.byte 0, $e4, %00, 16
-	.byte 0, $e6, %00, 24
-	.byte 6, $e8, %00, 32
-	.byte 0, $ea, %00, 35
+	.byte 0, $e0, %01, 0
+	.byte 0, $e2, %01, 8
+	.byte 0, $e4, %01, 16
+	.byte 0, $e6, %01, 24
+	.byte 6, $e8, %01, 32
+	.byte 0, $ea, %01, 35
 	.byte NULL
 sprite16:
-	.byte 0, $ec, %00, 0
-	.byte 0, $ee, %00, 8
-	.byte 0, $f0, %00, 16
+	.byte 0, $ec, %01, 0
+	.byte 0, $ee, %01, 8
+	.byte 0, $f0, %01, 16
 	.byte NULL
 sprite17:
 	.byte 0, $d2, %0, 0
@@ -175,12 +176,16 @@ sprite1F:
 sprite20:
 	.byte 0, $d0, %0, 0
 	.byte NULL
+sprite21:
+	.byte 0, $20, %01000000, 8
+	.byte 0, $20, %0, 0
+	.byte NULL
 ;pointer table
 spritesH:
 	.byte >sprite00, >sprite01, >sprite02, >sprite03, >sprite04, >sprite05, >sprite06, >sprite07, >sprite08, >sprite09, >sprite0A, >sprite0B, >sprite0C, >sprite0D, >sprite0E, >sprite0F
 	.byte >sprite10, >sprite11, >sprite12, >sprite13, >sprite14, >sprite15, >sprite16, >sprite17, >sprite18, >sprite19, >sprite1A, >sprite1B, >sprite1C, >sprite1D, >sprite1E, >sprite1F
-	.byte >sprite20
+	.byte >sprite20, >sprite21
 spritesL:
 	.byte <sprite00, <sprite01, <sprite02, <sprite03, <sprite04, <sprite05, <sprite06, <sprite07, <sprite08, <sprite09, <sprite0A, <sprite0B, <sprite0C, <sprite0D, <sprite0E, <sprite0F
 	.byte <sprite10, <sprite11, <sprite12, <sprite13, <sprite14, <sprite15, <sprite16, <sprite17, <sprite18, <sprite19, <sprite1A, <sprite1B, <sprite1C, <sprite1D, <sprite1E, <sprite1F
-	.byte <sprite20
+	.byte <sprite20, <sprite21

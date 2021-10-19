@@ -8,10 +8,7 @@
 .globalzp bulletSprite
 .globalzp PlayerBullet_damage
 .globalzp PlayerBullet_width
-;constructors
-.global shotType00
-.global shotType01
-.global shotType02
 
 ;functions
+.global PlayerBullets_shoot
 .global PlayerBullets_move

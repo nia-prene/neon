@@ -11,19 +11,20 @@ color2: .res 8
 color3: .res 8
 
 .rodata
-PLAYER_PALETTE= 0
-PALETTE01= 1
-PALETTE02= 2
-PALETTE03= 3
+PALETTE00=0
+PALETTE01=1
+PALETTE02=2
+PALETTE03=3
 TARGET_PALETTE=4
 PURPLE_BULLET=5
 PALETTE06=6;blue drone palette
+PALETTE07=7;blue drone palette
 romColor1:
-	.byte $07, $17, $2b, $01, $1d, $04, $1d
+	.byte $07, $17, $2b, $01, $1d, $04, $1d, $15
 romColor2:
-	.byte $25, $19, $23, $21, $05, $24, $21
+	.byte $25, $19, $23, $21, $05, $24, $21, $25
 romColor3:
-	.byte $35, $29, $37, $31, $30, $34, $31
+	.byte $35, $29, $37, $31, $30, $34, $31, $35
 
 ;;;;;;;;;;;;;
 ;collections;

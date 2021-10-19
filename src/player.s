@@ -16,7 +16,6 @@ playerY_H: .res 1
 playerY_L: .res 1
 speed_H: .res 1
 speed_L: .res 1
-pressingShoot: .res 1
 playerSprite: .res 1
 playerHP: .res 1
 Player_powerLevel: .res 1
@@ -27,7 +26,7 @@ Player_initialize:
 	lda #4
 	sta playerHP
 	tay
-	ldx #PLAYER_PALETTE
+	ldx #PALETTE00
 	jsr setPalette;(x, y)
 	lda #200;set to coordinates
 	sta playerY_H
@@ -140,34 +139,6 @@ MAX_DOWN = 215
 	lda #PLAYER_SPRITE
 	sta playerSprite;set sprite
 	rts
-
-Player_shoot:;(controller poll)
-B_BUTTON=%01000000
-	and #B_BUTTON
-	beq @notShooting
-		inc pressingShoot
-		ldy Player_powerLevel
-		@shotLoop:
-		;jump to all active shot types
-			lda @shotType_H,y
-			pha
-			lda @shotType_L,y
-			pha
-			dey
-			bpl @shotLoop
-			rts
-@notShooting:
-	lda #$ff
-	sta pressingShoot
-	rts
-@shotType_L:
-	.byte <(shotType00-1)
-	.byte <(shotType01-1)
-	.byte <(shotType02-1)
-@shotType_H:
-	.byte >shotType00
-	.byte >shotType01
-	.byte >shotType02
 
 .align $100
 Player_isHit:;(void)
