@@ -138,8 +138,8 @@ sprite15:
 	.byte 0, $e2, %01, 8
 	.byte 0, $e4, %01, 16
 	.byte 0, $e6, %01, 24
-	.byte 6, $e8, %01, 32
-	.byte 0, $ea, %01, 35
+	.byte 0, $e8, %01, 32
+	.byte 0, $ea, %01, 39 
 	.byte NULL
 sprite16:
 	.byte 0, $ec, %01, 0

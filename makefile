@@ -4,12 +4,12 @@ source = src/
 builddir = build/
 configfile = neon.cfg
 debugfile = neon.dbg
-EMULATOR = ~/programs/fceux/fceux.exe
+EMULATOR = ~/programs/mesen/Mesen.exe
 cleanfiles = *.o *.dbg *.nes
 
 LD = ld65
 AS = ca65
-WINE = wine
+MONO = mono
 
 ASflags =-o $(builddir)$@ --debug-info
 LDflags =-o $(builddir)$@ -C $(configfile) --dbgfile $(builddir)$(debugfile)
@@ -23,7 +23,7 @@ $(game): $(objects)
 	$(LD) $(LDflags) $(builddir)*.o
 
 test: ${game}
-	${WINE} ${EMULATOR} ${builddir}${game}
+	${MONO} ${EMULATOR} ${builddir}${game}
 
 clean:
 	-rm $(builddir)*.o
