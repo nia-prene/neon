@@ -38,6 +38,7 @@ Score_clear:
 	sta Score_tenThousands
 	sta Score_hundredThousands
 	sta Score_millions
+	sta Score_multiplier
 	rts
 
 Score_setDefaultX:
@@ -62,7 +63,18 @@ Score_tallyFrame:
 ;arguments
 ;a - current player
 ;todo multiplier
+;get the player's multiplier
+	tax
 	pha
+	lda Score_multiplier,x
+	tay
+@multiplierLoop:
+	dey
+	bmi :+
+	asl Score_frameTotal_L
+	rol Score_frameTotal_H
+	jmp @multiplierLoop
+:
 	jsr Score_convertToDecimal
 ;add the ones place
 	pla

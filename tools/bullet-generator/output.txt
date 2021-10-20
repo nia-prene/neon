@@ -1,512 +1,512 @@
 bullet00:
 	mainFib 3, #2, #0, #0, #0 
 bullet01:
-	mainFib 3, #1, #256, #0, #13 
+	mainFib 3, #2, #127, #0, #15 
 bullet02:
 	mainFib 3, #1, #255, #0, #25 
 bullet03:
-	mainFib 3, #1, #255, #0, #38 
+	mainFib 3, #2, #253, #0, #56 
 bullet04:
-	mainFib 3, #1, #254, #0, #50 
+	mainFib 3, #1, #253, #0, #50 
 bullet05:
-	mainFib 3, #1, #252, #0, #63 
+	mainFib 3, #2, #123, #0, #78 
 bullet06:
 	mainFib 3, #1, #250, #0, #75 
 bullet07:
-	mainFib 3, #1, #248, #0, #88 
+	mainFib 3, #2, #244, #0, #131 
 bullet08:
-	mainFib 3, #1, #246, #0, #100 
+	mainFib 3, #1, #246, #0, #99 
 bullet09:
-	mainFib 3, #1, #244, #0, #112 
+	mainFib 3, #2, #112, #0, #140 
 bullet0A:
-	mainFib 3, #1, #241, #0, #124 
+	mainFib 3, #1, #240, #0, #124 
 bullet0B:
-	mainFib 3, #1, #237, #0, #137 
+	mainFib 3, #2, #228, #0, #204 
 bullet0C:
-	mainFib 3, #1, #234, #0, #149 
+	mainFib 3, #1, #233, #0, #148 
 bullet0D:
-	mainFib 3, #1, #230, #0, #161 
+	mainFib 3, #2, #95, #0, #200 
 bullet0E:
 	mainFib 3, #1, #226, #0, #172 
 bullet0F:
-	mainFib 3, #1, #222, #0, #184 
+	mainFib 3, #2, #204, #1, #20 
 bullet10:
-	mainFib 3, #1, #217, #0, #196 
+	mainFib 3, #1, #217, #0, #195 
 bullet11:
-	mainFib 3, #1, #212, #0, #207 
+	mainFib 3, #2, #73, #1, #3 
 bullet12:
-	mainFib 3, #1, #207, #0, #219 
+	mainFib 3, #1, #206, #0, #218 
 bullet13:
-	mainFib 3, #1, #201, #0, #230 
+	mainFib 3, #2, #173, #1, #89 
 bullet14:
-	mainFib 3, #1, #196, #0, #241 
+	mainFib 3, #1, #195, #0, #241 
 bullet15:
-	mainFib 3, #1, #189, #0, #252 
+	mainFib 3, #2, #44, #1, #59 
 bullet16:
 	mainFib 3, #1, #183, #1, #7 
 bullet17:
-	mainFib 3, #1, #177, #1, #18 
+	mainFib 3, #2, #136, #1, #154 
 bullet18:
-	mainFib 3, #1, #170, #1, #28 
+	mainFib 3, #1, #169, #1, #28 
 bullet19:
-	mainFib 3, #1, #163, #1, #39 
+	mainFib 3, #2, #11, #1, #112 
 bullet1A:
-	mainFib 3, #1, #155, #1, #49 
+	mainFib 3, #1, #155, #1, #48 
 bullet1B:
-	mainFib 3, #1, #148, #1, #59 
+	mainFib 3, #2, #93, #1, #216 
 bullet1C:
-	mainFib 3, #1, #140, #1, #69 
+	mainFib 3, #1, #139, #1, #68 
 bullet1D:
-	mainFib 3, #1, #132, #1, #78 
+	mainFib 3, #1, #228, #1, #162 
 bullet1E:
-	mainFib 3, #1, #123, #1, #88 
+	mainFib 3, #1, #123, #1, #87 
 bullet1F:
-	mainFib 3, #1, #115, #1, #97 
+	mainFib 3, #2, #44, #2, #17 
 bullet20:
 	mainFib 3, #1, #106, #1, #106 
 bullet21:
-	mainFib 3, #1, #97, #1, #115 
+	mainFib 3, #1, #185, #1, #207 
 bullet22:
-	mainFib 3, #1, #88, #1, #123 
+	mainFib 3, #1, #87, #1, #123 
 bullet23:
-	mainFib 3, #1, #78, #1, #132 
+	mainFib 3, #1, #245, #2, #69 
 bullet24:
-	mainFib 3, #1, #69, #1, #140 
+	mainFib 3, #1, #68, #1, #139 
 bullet25:
-	mainFib 3, #1, #59, #1, #148 
+	mainFib 3, #1, #137, #1, #248 
 bullet26:
-	mainFib 3, #1, #49, #1, #155 
+	mainFib 3, #1, #48, #1, #155 
 bullet27:
-	mainFib 3, #1, #39, #1, #163 
+	mainFib 3, #1, #186, #2, #115 
 bullet28:
-	mainFib 3, #1, #28, #1, #170 
+	mainFib 3, #1, #28, #1, #169 
 bullet29:
-	mainFib 3, #1, #18, #1, #177 
+	mainFib 3, #1, #86, #2, #28 
 bullet2A:
 	mainFib 3, #1, #7, #1, #183 
 bullet2B:
-	mainFib 3, #0, #252, #1, #189 
+	mainFib 3, #1, #122, #2, #156 
 bullet2C:
-	mainFib 3, #0, #241, #1, #196 
+	mainFib 3, #0, #241, #1, #195 
 bullet2D:
-	mainFib 3, #0, #230, #1, #201 
+	mainFib 3, #1, #31, #2, #59 
 bullet2E:
-	mainFib 3, #0, #219, #1, #207 
+	mainFib 3, #0, #218, #1, #206 
 bullet2F:
-	mainFib 3, #0, #207, #1, #212 
+	mainFib 3, #1, #55, #2, #190 
 bullet30:
-	mainFib 3, #0, #196, #1, #217 
+	mainFib 3, #0, #195, #1, #217 
 bullet31:
-	mainFib 3, #0, #184, #1, #222 
+	mainFib 3, #0, #230, #2, #85 
 bullet32:
 	mainFib 3, #0, #172, #1, #226 
 bullet33:
-	mainFib 3, #0, #161, #1, #230 
+	mainFib 3, #0, #240, #2, #217 
 bullet34:
-	mainFib 3, #0, #149, #1, #234 
+	mainFib 3, #0, #148, #1, #233 
 bullet35:
-	mainFib 3, #0, #137, #1, #237 
+	mainFib 3, #0, #170, #2, #104 
 bullet36:
-	mainFib 3, #0, #124, #1, #241 
+	mainFib 3, #0, #124, #1, #240 
 bullet37:
-	mainFib 3, #0, #112, #1, #244 
+	mainFib 3, #0, #168, #2, #237 
 bullet38:
-	mainFib 3, #0, #100, #1, #246 
+	mainFib 3, #0, #99, #1, #246 
 bullet39:
-	mainFib 3, #0, #88, #1, #248 
+	mainFib 3, #0, #109, #2, #118 
 bullet3A:
 	mainFib 3, #0, #75, #1, #250 
 bullet3B:
-	mainFib 3, #0, #63, #1, #252 
+	mainFib 3, #0, #94, #2, #250 
 bullet3C:
-	mainFib 3, #0, #50, #1, #254 
+	mainFib 3, #0, #50, #1, #253 
 bullet3D:
-	mainFib 3, #0, #38, #1, #255 
+	mainFib 3, #0, #47, #2, #126 
 bullet3E:
 	mainFib 3, #0, #25, #1, #255 
 bullet3F:
-	mainFib 3, #0, #13, #1, #256 
+	mainFib 3, #0, #18, #2, #255 
 bullet40:
 	mainFib 4, #0, #0, #2, #0 
 bullet41:
-	mainFib 4, #0, #13, #1, #256 
+	mainFib 4, #0, #15, #2, #127 
 bullet42:
 	mainFib 4, #0, #25, #1, #255 
 bullet43:
-	mainFib 4, #0, #38, #1, #255 
+	mainFib 4, #0, #56, #2, #253 
 bullet44:
-	mainFib 4, #0, #50, #1, #254 
+	mainFib 4, #0, #50, #1, #253 
 bullet45:
-	mainFib 4, #0, #63, #1, #252 
+	mainFib 4, #0, #78, #2, #123 
 bullet46:
 	mainFib 4, #0, #75, #1, #250 
 bullet47:
-	mainFib 4, #0, #88, #1, #248 
+	mainFib 4, #0, #131, #2, #244 
 bullet48:
-	mainFib 4, #0, #100, #1, #246 
+	mainFib 4, #0, #99, #1, #246 
 bullet49:
-	mainFib 4, #0, #112, #1, #244 
+	mainFib 4, #0, #140, #2, #112 
 bullet4A:
-	mainFib 4, #0, #124, #1, #241 
+	mainFib 4, #0, #124, #1, #240 
 bullet4B:
-	mainFib 4, #0, #137, #1, #237 
+	mainFib 4, #0, #204, #2, #228 
 bullet4C:
-	mainFib 4, #0, #149, #1, #234 
+	mainFib 4, #0, #148, #1, #233 
 bullet4D:
-	mainFib 4, #0, #161, #1, #230 
+	mainFib 4, #0, #200, #2, #95 
 bullet4E:
 	mainFib 4, #0, #172, #1, #226 
 bullet4F:
-	mainFib 4, #0, #184, #1, #222 
+	mainFib 4, #1, #20, #2, #204 
 bullet50:
-	mainFib 4, #0, #196, #1, #217 
+	mainFib 4, #0, #195, #1, #217 
 bullet51:
-	mainFib 4, #0, #207, #1, #212 
+	mainFib 4, #1, #3, #2, #73 
 bullet52:
-	mainFib 4, #0, #219, #1, #207 
+	mainFib 4, #0, #218, #1, #206 
 bullet53:
-	mainFib 4, #0, #230, #1, #201 
+	mainFib 4, #1, #89, #2, #173 
 bullet54:
-	mainFib 4, #0, #241, #1, #196 
+	mainFib 4, #0, #241, #1, #195 
 bullet55:
-	mainFib 4, #0, #252, #1, #189 
+	mainFib 4, #1, #59, #2, #44 
 bullet56:
 	mainFib 4, #1, #7, #1, #183 
 bullet57:
-	mainFib 4, #1, #18, #1, #177 
+	mainFib 4, #1, #154, #2, #136 
 bullet58:
-	mainFib 4, #1, #28, #1, #170 
+	mainFib 4, #1, #28, #1, #169 
 bullet59:
-	mainFib 4, #1, #39, #1, #163 
+	mainFib 4, #1, #112, #2, #11 
 bullet5A:
-	mainFib 4, #1, #49, #1, #155 
+	mainFib 4, #1, #48, #1, #155 
 bullet5B:
-	mainFib 4, #1, #59, #1, #148 
+	mainFib 4, #1, #216, #2, #93 
 bullet5C:
-	mainFib 4, #1, #69, #1, #140 
+	mainFib 4, #1, #68, #1, #139 
 bullet5D:
-	mainFib 4, #1, #78, #1, #132 
+	mainFib 4, #1, #162, #1, #228 
 bullet5E:
-	mainFib 4, #1, #88, #1, #123 
+	mainFib 4, #1, #87, #1, #123 
 bullet5F:
-	mainFib 4, #1, #97, #1, #115 
+	mainFib 4, #2, #17, #2, #44 
 bullet60:
 	mainFib 4, #1, #106, #1, #106 
 bullet61:
-	mainFib 4, #1, #115, #1, #97 
+	mainFib 4, #1, #207, #1, #185 
 bullet62:
-	mainFib 4, #1, #123, #1, #88 
+	mainFib 4, #1, #123, #1, #87 
 bullet63:
-	mainFib 4, #1, #132, #1, #78 
+	mainFib 4, #2, #69, #1, #245 
 bullet64:
-	mainFib 4, #1, #140, #1, #69 
+	mainFib 4, #1, #139, #1, #68 
 bullet65:
-	mainFib 4, #1, #148, #1, #59 
+	mainFib 4, #1, #248, #1, #137 
 bullet66:
-	mainFib 4, #1, #155, #1, #49 
+	mainFib 4, #1, #155, #1, #48 
 bullet67:
-	mainFib 4, #1, #163, #1, #39 
+	mainFib 4, #2, #115, #1, #186 
 bullet68:
-	mainFib 4, #1, #170, #1, #28 
+	mainFib 4, #1, #169, #1, #28 
 bullet69:
-	mainFib 4, #1, #177, #1, #18 
+	mainFib 4, #2, #28, #1, #86 
 bullet6A:
 	mainFib 4, #1, #183, #1, #7 
 bullet6B:
-	mainFib 4, #1, #189, #0, #252 
+	mainFib 4, #2, #156, #1, #122 
 bullet6C:
-	mainFib 4, #1, #196, #0, #241 
+	mainFib 4, #1, #195, #0, #241 
 bullet6D:
-	mainFib 4, #1, #201, #0, #230 
+	mainFib 4, #2, #59, #1, #31 
 bullet6E:
-	mainFib 4, #1, #207, #0, #219 
+	mainFib 4, #1, #206, #0, #218 
 bullet6F:
-	mainFib 4, #1, #212, #0, #207 
+	mainFib 4, #2, #190, #1, #55 
 bullet70:
-	mainFib 4, #1, #217, #0, #196 
+	mainFib 4, #1, #217, #0, #195 
 bullet71:
-	mainFib 4, #1, #222, #0, #184 
+	mainFib 4, #2, #85, #0, #230 
 bullet72:
 	mainFib 4, #1, #226, #0, #172 
 bullet73:
-	mainFib 4, #1, #230, #0, #161 
+	mainFib 4, #2, #217, #0, #240 
 bullet74:
-	mainFib 4, #1, #234, #0, #149 
+	mainFib 4, #1, #233, #0, #148 
 bullet75:
-	mainFib 4, #1, #237, #0, #137 
+	mainFib 4, #2, #104, #0, #170 
 bullet76:
-	mainFib 4, #1, #241, #0, #124 
+	mainFib 4, #1, #240, #0, #124 
 bullet77:
-	mainFib 4, #1, #244, #0, #112 
+	mainFib 4, #2, #237, #0, #168 
 bullet78:
-	mainFib 4, #1, #246, #0, #100 
+	mainFib 4, #1, #246, #0, #99 
 bullet79:
-	mainFib 4, #1, #248, #0, #88 
+	mainFib 4, #2, #118, #0, #109 
 bullet7A:
 	mainFib 4, #1, #250, #0, #75 
 bullet7B:
-	mainFib 4, #1, #252, #0, #63 
+	mainFib 4, #2, #250, #0, #94 
 bullet7C:
-	mainFib 4, #1, #254, #0, #50 
+	mainFib 4, #1, #253, #0, #50 
 bullet7D:
-	mainFib 4, #1, #255, #0, #38 
+	mainFib 4, #2, #126, #0, #47 
 bullet7E:
 	mainFib 4, #1, #255, #0, #25 
 bullet7F:
-	mainFib 4, #1, #256, #0, #13 
+	mainFib 4, #2, #255, #0, #18 
 bullet80:
 	mainFib 1, #2, #0, #0, #0 
 bullet81:
-	mainFib 1, #1, #256, #0, #13 
+	mainFib 1, #2, #127, #0, #15 
 bullet82:
 	mainFib 1, #1, #255, #0, #25 
 bullet83:
-	mainFib 1, #1, #255, #0, #38 
+	mainFib 1, #2, #253, #0, #56 
 bullet84:
-	mainFib 1, #1, #254, #0, #50 
+	mainFib 1, #1, #253, #0, #50 
 bullet85:
-	mainFib 1, #1, #252, #0, #63 
+	mainFib 1, #2, #123, #0, #78 
 bullet86:
 	mainFib 1, #1, #250, #0, #75 
 bullet87:
-	mainFib 1, #1, #248, #0, #88 
+	mainFib 1, #2, #244, #0, #131 
 bullet88:
-	mainFib 1, #1, #246, #0, #100 
+	mainFib 1, #1, #246, #0, #99 
 bullet89:
-	mainFib 1, #1, #244, #0, #112 
+	mainFib 1, #2, #112, #0, #140 
 bullet8A:
-	mainFib 1, #1, #241, #0, #124 
+	mainFib 1, #1, #240, #0, #124 
 bullet8B:
-	mainFib 1, #1, #237, #0, #137 
+	mainFib 1, #2, #228, #0, #204 
 bullet8C:
-	mainFib 1, #1, #234, #0, #149 
+	mainFib 1, #1, #233, #0, #148 
 bullet8D:
-	mainFib 1, #1, #230, #0, #161 
+	mainFib 1, #2, #95, #0, #200 
 bullet8E:
 	mainFib 1, #1, #226, #0, #172 
 bullet8F:
-	mainFib 1, #1, #222, #0, #184 
+	mainFib 1, #2, #204, #1, #20 
 bullet90:
-	mainFib 1, #1, #217, #0, #196 
+	mainFib 1, #1, #217, #0, #195 
 bullet91:
-	mainFib 1, #1, #212, #0, #207 
+	mainFib 1, #2, #73, #1, #3 
 bullet92:
-	mainFib 1, #1, #207, #0, #219 
+	mainFib 1, #1, #206, #0, #218 
 bullet93:
-	mainFib 1, #1, #201, #0, #230 
+	mainFib 1, #2, #173, #1, #89 
 bullet94:
-	mainFib 1, #1, #196, #0, #241 
+	mainFib 1, #1, #195, #0, #241 
 bullet95:
-	mainFib 1, #1, #189, #0, #252 
+	mainFib 1, #2, #44, #1, #59 
 bullet96:
 	mainFib 1, #1, #183, #1, #7 
 bullet97:
-	mainFib 1, #1, #177, #1, #18 
+	mainFib 1, #2, #136, #1, #154 
 bullet98:
-	mainFib 1, #1, #170, #1, #28 
+	mainFib 1, #1, #169, #1, #28 
 bullet99:
-	mainFib 1, #1, #163, #1, #39 
+	mainFib 1, #2, #11, #1, #112 
 bullet9A:
-	mainFib 1, #1, #155, #1, #49 
+	mainFib 1, #1, #155, #1, #48 
 bullet9B:
-	mainFib 1, #1, #148, #1, #59 
+	mainFib 1, #2, #93, #1, #216 
 bullet9C:
-	mainFib 1, #1, #140, #1, #69 
+	mainFib 1, #1, #139, #1, #68 
 bullet9D:
-	mainFib 1, #1, #132, #1, #78 
+	mainFib 1, #1, #228, #1, #162 
 bullet9E:
-	mainFib 1, #1, #123, #1, #88 
+	mainFib 1, #1, #123, #1, #87 
 bullet9F:
-	mainFib 1, #1, #115, #1, #97 
+	mainFib 1, #2, #44, #2, #17 
 bulletA0:
 	mainFib 1, #1, #106, #1, #106 
 bulletA1:
-	mainFib 1, #1, #97, #1, #115 
+	mainFib 1, #1, #185, #1, #207 
 bulletA2:
-	mainFib 1, #1, #88, #1, #123 
+	mainFib 1, #1, #87, #1, #123 
 bulletA3:
-	mainFib 1, #1, #78, #1, #132 
+	mainFib 1, #1, #245, #2, #69 
 bulletA4:
-	mainFib 1, #1, #69, #1, #140 
+	mainFib 1, #1, #68, #1, #139 
 bulletA5:
-	mainFib 1, #1, #59, #1, #148 
+	mainFib 1, #1, #137, #1, #248 
 bulletA6:
-	mainFib 1, #1, #49, #1, #155 
+	mainFib 1, #1, #48, #1, #155 
 bulletA7:
-	mainFib 1, #1, #39, #1, #163 
+	mainFib 1, #1, #186, #2, #115 
 bulletA8:
-	mainFib 1, #1, #28, #1, #170 
+	mainFib 1, #1, #28, #1, #169 
 bulletA9:
-	mainFib 1, #1, #18, #1, #177 
+	mainFib 1, #1, #86, #2, #28 
 bulletAA:
 	mainFib 1, #1, #7, #1, #183 
 bulletAB:
-	mainFib 1, #0, #252, #1, #189 
+	mainFib 1, #1, #122, #2, #156 
 bulletAC:
-	mainFib 1, #0, #241, #1, #196 
+	mainFib 1, #0, #241, #1, #195 
 bulletAD:
-	mainFib 1, #0, #230, #1, #201 
+	mainFib 1, #1, #31, #2, #59 
 bulletAE:
-	mainFib 1, #0, #219, #1, #207 
+	mainFib 1, #0, #218, #1, #206 
 bulletAF:
-	mainFib 1, #0, #207, #1, #212 
+	mainFib 1, #1, #55, #2, #190 
 bulletB0:
-	mainFib 1, #0, #196, #1, #217 
+	mainFib 1, #0, #195, #1, #217 
 bulletB1:
-	mainFib 1, #0, #184, #1, #222 
+	mainFib 1, #0, #230, #2, #85 
 bulletB2:
 	mainFib 1, #0, #172, #1, #226 
 bulletB3:
-	mainFib 1, #0, #161, #1, #230 
+	mainFib 1, #0, #240, #2, #217 
 bulletB4:
-	mainFib 1, #0, #149, #1, #234 
+	mainFib 1, #0, #148, #1, #233 
 bulletB5:
-	mainFib 1, #0, #137, #1, #237 
+	mainFib 1, #0, #170, #2, #104 
 bulletB6:
-	mainFib 1, #0, #124, #1, #241 
+	mainFib 1, #0, #124, #1, #240 
 bulletB7:
-	mainFib 1, #0, #112, #1, #244 
+	mainFib 1, #0, #168, #2, #237 
 bulletB8:
-	mainFib 1, #0, #100, #1, #246 
+	mainFib 1, #0, #99, #1, #246 
 bulletB9:
-	mainFib 1, #0, #88, #1, #248 
+	mainFib 1, #0, #109, #2, #118 
 bulletBA:
 	mainFib 1, #0, #75, #1, #250 
 bulletBB:
-	mainFib 1, #0, #63, #1, #252 
+	mainFib 1, #0, #94, #2, #250 
 bulletBC:
-	mainFib 1, #0, #50, #1, #254 
+	mainFib 1, #0, #50, #1, #253 
 bulletBD:
-	mainFib 1, #0, #38, #1, #255 
+	mainFib 1, #0, #47, #2, #126 
 bulletBE:
 	mainFib 1, #0, #25, #1, #255 
 bulletBF:
-	mainFib 1, #0, #13, #1, #256 
+	mainFib 1, #0, #18, #2, #255 
 bulletC0:
 	mainFib 2, #0, #0, #2, #0 
 bulletC1:
-	mainFib 2, #0, #13, #1, #256 
+	mainFib 2, #0, #15, #2, #127 
 bulletC2:
 	mainFib 2, #0, #25, #1, #255 
 bulletC3:
-	mainFib 2, #0, #38, #1, #255 
+	mainFib 2, #0, #56, #2, #253 
 bulletC4:
-	mainFib 2, #0, #50, #1, #254 
+	mainFib 2, #0, #50, #1, #253 
 bulletC5:
-	mainFib 2, #0, #63, #1, #252 
+	mainFib 2, #0, #78, #2, #123 
 bulletC6:
 	mainFib 2, #0, #75, #1, #250 
 bulletC7:
-	mainFib 2, #0, #88, #1, #248 
+	mainFib 2, #0, #131, #2, #244 
 bulletC8:
-	mainFib 2, #0, #100, #1, #246 
+	mainFib 2, #0, #99, #1, #246 
 bulletC9:
-	mainFib 2, #0, #112, #1, #244 
+	mainFib 2, #0, #140, #2, #112 
 bulletCA:
-	mainFib 2, #0, #124, #1, #241 
+	mainFib 2, #0, #124, #1, #240 
 bulletCB:
-	mainFib 2, #0, #137, #1, #237 
+	mainFib 2, #0, #204, #2, #228 
 bulletCC:
-	mainFib 2, #0, #149, #1, #234 
+	mainFib 2, #0, #148, #1, #233 
 bulletCD:
-	mainFib 2, #0, #161, #1, #230 
+	mainFib 2, #0, #200, #2, #95 
 bulletCE:
 	mainFib 2, #0, #172, #1, #226 
 bulletCF:
-	mainFib 2, #0, #184, #1, #222 
+	mainFib 2, #1, #20, #2, #204 
 bulletD0:
-	mainFib 2, #0, #196, #1, #217 
+	mainFib 2, #0, #195, #1, #217 
 bulletD1:
-	mainFib 2, #0, #207, #1, #212 
+	mainFib 2, #1, #3, #2, #73 
 bulletD2:
-	mainFib 2, #0, #219, #1, #207 
+	mainFib 2, #0, #218, #1, #206 
 bulletD3:
-	mainFib 2, #0, #230, #1, #201 
+	mainFib 2, #1, #89, #2, #173 
 bulletD4:
-	mainFib 2, #0, #241, #1, #196 
+	mainFib 2, #0, #241, #1, #195 
 bulletD5:
-	mainFib 2, #0, #252, #1, #189 
+	mainFib 2, #1, #59, #2, #44 
 bulletD6:
 	mainFib 2, #1, #7, #1, #183 
 bulletD7:
-	mainFib 2, #1, #18, #1, #177 
+	mainFib 2, #1, #154, #2, #136 
 bulletD8:
-	mainFib 2, #1, #28, #1, #170 
+	mainFib 2, #1, #28, #1, #169 
 bulletD9:
-	mainFib 2, #1, #39, #1, #163 
+	mainFib 2, #1, #112, #2, #11 
 bulletDA:
-	mainFib 2, #1, #49, #1, #155 
+	mainFib 2, #1, #48, #1, #155 
 bulletDB:
-	mainFib 2, #1, #59, #1, #148 
+	mainFib 2, #1, #216, #2, #93 
 bulletDC:
-	mainFib 2, #1, #69, #1, #140 
+	mainFib 2, #1, #68, #1, #139 
 bulletDD:
-	mainFib 2, #1, #78, #1, #132 
+	mainFib 2, #1, #162, #1, #228 
 bulletDE:
-	mainFib 2, #1, #88, #1, #123 
+	mainFib 2, #1, #87, #1, #123 
 bulletDF:
-	mainFib 2, #1, #97, #1, #115 
+	mainFib 2, #2, #17, #2, #44 
 bulletE0:
 	mainFib 2, #1, #106, #1, #106 
 bulletE1:
-	mainFib 2, #1, #115, #1, #97 
+	mainFib 2, #1, #207, #1, #185 
 bulletE2:
-	mainFib 2, #1, #123, #1, #88 
+	mainFib 2, #1, #123, #1, #87 
 bulletE3:
-	mainFib 2, #1, #132, #1, #78 
+	mainFib 2, #2, #69, #1, #245 
 bulletE4:
-	mainFib 2, #1, #140, #1, #69 
+	mainFib 2, #1, #139, #1, #68 
 bulletE5:
-	mainFib 2, #1, #148, #1, #59 
+	mainFib 2, #1, #248, #1, #137 
 bulletE6:
-	mainFib 2, #1, #155, #1, #49 
+	mainFib 2, #1, #155, #1, #48 
 bulletE7:
-	mainFib 2, #1, #163, #1, #39 
+	mainFib 2, #2, #115, #1, #186 
 bulletE8:
-	mainFib 2, #1, #170, #1, #28 
+	mainFib 2, #1, #169, #1, #28 
 bulletE9:
-	mainFib 2, #1, #177, #1, #18 
+	mainFib 2, #2, #28, #1, #86 
 bulletEA:
 	mainFib 2, #1, #183, #1, #7 
 bulletEB:
-	mainFib 2, #1, #189, #0, #252 
+	mainFib 2, #2, #156, #1, #122 
 bulletEC:
-	mainFib 2, #1, #196, #0, #241 
+	mainFib 2, #1, #195, #0, #241 
 bulletED:
-	mainFib 2, #1, #201, #0, #230 
+	mainFib 2, #2, #59, #1, #31 
 bulletEE:
-	mainFib 2, #1, #207, #0, #219 
+	mainFib 2, #1, #206, #0, #218 
 bulletEF:
-	mainFib 2, #1, #212, #0, #207 
+	mainFib 2, #2, #190, #1, #55 
 bulletF0:
-	mainFib 2, #1, #217, #0, #196 
+	mainFib 2, #1, #217, #0, #195 
 bulletF1:
-	mainFib 2, #1, #222, #0, #184 
+	mainFib 2, #2, #85, #0, #230 
 bulletF2:
 	mainFib 2, #1, #226, #0, #172 
 bulletF3:
-	mainFib 2, #1, #230, #0, #161 
+	mainFib 2, #2, #217, #0, #240 
 bulletF4:
-	mainFib 2, #1, #234, #0, #149 
+	mainFib 2, #1, #233, #0, #148 
 bulletF5:
-	mainFib 2, #1, #237, #0, #137 
+	mainFib 2, #2, #104, #0, #170 
 bulletF6:
-	mainFib 2, #1, #241, #0, #124 
+	mainFib 2, #1, #240, #0, #124 
 bulletF7:
-	mainFib 2, #1, #244, #0, #112 
+	mainFib 2, #2, #237, #0, #168 
 bulletF8:
-	mainFib 2, #1, #246, #0, #100 
+	mainFib 2, #1, #246, #0, #99 
 bulletF9:
-	mainFib 2, #1, #248, #0, #88 
+	mainFib 2, #2, #118, #0, #109 
 bulletFA:
 	mainFib 2, #1, #250, #0, #75 
 bulletFB:
-	mainFib 2, #1, #252, #0, #63 
+	mainFib 2, #2, #250, #0, #94 
 bulletFC:
-	mainFib 2, #1, #254, #0, #50 
+	mainFib 2, #1, #253, #0, #50 
 bulletFD:
-	mainFib 2, #1, #255, #0, #38 
+	mainFib 2, #2, #126, #0, #47 
 bulletFE:
 	mainFib 2, #1, #255, #0, #25 
 bulletFF:
-	mainFib 2, #1, #256, #0, #13 
+	mainFib 2, #2, #255, #0, #18 

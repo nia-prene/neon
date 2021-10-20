@@ -3,6 +3,8 @@
 .include "tiles.h"
 .include "palettes.h"
 .include "waves.h"
+.include "bullets.h"
+.include "speed.h"
 
 .rodata
 Scenes_tile:
@@ -13,3 +15,5 @@ Scenes_backgroundColor:
 	.byte $0f
 Scenes_waveString:
 	.byte WAVESTRING00
+Scenes_speed:
+	.byte SPEED00

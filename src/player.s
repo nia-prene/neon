@@ -143,6 +143,7 @@ MAX_DOWN = 215
 .align $100
 Player_isHit:;(void)
 PLAYER_HEIGHT=16
+MAX_BULLET_DIAMETER=16
 HITBOX_X_OFFSET=3
 HITBOX_Y_OFFSET=12
 HITBOX_WIDTH=2
@@ -157,7 +158,7 @@ HITBOX_HEIGHT=2
 	bcs @bulletGreaterX
 	eor #%11111111 ;if negative
 @bulletGreaterX:
-	cmp enemyBulletWidth,x ; if x distance < width
+	cmp #MAX_BULLET_DIAMETER; if x distance < width
 	bcs @nextBullet ;else
 	sec ;find y distance
 	lda enemyBulletYH,x

@@ -15,6 +15,7 @@
 .include "enemies.h"
 .include "pickups.h"
 .include "score.h"
+.include "speed.h"
 .include "init.s"
 
 .zeropage
@@ -81,6 +82,9 @@ gameLoop:
 	;reset the enemy wave dispenser
 		ldx nextScene
 		jsr Waves_reset;(x)
+	;set the bullet speeds
+		ldx nextScene
+		jsr Speed_setLevel
 	;move the scoreboard to the right position
 		jsr Score_setDefaultX
 		jsr enableRendering;(a, x)

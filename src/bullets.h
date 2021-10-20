@@ -20,7 +20,6 @@
 .global enemyBulletYH
 .global enemyBulletYL
 .global enemyBulletMetasprite
-.global enemyBulletWidth
 
 ;functions
 .global Enemy_Bullet
