@@ -8,7 +8,7 @@
 
 .rodata
 Scenes_tile:
-	.byte BEACH_SCREEN
+	.byte SCREEN00
 Scenes_palettes:
 	.byte BEACH_PALETTE
 Scenes_backgroundColor:

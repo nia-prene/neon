@@ -159,8 +159,8 @@ render32:;(a)
 ;a - tile in tiles32 array to render
 ;returns void;
 ;a is tile position in tiles32
-	tax;x is tile number in array
-	tay;y is nametable reference pos
+	tay;y is tile number in array
+	tax;x is nametable reference pos
 	;all tiles ending in 111 are shorter
 	pha
 	and #%00000111
@@ -168,125 +168,125 @@ render32:;(a)
 	bne @standardTile
 @shorterTile:
 	;save the 2 tiles
-	lda tiles32,x
-	tax;x is now the 32x32 tile
-	lda topLeft32,x
+	lda (Tiles_screenPointer),y
+	tay;y is now the 32x32 tile
+	lda topLeft32,y
 	sta tile16a
-	lda topRight32,x
+	lda topRight32,y
 	sta tile16c
 	;look up nametable conversion, save them and put them in ppu
-	lda nameTableConversionH,y
+	lda nameTableConversionH,x
 	sta currentNameTable
 	sta PPUADDR
-	lda nameTableConversionL,y
+	lda nameTableConversionL,x
 	sta currentNameTable+1
 	sta PPUADDR
 	;now the ppu knows where to put our tile
-	ldx tile16a
-	lda topLeft16,x
+	ldy tile16a
+	lda topLeft16,y
 	sta PPUDATA
-	lda bottomLeft16,x
-	sta PPUDATA
-	inc currentNameTable+1
-	lda currentNameTable
-	sta PPUADDR
-	lda currentNameTable+1
-	sta PPUADDR
-	lda topRight16,x
-	sta PPUDATA
-	lda bottomRight16,x
+	lda bottomLeft16,y
 	sta PPUDATA
 	inc currentNameTable+1
 	lda currentNameTable
 	sta PPUADDR
 	lda currentNameTable+1
 	sta PPUADDR
-	ldx tile16c
-	lda topLeft16,x
+	lda topRight16,y
 	sta PPUDATA
-	lda bottomLeft16,x
+	lda bottomRight16,y
 	sta PPUDATA
 	inc currentNameTable+1
 	lda currentNameTable
 	sta PPUADDR
 	lda currentNameTable+1
 	sta PPUADDR
-	lda topRight16,x
+	ldy tile16c
+	lda topLeft16,y
 	sta PPUDATA
-	lda bottomRight16,x
+	lda bottomLeft16,y
+	sta PPUDATA
+	inc currentNameTable+1
+	lda currentNameTable
+	sta PPUADDR
+	lda currentNameTable+1
+	sta PPUADDR
+	lda topRight16,y
+	sta PPUDATA
+	lda bottomRight16,y
 	sta PPUDATA
 	jmp @attributeByte
 
 @standardTile:
 	;save the 4 tiles
-	lda tiles32,x
-	tax;x is now the 32x32 tile
-	lda topLeft32,x
+	lda (Tiles_screenPointer),y
+	tay;y is now the 32x32 tile
+	lda topLeft32,y
 	sta tile16a
-	lda bottomLeft32,x
+	lda bottomLeft32,y
 	sta tile16b
-	lda topRight32,x
+	lda topRight32,y
 	sta tile16c
-	lda bottomRight32,x
+	lda bottomRight32,y
 	sta tile16d
 	;look up nametable conversion, save them and put them in ppu
-	lda nameTableConversionH,y
+	lda nameTableConversionH,x
 	sta currentNameTable
 	sta PPUADDR
-	lda nameTableConversionL,y
+	lda nameTableConversionL,x
 	sta currentNameTable+1
 	sta PPUADDR
 	;now the ppu knows where to put our tile
-	ldx tile16a
-	ldy tile16b
-	lda topLeft16,x
-	sta PPUDATA
-	lda bottomLeft16,x
-	sta PPUDATA
+	ldy tile16a
+	ldx tile16b
 	lda topLeft16,y
 	sta PPUDATA
 	lda bottomLeft16,y
 	sta PPUDATA
-	inc currentNameTable+1
-	lda currentNameTable
-	sta PPUADDR
-	lda currentNameTable+1
-	sta PPUADDR
-	lda topRight16,x
-	sta PPUDATA
-	lda bottomRight16,x
-	sta PPUDATA
-	lda topRight16,y
-	sta PPUDATA
-	lda bottomRight16,y
-	sta PPUDATA
-	inc currentNameTable+1
-	lda currentNameTable
-	sta PPUADDR
-	lda currentNameTable+1
-	sta PPUADDR
-	ldx tile16c
-	ldy tile16d
 	lda topLeft16,x
 	sta PPUDATA
 	lda bottomLeft16,x
 	sta PPUDATA
-	lda topLeft16,y
+	inc currentNameTable+1
+	lda currentNameTable
+	sta PPUADDR
+	lda currentNameTable+1
+	sta PPUADDR
+	lda topRight16,y
 	sta PPUDATA
-	lda bottomLeft16,y
+	lda bottomRight16,y
+	sta PPUDATA
+	lda topRight16,x
+	sta PPUDATA
+	lda bottomRight16,x
 	sta PPUDATA
 	inc currentNameTable+1
 	lda currentNameTable
 	sta PPUADDR
 	lda currentNameTable+1
 	sta PPUADDR
-	lda topRight16,x
+	ldy tile16c
+	ldx tile16d
+	lda topLeft16,y
 	sta PPUDATA
-	lda bottomRight16,x
+	lda bottomLeft16,y
 	sta PPUDATA
+	lda topLeft16,x
+	sta PPUDATA
+	lda bottomLeft16,x
+	sta PPUDATA
+	inc currentNameTable+1
+	lda currentNameTable
+	sta PPUADDR
+	lda currentNameTable+1
+	sta PPUADDR
 	lda topRight16,y
 	sta PPUDATA
 	lda bottomRight16,y
+	sta PPUDATA
+	lda topRight16,x
+	sta PPUDATA
+	lda bottomRight16,x
 	sta PPUDATA
 @attributeByte:
 ;get the tile
@@ -298,7 +298,7 @@ render32:;(a)
 	sta PPUADDR
 	lda attributeTableConversionL,x
 	sta PPUADDR
-	lda tiles32,y
+	lda (Tiles_screenPointer),y
 	tay;y is tile itself
 	lda tileAttributeByte,y
 	sta PPUDATA

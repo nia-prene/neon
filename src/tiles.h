@@ -1,6 +1,4 @@
-.globalzp BEACH_SCREEN
-
-.global tiles32
+.globalzp Tiles_screenPointer
 
 .global topLeft32
 .global bottomLeft32
@@ -11,5 +9,5 @@
 .global topRight16
 .global bottomRight16
 .global tileAttributeByte
-
-.global unzipAllTiles
+.global Tiles_getScreenPointer
+.globalzp SCREEN00

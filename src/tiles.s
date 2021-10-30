@@ -9,242 +9,37 @@ tile64a: .res 1
 tile64b: .res 1
 tile64c: .res 1
 tile64d: .res 1
-
-.data
-tiles128: .res 4
-tiles64: .res 16
-tiles32: .res 64
+Tiles_screenPointer: .res 2
 
 .code
-unzipAllTiles:;(a)
-;unzips all the tile for a scene
-;arguments
-;a next scene
-;get the big tile	
-	tax
-	lda Scenes_tile,x
-;start at tiles128[0]
-	ldy #$00
-	tax 
-	lda topLeft256,x
-	sta tiles128,y
-	iny
-	lda bottomLeft256,x
-	sta tiles128,y
-	iny
-	lda topRight256,x
-	sta tiles128,y
-	iny
-	lda bottomRight256,x
-	sta tiles128,y
-;now unzip all 64x64 in columns, 2 total
-;start with column 0
-	ldx #$00
-;for(x = 0; x <4; x++)
-@unzipAll64:
-;save counter
-	txa
-	pha
-	jsr unzip64Column;(a)
-	pla
-	tax
-	inx
-	cpx #02
-	bne @unzipAll64
-;move tiles from 64x64 to 32x32, 4 total;start with tile 0
-	ldx #00
-;for(x = 0; x < 4; x++)
-@unzipAll32:
-	txa
-	pha
-;a is column to unzip
-	jsr unzip32Column;(a)
-	pla
-	tax
-	inx
-	cpx #04
-	bne @unzipAll32
-	rts
-
-unzip64Column:;(x)
-	;tiles are decompressed from one column of 128x128 to two columns of 64x64 tiles
-;arguments
-;a - column to update
-;void
-;convert column to array index
-;save for return value
-	asl
-;x where they come from in 128x128
-	tax
-	asl
-	asl
-	tay
-;y where they are going in 64x64
-	;get first tile in column and save it
-	lda tiles128,x
-	sta tile128a
-	inx
-	;get second tile in column and save it
-	lda tiles128,x
-	sta tile128b
-	;store the left hand sides of tile128a and 128b into tiles64 array
-	ldx tile128a
-	lda topLeft128,x
-	sta tiles64,y
-	iny
-	lda bottomLeft128,x
-	sta tiles64,y
-	iny
-	ldx tile128b
-	lda topLeft128,x
-	sta tiles64,y
-	iny
-	lda bottomLeft128,x
-	sta tiles64,y
-	iny
-	;store the right hand sides of tile128a and 128b into tiles64 array
-	ldx tile128a
-	lda topRight128,x
-	sta tiles64,y
-	iny
-	lda bottomRight128,x
-	sta tiles64,y
-	iny
-	ldx tile128b
-	lda topRight128,x
-	sta tiles64,y
-	iny
-	lda bottomRight128,x
-	sta tiles64,y
-;return void
-	rts
-
-unzip32Column:;(a)
-;unzips a 64x64 tile block column (1-4) into two 32x32 columns;
-;arguments
-;a - column to unzip (1-4)
-;returns void
-	asl
-	asl
-	tax;x where they are coming from
-	asl
-	asl
-	tay;y where they are going
-	;save the 4 tiles we are working with
-	lda tiles64,x
-	sta tile64a
-	inx
-	lda tiles64,x
-	sta tile64b
-	inx
-	lda tiles64,x
-	sta tile64c
-	inx
-	lda tiles64,x
-	sta tile64d
-	;ok lets unload the first column
-	ldx tile64a
-	lda topLeft64,x
-	sta tiles32,y
-	iny
-	lda bottomLeft64,x
-	sta tiles32,y
-	iny
-	ldx tile64b
-	lda topLeft64,x
-	sta tiles32,y
-	iny
-	lda bottomLeft64,x
-	sta tiles32,y
-	iny
-	ldx tile64c
-	lda topLeft64,x
-	sta tiles32,y
-	iny
-	lda bottomLeft64,x
-	sta tiles32,y
-	iny
-	ldx tile64d
-	lda topLeft64,x
-	sta tiles32,y
-	iny
-	lda bottomLeft64,x
-	sta tiles32,y
-	iny
-	ldx tile64a
-	lda topRight64,x
-	sta tiles32,y
-	iny
-	lda bottomRight64,x
-	sta tiles32,y
-	iny
-	ldx tile64b
-	lda topRight64,x
-	sta tiles32,y
-	iny
-	lda bottomRight64,x
-	sta tiles32,y
-	iny
-	ldx tile64c
-	lda topRight64,x
-	sta tiles32,y
-	iny
-	lda bottomRight64,x
-	sta tiles32,y
-	iny
-	ldx tile64d
-	lda topRight64,x
-	sta tiles32,y
-	iny
-	lda bottomRight64,x
-	sta tiles32,y
+Tiles_getScreenPointer:
+;x - scene number
+	ldx #0
+	lda screens_L,x
+	sta Tiles_screenPointer
+	lda screens_H,x
+	sta Tiles_screenPointer+1
 	rts
 
 .rodata
 ;;;;;;;;
 ;screens;
-;256x256;
 ;;;;;;;;;
-BEACH_SCREEN=0
-topLeft256:
-	.byte $00
-bottomLeft256:
-	.byte $01
-topRight256:
-	.byte $02
-bottomRight256:
-	.byte $03
-;;;;;;;;;
-;128x128;
-;;;;;;;;;
-topLeft128:
-	.byte $00, $01, $05, $07
-bottomLeft128:
-	.byte $00, $02, $06, $08
-topRight128:
-	.byte $03, $03, $09, $0b
-bottomRight128:
-	.byte $03, $04, $0a, $0c
-;;;;;;;
-;64x64;
-;;;;;;;
-topLeft64:
-	.byte $00, $00, $04, $08, $09, $0b, $0b, $0b, $0b, $0d, $0d, $11, $11
-bottomLeft64:
-	.byte $00, $02, $06, $08, $0a, $0b, $0b, $0b, $0b, $0d, $0f, $11, $13
-topRight64:
-	.byte $01, $01, $05, $0b, $0b, $0c, $0c, $10, $10, $14, $14, $14, $14
-bottomRight64:
-	.byte $01, $03, $07, $0b, $0b, $0c, $0e, $10, $12, $14, $14, $14, $14
-;screens
+SCREEN00=$0
+screens_H:
+	.byte >screen00
+screens_L:
+	.byte <screen00
+screen00:
 	.byte $00, $00, $00, $00, $00, $02, $04, $06
 	.byte $01, $01, $01, $01, $01, $03, $05, $07
 	.byte $08, $08, $08, $08, $08, $08, $09, $0a
 	.byte $0b, $0b, $0b, $0b, $0b, $0b, $0b, $0b 
 	.byte $0b, $0b, $0b, $0b, $0b, $0b, $0b, $0b 
 	.byte $0c, $0c, $0c, $0e, $10, $10, $10, $12 
+	.byte $0d, $0d, $0d, $0f, $11, $11, $11, $13 
+	.byte $14, $14, $14, $14, $14, $14, $14, $14 
 	
-
 ;;;;;;;
 ;32x32;
 ;;;;;;;

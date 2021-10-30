@@ -70,12 +70,12 @@ gameLoop:
 		jsr disableRendering;(a, x)
 	;set up the player
 		jsr Player_initialize;()
-	;get the tiles
-		lda nextScene
-		jsr unzipAllTiles;(a)
 	;get the palettes
 		ldx nextScene
 		jsr setPaletteCollection;(x)
+	;get the screen pointer
+		ldx nextScene
+		jsr Tiles_getScreenPointer
 	;rendering is off so we can update video ram
 		jsr renderAllTiles;()
 		jsr renderAllPalettes;()
