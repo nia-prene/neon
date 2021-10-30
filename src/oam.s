@@ -20,8 +20,7 @@ buildX: .res 1
 buildY: .res 1
 buildPalette: .res 1
 spritePointer: .res 2
-OAM_overflowFrames: .res 1
-OAM_hideExcessSprites: .res 1
+OAM_overflowTimer: .res 1
 .segment "OAM"
 oam: .res 256
 
@@ -43,58 +42,39 @@ OAM_build:;c (c)
 	bcs @oamFull
 	jsr buildEnemies
 	bcs @oamFull
-;if there arent enough sprites, stop building scoreboard
-	lda OAM_hideExcessSprites
-	bne :+
-		jsr OAM_buildScore
-		bcs @oamFull
-:	jsr buildPlayerBullets
+	jsr OAM_buildScore
 	bcs @oamFull
-;if there arent enough sprites, stop building hearts
-	lda OAM_hideExcessSprites
-	bne :+
-		jsr buildHearts
-		bcs @oamFull
-:	jsr clearRemaining
+	jsr buildPlayerBullets
+	bcs @oamFull
+	jsr buildHearts
+	bcs @oamFull
+	jsr clearRemaining
 	jmp @allSPritesRendered
 @buildWithoutPlayer:
 	jsr buildEnemyBullets
 	bcs @oamFull
 	jsr buildEnemies
 	bcs @oamFull
-;if there arent enough sprites, stop building scoreboard
-	lda OAM_hideExcessSprites
-	bne :+
-		jsr OAM_buildScore
-		bcs @oamFull
-:	jsr buildPlayerBullets
+	jsr OAM_buildScore
+	bcs @oamFull
+	jsr buildPlayerBullets
 	bcs @oamFull
 ;if there arent enough sprites, stop building hearts
-	lda OAM_hideExcessSprites
-	bne :+
-		jsr buildHearts
-		bcs @oamFull
-:	jsr clearRemaining
+	jsr buildHearts
+	bcs @oamFull
+	jsr clearRemaining
 @allSPritesRendered:
-	sec
-	lda OAM_overflowFrames
-	sbc #1
+;if all sprites got rendered, decrease overflow timer
+	dec OAM_overflowTimer
 	bpl :+
+	;prevent underflow
 		lda #0
-:	sta OAM_overflowFrames
-	lda #FALSE
-	sta OAM_hideExcessSprites
-	rts
+		sta OAM_overflowTimer
+:	rts
 @oamFull:
-	clc
-	lda OAM_overflowFrames
-	adc #1
-	cmp #MAX_OVERFLOW_FRAMES+1
-	bcc :+
-		lda #MAX_OVERFLOW_FRAMES
-		lda #TRUE
-		sta OAM_hideExcessSprites
-:	sta OAM_overflowFrames
+;if full set the overflow timer to 128
+	lda #128
+	sta OAM_overflowTimer
 	rts
 
 buildHitbox:

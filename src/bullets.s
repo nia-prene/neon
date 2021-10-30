@@ -246,11 +246,9 @@ romEnemyBulletMetasprite:
 	pla
 	tax
 .if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))
-	sec
 	lda enemyBulletYL,x
 	sbc Speed_string+yOffset_L
 .elseif (.xmatch ({quadrant}, 3) .or .xmatch ({quadrant}, 4))
-	clc
 	lda enemyBulletYL,x
 	adc Speed_string+yOffset_L
 .else

@@ -128,7 +128,7 @@ Score_tallyFrame:
 	bcc :+
 		sbc #10
 :	sta Score_millions,x
-@Score_toSprites:
+Score_toSprites:
 ;arguments
 ;x - player
 	lda Score_ones,x
