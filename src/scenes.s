@@ -7,7 +7,7 @@
 .include "speed.h"
 
 .rodata
-Scenes_tile:
+Scenes_screen:
 	.byte SCREEN00
 Scenes_palettes:
 	.byte BEACH_PALETTE

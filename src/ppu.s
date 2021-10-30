@@ -69,6 +69,12 @@ yScroll_H: .res 1
 yScroll_L: .res 1
 scrollSpeed_H: .res 1
 scrollSpeed_L: .res 1
+tile128a: .res 1
+tile128b: .res 1
+tile64a: .res 1
+tile64b: .res 1
+tile64c: .res 1
+tile64d: .res 1
 
 .code
 

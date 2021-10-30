@@ -26,6 +26,8 @@ enemyBulletXL: .res MAX_ENEMY_BULLETS
 enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
+Bullets_hold: .res MAX_ENEMY_BULLETS
+
 
 .code
 Enemy_Bullet:
@@ -132,13 +134,20 @@ updateEnemyBullets:;(void)
 @bulletLoop:
 	lda isEnemyBulletActive,x
 	beq @skipBullet;skip inactive bullets
-	txa
-	pha; save array index
-	lda enemyBulletBehaviorH,x
-	pha; push function pointer H
-	lda enemyBulletBehaviorL,x
-	pha; push function pointer L
+		lda Bullets_hold,x
+		bne @decreaseHold
+			txa
+			pha; save array index
+			lda enemyBulletBehaviorH,x
+			pha; push function pointer H
+			lda enemyBulletBehaviorL,x
+			pha; push function pointer L
 @skipBullet:
+	dex ;x--
+	bpl @bulletLoop ;while x>=0
+	rts
+@decreaseHold:
+	dec Bullets_hold,x
 	dex ;x--
 	bpl @bulletLoop ;while x>=0
 	rts

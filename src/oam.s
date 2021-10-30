@@ -101,6 +101,7 @@ PLAYER_HITBOX_Y_OFFSET=5
 @hitboxAnimation:
 	.byte SPRITE06, SPRITE07
 
+.align $100
 buildEnemyBullets:
 	lda #NULL;terminate
 	pha
@@ -137,6 +138,7 @@ buildPlayer:
 	pha
 	jmp buildSprites
 
+.align $100
 buildPlayerBullets:
 	lda #NULL;terminate
 	pha
@@ -179,6 +181,7 @@ buildPlayerBullets:
 	bcc @loop1
 	jmp buildSpritesShort
 
+.align $100
 buildEnemies:
 	lda #NULL
 	pha
@@ -257,6 +260,7 @@ OAM_buildScore:
 	bcc :-
 	jmp buildSpritesShort
 
+.align $100
 buildSprites:
 ;builds collections of sprites
 ;push tile, y, x, palette
@@ -334,6 +338,7 @@ buildSprites:
 	sec ;set full
 	rts
 
+.align $100
 buildSpritesShort:
 ;builds collections of sprites
 ;push tile, y, x, palette
@@ -404,6 +409,7 @@ buildSpritesShort:
 	sec
 	rts
 
+.align $100
 clearRemaining:
 ;arguments
 ;x-starting point to clear

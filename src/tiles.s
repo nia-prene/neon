@@ -3,18 +3,13 @@
 .include "scenes.h"
 
 .zeropage
-tile128a: .res 1
-tile128b: .res 1
-tile64a: .res 1
-tile64b: .res 1
-tile64c: .res 1
-tile64d: .res 1
 Tiles_screenPointer: .res 2
 
 .code
 Tiles_getScreenPointer:
 ;x - scene number
-	ldx #0
+	lda Scenes_screen,x
+	tax
 	lda screens_L,x
 	sta Tiles_screenPointer
 	lda screens_H,x
