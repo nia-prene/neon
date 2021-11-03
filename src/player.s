@@ -32,7 +32,7 @@ Player_initialize:
 	sta playerY_H
 	lda #120
 	sta playerX_H 
-	lda #0
+	lda #2
 	sta Player_powerLevel
 	rts
 
@@ -40,7 +40,7 @@ Player_move:;(controller) returns void
 ;controller bits are | a b sel st u d l r |
 ;pixel per frame when moving fast
 FAST_MOVEMENT_H = 3
-FAST_MOVEMENT_L = 128
+FAST_MOVEMENT_L = 0
 ;pixel per frame when moving slow
 SLOW_MOVEMENT_H = 1
 SLOW_MOVEMENT_L = 0
@@ -49,7 +49,7 @@ MAX_RIGHT = 249
 ;furthest left player can go
 MAX_LEFT = 07
 ;furthest up player can go
-MAX_UP = 0
+MAX_UP = 08
 ;furthest down player can go
 MAX_DOWN = 215
 	rol;test bit 7 (A)
@@ -130,6 +130,7 @@ MAX_DOWN = 215
 	sta playerY_L
 	lda playerY_H
 	sbc speed_H
+	cmp #MAX_UP
 	bcs @storeUp
 	lda #MAX_UP
 @storeUp:

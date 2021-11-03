@@ -78,6 +78,7 @@ gameLoop:
 		jsr Tiles_getScreenPointer
 	;rendering is off so we can update video ram
 		jsr renderAllTiles;()
+		jsr PPU_renderHUD
 		jsr renderAllPalettes;()
 	;reset the enemy wave dispenser
 		ldx nextScene
@@ -85,6 +86,8 @@ gameLoop:
 	;set the bullet speeds
 		ldx nextScene
 		jsr Speed_setLevel
+	;set sprite 0 hit
+		jsr OAM_setSprite0
 	;move the scoreboard to the right position
 		jsr Score_setDefaultX
 		jsr enableRendering;(a, x)
@@ -101,7 +104,8 @@ gameLoop:
 	bne :+
 		jmp main
 ;reset the score for this frame
-:	jsr Score_clearFrameTally
+:
+	jsr Score_clearFrameTally
 	lda Gamepads_state
 ;move player
 	jsr Player_move;(a)
@@ -110,9 +114,10 @@ gameLoop:
 ;shoot new bullets
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
-	jsr updateEnemyBullets
+	jsr PPU_waitForSprite0Hit
 ;move enemies
 	jsr updateEnemies
+	jsr updateEnemyBullets
 ;create a new enemy
 	jsr dispenseEnemies
 ;add up all points earned this frame

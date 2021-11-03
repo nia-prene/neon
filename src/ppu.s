@@ -130,6 +130,34 @@ PPU_advanceClock:
 	inc frame_H
 	rts
 
+PPU_renderHUD:
+	bit PPUSTATUS
+	lda currentPPUSettings
+	and #INCREMENT_1
+	sta PPUCTRL
+	lda #$24
+	sta PPUADDR
+	lda #$00
+	sta PPUADDR
+	lda #1;tile 1
+	ldx #96-1;write 96 times
+@loop:
+	sta PPUDATA
+	dex
+	bpl @loop
+;render attribute bytes
+	lda #$27
+	sta PPUADDR
+	lda #$C0
+	sta PPUADDR
+	ldx #16-1
+	lda #%11111111
+@attributeLoop:
+	sta PPUDATA
+	dex
+	bpl @attributeLoop
+	rts
+
 renderAllPalettes:
 	;clear vblank flag before write
 	bit PPUSTATUS
@@ -358,14 +386,60 @@ PPU_updateScroll:
 	rts
 
 PPU_setScroll:
-;discharge capacitance
-	bit PPUSTATUS
-	lda currentPPUSettings
+	lda #0
+	sta PPUSCROLL
+	lda #0
+	sta PPUSCROLL
+	lda #01
+	ora currentPPUSettings
 	sta PPUCTRL
-	lda xScroll
-	sta PPUSCROLL
+	rts
+
+PPU_waitForSprite0Hit:
+Y_OFFSET=16
+;4th write - Low byte of nametable address to $2006, which is ((Y & $F8) << 2) | (X >> 3)
+	lda #%01000000
+@waitForReset:
+	bit PPUSTATUS
+	bne @waitForReset
+	clc
 	lda yScroll_H
-	sta PPUSCROLL
+	adc #Y_OFFSET
+	cmp #240
+	bcc :+
+		sbc #240
+:
+	and #$f8
+	asl
+	asl
+	pha
+;3rd write - X to $2005
+	lda #0
+	pha
+;2nd write - Y to $2005
+	clc
+	lda yScroll_H
+	adc #Y_OFFSET
+	cmp #240
+	bcc :+
+		sbc #240
+:
+	pha
+;1st write - Nametable number << 2 (that is: $00, $04, $08, or $0C) to $2006
+	lda #0;nametable 0 
+	pha
+	lda #%01000000
+@waitForHit:
+	bit PPUSTATUS
+	beq @waitForHit
+	pla
+	sta $2006
+	pla 
+	sta $2005
+	pla 
+	sta $2005
+	pla
+	sta $2006
 	rts
 
 .rodata

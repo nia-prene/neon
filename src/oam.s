@@ -22,16 +22,33 @@ buildPalette: .res 1
 spritePointer: .res 2
 OAM_overflowTimer: .res 1
 .segment "OAM"
-oam: .res 256
+OAM: .res 256
 
 .code
-OAM_build:;c (c)
+.proc OAM_setSprite0
+SPRITE_Y=0
+SPRITE_TILE=$0c
+SPRITE_ATTRIBUTE=0
+SPRITE_X=200
+	lda #SPRITE_Y
+	sta OAM
+	lda #SPRITE_TILE
+	sta OAM+1
+	lda #SPRITE_ATTRIBUTE
+	sta OAM+2
+	lda #SPRITE_X
+	sta OAM+3
+.endproc
+
+OAM_build:;c (c,a)
 ;builds oam 
 ;call with carry set to exclude player
+;a - gamepad
 ;returns carry clear if oam overflow
 	inc o ;module iterator
-	ldx #0
+	ldx #4;skip sprite 0
 	bcs @buildWithoutPlayer
+	jsr buildHUDCover
 ;build hitbox if button a is being pressed
 	and #%10000000
 	beq :+
@@ -42,26 +59,19 @@ OAM_build:;c (c)
 	bcs @oamFull
 	jsr buildEnemies
 	bcs @oamFull
-	jsr OAM_buildScore
-	bcs @oamFull
 	jsr buildPlayerBullets
-	bcs @oamFull
-	jsr buildHearts
 	bcs @oamFull
 	jsr clearRemaining
 	jmp @allSPritesRendered
 @buildWithoutPlayer:
+	jsr buildHUDCover
 	jsr buildEnemyBullets
 	bcs @oamFull
 	jsr buildEnemies
 	bcs @oamFull
-	jsr OAM_buildScore
-	bcs @oamFull
 	jsr buildPlayerBullets
 	bcs @oamFull
 ;if there arent enough sprites, stop building hearts
-	jsr buildHearts
-	bcs @oamFull
 	jsr clearRemaining
 @allSPritesRendered:
 ;if all sprites got rendered, decrease overflow timer
@@ -76,6 +86,23 @@ OAM_build:;c (c)
 	lda #128
 	sta OAM_overflowTimer
 	rts
+
+buildHUDCover:
+	lda #NULL
+	pha
+	ldy #6
+@loop:
+	lda #SPRITE06
+	pha
+	lda #0
+	pha
+	lda #$FF
+	pha
+	lda #0
+	pha
+	dey
+	bpl @loop
+	jmp buildSpritesShort
 
 buildHitbox:
 PLAYER_HITBOX_Y_OFFSET=5
@@ -289,23 +316,23 @@ buildSprites:
 		adc buildY
 		bcs @yOverflow
 	@returnY:
-		sta oam,x
+		sta OAM,x
 		inx
 		iny
 		lda (spritePointer),y
-		sta oam,x
+		sta OAM,x
 		inx
 		iny
 		lda (spritePointer),y
 		ora buildPalette
-		sta oam,x
+		sta OAM,x
 		inx
 		iny
 		lda (spritePointer),y
 		adc buildX
 		bcs @xOverflow
 	@returnX:
-		sta oam,x
+		sta OAM,x
 		inx
 		beq @oamFull
 		iny
@@ -365,22 +392,22 @@ buildSpritesShort:
 	clc
 	@tileLoop:
 		lda buildY
-		sta oam,x
+		sta OAM,x
 		inx
 		iny
 		lda (spritePointer),y
-		sta oam,x
+		sta OAM,x
 		inx
 		iny
 		lda (spritePointer),y
-		sta oam,x
+		sta OAM,x
 		inx
 		iny
 		lda (spritePointer),y
 		adc buildX
 		bcs @xOverflow
 	@returnX:
-		sta oam,x
+		sta OAM,x
 		inx
 		beq @oamFull
 		iny
@@ -415,11 +442,11 @@ clearRemaining:
 ;x-starting point to clear
 	lda #$ff
 @clearOAM:
-	sta oam,x
+	sta OAM,x
 	inx
 	inx
 	inx
-	sta oam,x
+	sta OAM,x
 	inx
 	bne @clearOAM
 	rts
