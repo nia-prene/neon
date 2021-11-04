@@ -22,9 +22,8 @@ DecHundreds: .res 1
 DecThousands: .res 1
 DecTenThousands: .res 1
 .data
-Score_displaySprites: .res 7;7 digit score
-Score_xPositions: .res 7;x positions of score
-Score_yPosition: .res 1;y position of score
+Score_tilesTop: .res 7;7 digit score
+Score_tilesBottom: .res 7;7 digit score
 
 .code
 Score_clear:
@@ -40,17 +39,6 @@ Score_clear:
 	sta Score_millions
 	sta Score_multiplier
 	rts
-
-Score_setDefaultX:
-	ldx #SCORE_DIGITS-1
-@loop:
-	lda @xOffsets,x
-	sta Score_xPositions,x
-	dex
-	bpl @loop
-	rts
-@xOffsets:
-	.byte 68, 59, 50, 39, 30, 21, 10
 
 Score_clearFrameTally:;void(void)
 ;call at beginning of frame to zero out score total
@@ -128,50 +116,82 @@ Score_tallyFrame:
 	bcc :+
 		sbc #10
 :	sta Score_millions,x
-Score_toSprites:
+Score_toTiles:
 ;arguments
 ;x - player
 	lda Score_ones,x
 	tay
-	lda @spriteConversion,y
-	sta Score_displaySprites
+	lda @tileTop,y
+	sta Score_tilesTop+6
+	lda @tileBottom,y
+	sta Score_tilesBottom+6
+
 	lda Score_tens,x
 	tay
-	lda @spriteConversion,y
-	sta Score_displaySprites+1
+	lda @tileTop,y
+	sta Score_tilesTop+5
+	lda @tileBottom,y
+	sta Score_tilesBottom+5
+
 	lda Score_hundreds,x
 	tay
-	lda @spriteConversion,y
-	sta Score_displaySprites+2
+	lda @tileTop,y
+	sta Score_tilesTop+4
+	lda @tileBottom,y
+	sta Score_tilesBottom+4
+	
 	lda Score_thousands,x
 	tay
-	lda @spriteConversion,y
-	sta Score_displaySprites+3
+	lda @tileTop,y
+	sta Score_tilesTop+3
+	lda @tileBottom,y
+	sta Score_tilesBottom+3
+
 	lda Score_tenThousands,x
 	tay
-	lda @spriteConversion,y
-	sta Score_displaySprites+4
+	lda @tileTop,y
+	sta Score_tilesTop+2
+	lda @tileBottom,y
+	sta Score_tilesBottom+2
+	
 	lda Score_hundredThousands,x
 	tay
-	lda @spriteConversion,y
-	sta Score_displaySprites+5
+	lda @tileTop,y
+	sta Score_tilesTop+1
+	lda @tileBottom,y
+	sta Score_tilesBottom+1
+	
 	lda Score_millions,x
 	tay
-	lda @spriteConversion,y
-	sta Score_displaySprites+6
+	lda @tileTop,y
+	sta Score_tilesTop
+	lda @tileBottom,y
+	sta Score_tilesBottom
 	rts
-@spriteConversion:
-	.byte ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE
-ZERO=SPRITE17
-ONE=SPRITE18
-TWO=SPRITE19
-THREE=SPRITE1A
-FOUR=SPRITE1B
-FIVE=SPRITE1C
-SIX=SPRITE1D
-SEVEN=SPRITE1E
-EIGHT=SPRITE1F
-NINE=SPRITE20
+@tileTop:
+	.byte ZERO_TOP, ONE_TOP, TWO_TOP, THREE_TOP, FOUR_TOP, FIVE_TOP, SIX_TOP, SEVEN_TOP, EIGHT_TOP, NINE_TOP
+@tileBottom:
+	.byte ZERO_BOTTOM, ONE_BOTTOM, TWO_BOTTOM, THREE_BOTTOM, FOUR_BOTTOM, FIVE_BOTTOM, SIX_BOTTOM, SEVEN_BOTTOM, EIGHT_BOTTOM, NINE_BOTTOM
+ZERO_TOP=$ef
+ZERO_BOTTOM=$e5
+ONE_TOP=$e0
+ONE_BOTTOM=$e1
+TWO_TOP=$e2
+TWO_BOTTOM=$e3
+THREE_TOP=$e4
+THREE_BOTTOM=$e5
+FOUR_TOP=$e6
+FOUR_BOTTOM=$e7
+FIVE_TOP=$e8
+FIVE_BOTTOM=$e5
+SIX_TOP=$e9
+SIX_BOTTOM=$e5
+SEVEN_TOP=$ea
+SEVEN_BOTTOM=$eb
+EIGHT_TOP=$ec
+EIGHT_BOTTOM=$e5
+NINE_TOP=$ed
+NINE_BOTTOM=$ee
 
 Score_convertToDecimal:
 ;Returns decimal value in DecOnes, DecTens, DecHundreds, DecThousands, DecTenThousands.

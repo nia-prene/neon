@@ -2,6 +2,7 @@
 .include "ppu.h"
 
 .include "tiles.h"
+.include "score.h"
 .include "hud.h"
 .include "palettes.h"
 
@@ -165,9 +166,76 @@ PPU_renderHUD:
 	bpl @attributeLoop
 	rts
 
+PPU_renderScore:
+	lda currentPPUSettings
+	and #INCREMENT_1
+	sta PPUCTRL
+	lda #$24
+	sta PPUADDR
+	lda #$22
+	sta PPUADDR
+;millions place
+	lda Score_tilesTop
+	sta PPUDATA
+;space for comma
+	lda #$1
+	sta PPUDATA
+;hundred thousands
+	lda Score_tilesTop+1
+	sta PPUDATA
+;ten thousands
+	lda Score_tilesTop+2
+	sta PPUDATA
+;thousands
+	lda Score_tilesTop+3
+	sta PPUDATA
+;space for comma
+	lda #$1
+	sta PPUDATA
+;hundreds
+	lda Score_tilesTop+4
+	sta PPUDATA
+;tens
+	lda Score_tilesTop+5
+	sta PPUDATA
+;ones
+	lda Score_tilesTop+6
+	sta PPUDATA
+;lower row
+	lda #$24
+	sta PPUADDR
+	lda #$42
+	sta PPUADDR
+;millions place
+	lda Score_tilesBottom
+	sta PPUDATA
+;space for comma
+	lda #$f5
+	sta PPUDATA
+;hundred thousands
+	lda Score_tilesBottom+1
+	sta PPUDATA
+;ten thousands
+	lda Score_tilesBottom+2
+	sta PPUDATA
+;thousands
+	lda Score_tilesBottom+3
+	sta PPUDATA
+;space for comma
+	lda #$f5
+	sta PPUDATA
+;hundreds
+	lda Score_tilesBottom+4
+	sta PPUDATA
+;tens
+	lda Score_tilesBottom+5
+	sta PPUDATA
+;ones
+	lda Score_tilesBottom+6
+	sta PPUDATA
+	rts
+
 renderAllPalettes:
-	;clear vblank flag before write
-	bit PPUSTATUS
 	lda currentPPUSettings
 	and #INCREMENT_1
 	sta PPUCTRL

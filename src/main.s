@@ -185,6 +185,7 @@ nmi:
 		jsr renderAllPalettes
 @skipPalettes:
 ;oamdma transfer
+	jsr PPU_renderScore
 	jsr OAM_beginDMA
 	jsr Gamepads_read
 	jsr PPU_setScroll

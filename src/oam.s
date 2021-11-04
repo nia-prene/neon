@@ -236,42 +236,6 @@ buildHearts:
 heartX:;location of hearts
 	.byte 10, 18, 26, 34, 42, 50, 58
 
-OAM_buildScore:
-	lda #NULL
-	pha
-;alternate between building forward and backward for flicker
-	lda o
-	ror
-	bcs @loop2
-@loop1:
-	ldy #6
-:
-	lda Score_displaySprites,y
-	pha
-	lda #8
-	pha
-	lda Score_xPositions,y
-	pha
-	lda #00
-	pha
-	dey
-	bpl :-
-	jmp buildSpritesShort
-@loop2:
-	ldy #0
-:
-	lda Score_displaySprites,y
-	pha
-	lda #8
-	pha
-	lda Score_xPositions,y
-	pha
-	lda #00
-	pha
-	iny
-	cpy #7
-	bcc :-
-	jmp buildSpritesShort
 
 .align $100
 buildSprites:
