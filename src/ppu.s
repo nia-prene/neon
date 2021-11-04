@@ -2,6 +2,7 @@
 .include "ppu.h"
 
 .include "tiles.h"
+.include "hud.h"
 .include "palettes.h"
 
 PPUCTRL = $2000;(VPHB SINN) NMI enable (V), PPU master/slave (P), sprite height (H), background tile select (B), sprite tile select (S), increment mode (I), nametable select (NN)
@@ -131,7 +132,6 @@ PPU_advanceClock:
 	rts
 
 PPU_renderHUD:
-	bit PPUSTATUS
 	lda currentPPUSettings
 	and #INCREMENT_1
 	sta PPUCTRL
@@ -140,11 +140,18 @@ PPU_renderHUD:
 	lda #$00
 	sta PPUADDR
 	lda #1;tile 1
-	ldx #96-1;write 96 times
+	ldx #32-1;write 32 blank tiles for ntsc covered pixels
 @loop:
 	sta PPUDATA
 	dex
 	bpl @loop
+	ldx #0
+@HUDLoop:
+	lda HUD_tiles,x
+	sta PPUDATA
+	inx
+	cpx #64
+	bcc @HUDLoop
 ;render attribute bytes
 	lda #$27
 	sta PPUADDR
@@ -396,7 +403,7 @@ PPU_setScroll:
 	rts
 
 PPU_waitForSprite0Hit:
-Y_OFFSET=16
+Y_OFFSET=24
 ;4th write - Low byte of nametable address to $2006, which is ((Y & $F8) << 2) | (X >> 3)
 	lda #%01000000
 @waitForReset:
@@ -405,6 +412,9 @@ Y_OFFSET=16
 	clc
 	lda yScroll_H
 	adc #Y_OFFSET
+	bcc :+
+		sbc #240
+:
 	cmp #240
 	bcc :+
 		sbc #240

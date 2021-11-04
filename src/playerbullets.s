@@ -6,26 +6,28 @@
 .include "sprites.h"
 
 .zeropage
-MAX_PLAYER_BULLETS = 15
+MAX_PLAYER_BULLETS = 10
 bulletX: .res MAX_PLAYER_BULLETS 
 bulletY: .res MAX_PLAYER_BULLETS 
 PlayerBullet_width: .res MAX_PLAYER_BULLETS
 bulletSprite: .res MAX_PLAYER_BULLETS
 PlayerBullet_damage: .res MAX_PLAYER_BULLETS
 isActive: .res MAX_PLAYER_BULLETS
-pressingShoot: .res 1
-i: .res 1 ;module iterator
-
+PlayerBullet_CooldownTimer: .res 1
+COOLDOWN_TIME=5;shoots every 5 frames
 .code
 PlayerBullets_shoot:;(controller poll)
 B_BUTTON=%01000000
+;see if the player is pressing b (shoot)
 	and #B_BUTTON
-	beq @notShooting
-		inc pressingShoot
-		lda pressingShoot
-		and #%00000011
+	beq @return
+	;only allow shooting when cooldown timer has reached zero
+		lda PlayerBullet_CooldownTimer
 		bne @return
-			inc i;increase module iterator
+		;set the weapons cooldown timer
+			lda #COOLDOWN_TIME
+			sta PlayerBullet_CooldownTimer
+		;push on as many shooting routines as powerups
 			ldy Player_powerLevel
 		@shotLoop:
 		;jump to all active shot types
@@ -36,11 +38,16 @@ B_BUTTON=%01000000
 			dey
 			bpl @shotLoop
 			rts
-@notShooting:
-	lda #$ff
-	sta pressingShoot
 @return:
+;decrease the cooldown timer every frame
+	dec PlayerBullet_CooldownTimer
+	bpl :+
+	;don't let that timer go negative 
+		lda #0
+		sta PlayerBullet_CooldownTimer
+:
 	rts
+;different shot pattern function pointers
 @shotType_L:
 	.byte <(shotType00-1)
 	.byte <(shotType01-1)
@@ -112,10 +119,7 @@ WIDTH=16
 	sbc #Y_OFFSET
 	bcc @bulletOffscreen
 	sta bulletY,x
-	lda i
-	and #%1
-	tay
-	lda @starSprites,y
+	lda #LARGE_STAR
 	sta bulletSprite,x
 	lda #DAMAGE
 	sta PlayerBullet_damage,x
@@ -127,8 +131,6 @@ WIDTH=16
 	lda #FALSE
 	sta isActive,x
 	rts
-@starSprites:
-	.byte LARGE_STAR, SPRITE21
 .endproc
 
 .proc shotType01

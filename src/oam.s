@@ -26,10 +26,10 @@ OAM: .res 256
 
 .code
 .proc OAM_setSprite0
-SPRITE_Y=0
+SPRITE_Y=7
 SPRITE_TILE=$0c
 SPRITE_ATTRIBUTE=0
-SPRITE_X=200
+SPRITE_X=180
 	lda #SPRITE_Y
 	sta OAM
 	lda #SPRITE_TILE
@@ -46,9 +46,8 @@ OAM_build:;c (c,a)
 ;a - gamepad
 ;returns carry clear if oam overflow
 	inc o ;module iterator
-	ldx #4;skip sprite 0
+	ldx #32;skip sprite 0-7
 	bcs @buildWithoutPlayer
-	jsr buildHUDCover
 ;build hitbox if button a is being pressed
 	and #%10000000
 	beq :+
@@ -62,47 +61,34 @@ OAM_build:;c (c,a)
 	jsr buildPlayerBullets
 	bcs @oamFull
 	jsr clearRemaining
-	jmp @allSPritesRendered
+	rts
 @buildWithoutPlayer:
-	jsr buildHUDCover
 	jsr buildEnemyBullets
 	bcs @oamFull
 	jsr buildEnemies
 	bcs @oamFull
 	jsr buildPlayerBullets
 	bcs @oamFull
-;if there arent enough sprites, stop building hearts
 	jsr clearRemaining
-@allSPritesRendered:
-;if all sprites got rendered, decrease overflow timer
-	dec OAM_overflowTimer
-	bpl :+
-	;prevent underflow
-		lda #0
-		sta OAM_overflowTimer
-:	rts
 @oamFull:
-;if full set the overflow timer to 128
-	lda #128
-	sta OAM_overflowTimer
 	rts
 
-buildHUDCover:
-	lda #NULL
-	pha
-	ldy #6
+OAM_setHUDCover:
+	ldy #6;put 7 sprites to cover hud
+	ldx #4;starting at oam address 4
 @loop:
-	lda #SPRITE06
-	pha
-	lda #0
-	pha
-	lda #$FF
-	pha
-	lda #0
-	pha
+	lda #7;put at y=7
+	sta OAM,x
+	inx
+	lda $0c;use sprite 0 tile, its mostly blank
+	sta OAM,x
+	inx;doesnt need attribute
+	inx
+	lda #$FF;put offscreen
+	inx
 	dey
 	bpl @loop
-	jmp buildSpritesShort
+	rts
 
 buildHitbox:
 PLAYER_HITBOX_Y_OFFSET=5

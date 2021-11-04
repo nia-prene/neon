@@ -88,8 +88,9 @@ gameLoop:
 		jsr Speed_setLevel
 	;set sprite 0 hit
 		jsr OAM_setSprite0
+	;cover hud with 7 sprites to block out other sprites
+		jsr OAM_setHUDCover
 	;move the scoreboard to the right position
-		jsr Score_setDefaultX
 		jsr enableRendering;(a, x)
 	;set current to next
 		lda nextScene
@@ -115,9 +116,9 @@ gameLoop:
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
 	jsr PPU_waitForSprite0Hit
+	jsr updateEnemyBullets
 ;move enemies
 	jsr updateEnemies
-	jsr updateEnemyBullets
 ;create a new enemy
 	jsr dispenseEnemies
 ;add up all points earned this frame
