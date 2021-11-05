@@ -49,7 +49,7 @@ MAX_RIGHT = 249
 ;furthest left player can go
 MAX_LEFT = 07
 ;furthest up player can go
-MAX_UP = 08
+MAX_UP = 13
 ;furthest down player can go
 MAX_DOWN = 215
 	rol;test bit 7 (A)

@@ -1,4 +1,5 @@
 .include "lib.h"
+.include "main.h"
 
 .include "scenes.h"
 .include "playerbullets.h"
@@ -19,13 +20,13 @@
 .include "init.s"
 
 .zeropage
+MAIN_stack: .res 1
 currentFrame: .res 1
 framesDropped: .res 1
 currentScene: .res 1
 nextScene: .res 1
 hasFrameBeenRendered: .res 1
 currentPlayer: .res 1
-
 .code
 main:
 	NES_init
@@ -155,6 +156,7 @@ gameLoop:
 @buildSprites:
 	lda Gamepads_state
 	jsr OAM_build;(c,a)
+	jsr	PPU_scoreToBuffer
 ;if frame differs from beginning 
 	lda frame_L
 	cmp currentFrame
@@ -179,13 +181,13 @@ nmi:
 	tya
 	pha
 	jsr PPU_advanceClock;()
+	jsr PPU_renderScore
 ;rendering code goes here
 	lda PPU_havePalettesChanged
 	beq @skipPalettes
 		jsr renderAllPalettes
 @skipPalettes:
 ;oamdma transfer
-	jsr PPU_renderScore
 	jsr OAM_beginDMA
 	jsr Gamepads_read
 	jsr PPU_setScroll

@@ -3,6 +3,7 @@
 
 .include "tiles.h"
 .include "score.h"
+.include "main.h"
 .include "hud.h"
 .include "palettes.h"
 
@@ -77,6 +78,10 @@ tile64a: .res 1
 tile64b: .res 1
 tile64c: .res 1
 tile64d: .res 1
+PPU_stack: .res 1
+
+.segment "PPUBUFFER"
+PPU_buffer:
 
 .code
 
@@ -167,72 +172,59 @@ PPU_renderHUD:
 	rts
 
 PPU_renderScore:
+	tsx
+	stx MAIN_stack
+	ldx PPU_stack
+	txs
 	lda currentPPUSettings
 	and #INCREMENT_1
 	sta PPUCTRL
-	lda #$24
+	pla
 	sta PPUADDR
-	lda #$22
+	pla
 	sta PPUADDR
-;millions place
-	lda Score_tilesTop
+	pla
 	sta PPUDATA
-;space for comma
-	lda #$1
+	pla
 	sta PPUDATA
-;hundred thousands
-	lda Score_tilesTop+1
+	pla
 	sta PPUDATA
-;ten thousands
-	lda Score_tilesTop+2
+	pla
 	sta PPUDATA
-;thousands
-	lda Score_tilesTop+3
+	pla
 	sta PPUDATA
-;space for comma
-	lda #$1
+	pla
 	sta PPUDATA
-;hundreds
-	lda Score_tilesTop+4
+	pla
 	sta PPUDATA
-;tens
-	lda Score_tilesTop+5
+	pla
 	sta PPUDATA
-;ones
-	lda Score_tilesTop+6
+	pla
 	sta PPUDATA
-;lower row
-	lda #$24
+	pla
 	sta PPUADDR
-	lda #$42
+	pla
 	sta PPUADDR
-;millions place
-	lda Score_tilesBottom
+	pla
 	sta PPUDATA
-;space for comma
-	lda #$f5
+	pla
 	sta PPUDATA
-;hundred thousands
-	lda Score_tilesBottom+1
+	pla
 	sta PPUDATA
-;ten thousands
-	lda Score_tilesBottom+2
+	pla
 	sta PPUDATA
-;thousands
-	lda Score_tilesBottom+3
+	pla
 	sta PPUDATA
-;space for comma
-	lda #$f5
+	pla
 	sta PPUDATA
-;hundreds
-	lda Score_tilesBottom+4
+	pla
 	sta PPUDATA
-;tens
-	lda Score_tilesBottom+5
+	pla
 	sta PPUDATA
-;ones
-	lda Score_tilesBottom+6
+	pla
 	sta PPUDATA
+	ldx MAIN_stack
+	txs
 	rts
 
 renderAllPalettes:
@@ -519,6 +511,102 @@ Y_OFFSET=24
 	pla
 	sta $2006
 	rts
+
+PPU_scoreToBuffer:
+BYTES_SCORE=22
+;arguments
+;x - player
+	ldx #0
+	lda #(<PPU_buffer)-(BYTES_SCORE+1)
+	sta PPU_stack
+	lda #$24
+	sta PPU_buffer-22
+	sta PPU_buffer-11
+	lda #$22
+	sta PPU_buffer-21
+	lda #$42
+	sta PPU_buffer-10
+
+	lda Score_millions,x
+	tay
+	lda @tileTop,y
+	sta PPU_buffer-20
+	lda @tileBottom,y
+	sta PPU_buffer-9
+
+	lda Score_hundredThousands,x
+	tay
+	lda @tileTop,y
+	sta PPU_buffer-18
+	lda @tileBottom,y
+	sta PPU_buffer-7
+	
+	lda Score_tenThousands,x
+	tay 
+	lda @tileTop,y
+	sta PPU_buffer-17
+	lda @tileBottom,y
+	sta PPU_buffer-6
+	
+	lda Score_thousands,x
+	tay
+	lda @tileTop,y
+	sta PPU_buffer-16
+	lda @tileBottom,y
+	sta PPU_buffer-5
+;hundreds place
+	lda Score_hundreds,x
+	tay
+	lda @tileTop,y
+	sta PPU_buffer-14
+	lda @tileBottom,y
+	sta PPU_buffer-3
+;tens place	
+	lda Score_tens,x
+	tay
+	lda @tileTop,y
+	sta PPU_buffer-13
+	lda @tileBottom,y
+	sta PPU_buffer-2
+;ones place
+	lda Score_ones,x
+	tay
+	lda @tileTop,y
+	sta PPU_buffer-12
+	lda @tileBottom,y
+	sta PPU_buffer-1
+;commas
+	lda #$1
+	sta PPU_buffer-19
+	sta PPU_buffer-15
+	lda #$f5
+	sta PPU_buffer-8
+	sta PPU_buffer-4
+	rts
+@tileTop:
+	.byte ZERO_TOP, ONE_TOP, TWO_TOP, THREE_TOP, FOUR_TOP, FIVE_TOP, SIX_TOP, SEVEN_TOP, EIGHT_TOP, NINE_TOP
+@tileBottom:
+	.byte ZERO_BOTTOM, ONE_BOTTOM, TWO_BOTTOM, THREE_BOTTOM, FOUR_BOTTOM, FIVE_BOTTOM, SIX_BOTTOM, SEVEN_BOTTOM, EIGHT_BOTTOM, NINE_BOTTOM
+ZERO_TOP=$ef
+ZERO_BOTTOM=$e5
+ONE_TOP=$e0
+ONE_BOTTOM=$e1
+TWO_TOP=$e2
+TWO_BOTTOM=$e3
+THREE_TOP=$e4
+THREE_BOTTOM=$e5
+FOUR_TOP=$e6
+FOUR_BOTTOM=$e7
+FIVE_TOP=$e8
+FIVE_BOTTOM=$e5
+SIX_TOP=$e9
+SIX_BOTTOM=$e5
+SEVEN_TOP=$ea
+SEVEN_BOTTOM=$eb
+EIGHT_TOP=$ec
+EIGHT_BOTTOM=$e5
+NINE_TOP=$ed
+NINE_BOTTOM=$ee
 
 .rodata
 nameTableConversionH:

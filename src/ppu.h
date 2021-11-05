@@ -10,6 +10,7 @@
 .global PPU_renderHUD
 .global PPU_waitForSprite0Hit
 .global PPU_renderScore
+.global PPU_scoreToBuffer
 .global enableRendering
 .global disableRendering
 .global renderAllPalettes

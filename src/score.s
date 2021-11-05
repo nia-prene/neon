@@ -116,6 +116,8 @@ Score_tallyFrame:
 	bcc :+
 		sbc #10
 :	sta Score_millions,x
+	rts
+
 Score_toTiles:
 ;arguments
 ;x - player
