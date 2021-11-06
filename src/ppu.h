@@ -1,6 +1,7 @@
 .globalzp frame_L
+.globalzp PPU_stack
 .globalzp PPU_havePalettesChanged
-
+.globalzp PPU_willVRAMUpdate
 .global PPU_init
 .global PPU_resetClock
 .global PPU_advanceClock
@@ -11,6 +12,7 @@
 .global PPU_waitForSprite0Hit
 .global PPU_renderScore
 .global PPU_scoreToBuffer
+.global PPU_planNMI
 .global enableRendering
 .global disableRendering
 .global renderAllPalettes

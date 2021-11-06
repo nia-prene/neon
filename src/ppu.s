@@ -17,7 +17,7 @@ PPUDATA = $2007;(dddd dddd)	PPU data read/write
 ;Project ppu settings
 
 BASE_NAMETABLE = 0;this here for ease of change
-VRAM_INCREMENT = 1;0: add 1, going across; 1: add 32, going down
+VRAM_INCREMENT = 0;0: add 1, going across; 1: add 32, going down
 SPRITE_TABLE = 0;0: $0000, 1: $1000, ignored in 8x16 mode
 BACKGROUND_TABLE = 1;0: $0000 1: $1000
 SPRITE_SIZE = 1;0: 8x8 pixels 1: 8x16 pixels
@@ -58,6 +58,7 @@ DIM_SCREEN = %11100000			; or
 
 .zeropage
 PPU_havePalettesChanged: .res 1
+PPU_willVRAMUpdate:.res 1
 currentNameTable: .res 2
 currentPPUSettings: .res 1
 currentMaskSettings: .res 1
@@ -79,9 +80,7 @@ tile64b: .res 1
 tile64c: .res 1
 tile64d: .res 1
 PPU_stack: .res 1
-
-.segment "PPUBUFFER"
-PPU_buffer:
+PPU_bufferBytes:.res 1
 
 .code
 
@@ -171,66 +170,92 @@ PPU_renderHUD:
 	bpl @attributeLoop
 	rts
 
-PPU_renderScore:
+PPU_planNMI:
+;byte writes INCLUDE functions pushed on stack
+MAX_BYTE_WRITES=70
+SCORE_BYTES=24
+;save the main stack
 	tsx
-	stx MAIN_stack
-	ldx PPU_stack
+	stx Main_stack
+;make a new ppu stack, large enough to hold all byte writes
+	ldx #MAX_BYTE_WRITES+2
 	txs
-	lda currentPPUSettings
-	and #INCREMENT_1
-	sta PPUCTRL
-	pla
-	sta PPUADDR
-	pla
-	sta PPUADDR
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUADDR
-	pla
-	sta PPUADDR
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	ldx MAIN_stack
+;after routine runs, return at the end of NMI
+	lda #>(Main_NMIReturn-1)
+	pha
+	lda #<(Main_NMIReturn-1)
+	pha
+	tsx
+	stx PPU_stack
+	ldx Main_stack
 	txs
+;we just stored 2 bytes
+	lda #2
+	sta PPU_bufferBytes
+;check if score needs updating
+	lda Score_hasChanged
+	beq :+
+		jsr PPU_scoreToBuffer
+		lda #FALSE
+		sta Score_hasChanged
+		clc
+		lda #SCORE_BYTES
+		adc PPU_bufferBytes
+		sta PPU_bufferBytes
+:
+;swap this NMI stack for the main program stack
+	lda #TRUE
+	sta PPU_willVRAMUpdate
+	rts
+
+PPU_renderScore:
+	pla
+	sta PPUADDR
+	pla
+	sta PPUADDR
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUADDR
+	pla
+	sta PPUADDR
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
 	rts
 
 renderAllPalettes:
-	lda currentPPUSettings
-	and #INCREMENT_1
-	sta PPUCTRL
 ;palettes are at 3f00 of ppu, accessed through PPUADDR
 	lda #$3f
 	sta PPUADDR
@@ -513,75 +538,119 @@ Y_OFFSET=24
 	rts
 
 PPU_scoreToBuffer:
-BYTES_SCORE=22
 ;arguments
-;x - player
-	ldx #0
-	lda #(<PPU_buffer)-(BYTES_SCORE+1)
-	sta PPU_stack
-	lda #$24
-	sta PPU_buffer-22
-	sta PPU_buffer-11
-	lda #$22
-	sta PPU_buffer-21
+;y - player
+	ldy #0
+;swap stacks
+	tsx
+	stx Main_stack
+	ldx PPU_stack
+	txs
+;start at the end (ones digit
+	lda Score_ones,y
+	tax
+	lda @tileBottom,x
+	pha
+
+	lda Score_tens,y
+	tax
+	lda @tileBottom,x
+	pha
+
+	lda Score_hundreds,y
+	tax
+	lda @tileBottom,x
+	pha
+	
+	lda #COMMA_BOTTOM
+	pha
+	
+	lda Score_thousands,y
+	tax
+	lda @tileBottom,x
+	pha
+	
+	lda Score_tenThousands,y
+	tax
+	lda @tileBottom,x
+	pha
+	
+	lda Score_hundredThousands,y
+	tax
+	lda @tileBottom,x
+	pha
+;comma	
+	lda #COMMA_BOTTOM
+	pha
+
+	lda Score_millions,y
+	tax
+	lda @tileBottom,x
+	pha
+	
 	lda #$42
-	sta PPU_buffer-10
+	pha
+	lda #$24
+	pha
 
-	lda Score_millions,x
-	tay
-	lda @tileTop,y
-	sta PPU_buffer-20
-	lda @tileBottom,y
-	sta PPU_buffer-9
+;start at the end (ones digit
+	lda Score_ones,y
+	tax
+	lda @tileTop,x
+	pha
 
-	lda Score_hundredThousands,x
-	tay
-	lda @tileTop,y
-	sta PPU_buffer-18
-	lda @tileBottom,y
-	sta PPU_buffer-7
+	lda Score_tens,y
+	tax
+	lda @tileTop,x
+	pha
+
+	lda Score_hundreds,y
+	tax
+	lda @tileTop,x
+	pha
 	
-	lda Score_tenThousands,x
-	tay 
-	lda @tileTop,y
-	sta PPU_buffer-17
-	lda @tileBottom,y
-	sta PPU_buffer-6
+	lda #COMMA_TOP 
+	pha
 	
-	lda Score_thousands,x
-	tay
-	lda @tileTop,y
-	sta PPU_buffer-16
-	lda @tileBottom,y
-	sta PPU_buffer-5
-;hundreds place
-	lda Score_hundreds,x
-	tay
-	lda @tileTop,y
-	sta PPU_buffer-14
-	lda @tileBottom,y
-	sta PPU_buffer-3
-;tens place	
-	lda Score_tens,x
-	tay
-	lda @tileTop,y
-	sta PPU_buffer-13
-	lda @tileBottom,y
-	sta PPU_buffer-2
-;ones place
-	lda Score_ones,x
-	tay
-	lda @tileTop,y
-	sta PPU_buffer-12
-	lda @tileBottom,y
-	sta PPU_buffer-1
-;commas
-	lda #$1
-	sta PPU_buffer-19
-	sta PPU_buffer-15
-	lda #$f5
-	sta PPU_buffer-8
-	sta PPU_buffer-4
+	lda Score_thousands,y
+	tax
+	lda @tileTop,x
+	pha
+	
+	lda Score_tenThousands,y
+	tax
+	lda @tileTop,x
+	pha
+	
+	lda Score_hundredThousands,y
+	tax
+	lda @tileTop,x
+	pha
+;comma	
+	lda #COMMA_TOP 
+	pha
+
+	lda Score_millions,y
+	tax
+	lda @tileTop,x
+	pha
+	
+	lda #$22
+	pha
+	lda #$24
+	pha
+
+;subroutine that handles nmi rendering
+	lda #>(PPU_renderScore-1)
+	pha
+	lda #<(PPU_renderScore-1)
+	pha
+;swap back stacks
+	tsx
+	stx PPU_stack
+	ldx Main_stack
+	txs
+
 	rts
 @tileTop:
 	.byte ZERO_TOP, ONE_TOP, TWO_TOP, THREE_TOP, FOUR_TOP, FIVE_TOP, SIX_TOP, SEVEN_TOP, EIGHT_TOP, NINE_TOP
@@ -607,6 +676,8 @@ EIGHT_TOP=$ec
 EIGHT_BOTTOM=$e5
 NINE_TOP=$ed
 NINE_BOTTOM=$ee
+COMMA_TOP = $01
+COMMA_BOTTOM = $F5
 
 .rodata
 nameTableConversionH:

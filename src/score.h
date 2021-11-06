@@ -9,6 +9,7 @@
 .globalzp Score_hundredThousands
 .globalzp Score_millions
 .globalzp Score_multiplier
+.globalzp Score_hasChanged
 .global Score_tilesTop
 .global Score_tilesBottom
 

@@ -20,7 +20,7 @@
 .include "init.s"
 
 .zeropage
-MAIN_stack: .res 1
+Main_stack: .res 1
 currentFrame: .res 1
 framesDropped: .res 1
 currentScene: .res 1
@@ -123,8 +123,8 @@ gameLoop:
 ;create a new enemy
 	jsr dispenseEnemies
 ;add up all points earned this frame
-	lda currentPlayer
-	jsr Score_tallyFrame;(a)
+	ldx currentPlayer
+	jsr Score_tallyFrame;(x)
 ;if iframes>0, player harmed recently
 	lda playerIFrames
 	bne @playerHarmed
@@ -156,7 +156,7 @@ gameLoop:
 @buildSprites:
 	lda Gamepads_state
 	jsr OAM_build;(c,a)
-	jsr	PPU_scoreToBuffer
+	jsr PPU_planNMI
 ;if frame differs from beginning 
 	lda frame_L
 	cmp currentFrame
@@ -181,16 +181,24 @@ nmi:
 	tya
 	pha
 	jsr PPU_advanceClock;()
-	jsr PPU_renderScore
-;rendering code goes here
-	lda PPU_havePalettesChanged
-	beq @skipPalettes
-		jsr renderAllPalettes
-@skipPalettes:
+	lda PPU_willVRAMUpdate
+	beq :+
+		tsx
+		stx Main_stack
+		ldx PPU_stack
+		txs
+		rts
+	;run all render code, return here
+	Main_NMIReturn:
+		ldx Main_stack
+		txs
+:
 ;oamdma transfer
 	jsr OAM_beginDMA
 	jsr Gamepads_read
 	jsr PPU_setScroll
+	lda #FALSE
+	sta PPU_willVRAMUpdate
 	lda #TRUE
 	sta hasFrameBeenRendered	
 ;restore registers

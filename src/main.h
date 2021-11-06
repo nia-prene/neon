@@ -1,1 +1,2 @@
-.globalzp MAIN_stack
+.globalzp Main_stack
+.global Main_NMIReturn

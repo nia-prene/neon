@@ -14,6 +14,7 @@ Score_millions: .res 2
 Score_multiplier: .res 2
 Score_frameTotal_L: .res 1
 Score_frameTotal_H: .res 1
+Score_hasChanged: .res 1
 ;locals
 ;these convert bin to dec
 DecOnes: .res 1
@@ -22,22 +23,22 @@ DecHundreds: .res 1
 DecThousands: .res 1
 DecTenThousands: .res 1
 .data
-Score_tilesTop: .res 7;7 digit score
-Score_tilesBottom: .res 7;7 digit score
 
 .code
 Score_clear:
 ;arguments -
 ;x - player score to clear
 	lda #0
-	sta Score_ones
-	sta Score_tens
-	sta Score_hundreds
-	sta Score_thousands
-	sta Score_tenThousands
-	sta Score_hundredThousands
-	sta Score_millions
-	sta Score_multiplier
+	sta Score_ones,x
+	sta Score_tens,x
+	sta Score_hundreds,x
+	sta Score_thousands,x
+	sta Score_tenThousands,x
+	sta Score_hundredThousands,x
+	sta Score_millions,x
+	sta Score_multiplier,x
+	lda #TRUE
+	sta Score_hasChanged
 	rts
 
 Score_clearFrameTally:;void(void)
@@ -49,10 +50,17 @@ Score_clearFrameTally:;void(void)
 
 Score_tallyFrame:
 ;arguments
-;a - current player
-;todo multiplier
-;get the player's multiplier
-	tax
+;x - current player
+;if the frame total is zero, skip all this
+	lda Score_frameTotal_L
+	bne @doScore
+		lda Score_frameTotal_H
+		bne @doScore
+			rts
+@doScore:
+	lda #TRUE
+	sta Score_hasChanged
+	txa
 	pha
 	lda Score_multiplier,x
 	tay
@@ -117,83 +125,6 @@ Score_tallyFrame:
 		sbc #10
 :	sta Score_millions,x
 	rts
-
-Score_toTiles:
-;arguments
-;x - player
-	lda Score_ones,x
-	tay
-	lda @tileTop,y
-	sta Score_tilesTop+6
-	lda @tileBottom,y
-	sta Score_tilesBottom+6
-
-	lda Score_tens,x
-	tay
-	lda @tileTop,y
-	sta Score_tilesTop+5
-	lda @tileBottom,y
-	sta Score_tilesBottom+5
-
-	lda Score_hundreds,x
-	tay
-	lda @tileTop,y
-	sta Score_tilesTop+4
-	lda @tileBottom,y
-	sta Score_tilesBottom+4
-	
-	lda Score_thousands,x
-	tay
-	lda @tileTop,y
-	sta Score_tilesTop+3
-	lda @tileBottom,y
-	sta Score_tilesBottom+3
-
-	lda Score_tenThousands,x
-	tay
-	lda @tileTop,y
-	sta Score_tilesTop+2
-	lda @tileBottom,y
-	sta Score_tilesBottom+2
-	
-	lda Score_hundredThousands,x
-	tay
-	lda @tileTop,y
-	sta Score_tilesTop+1
-	lda @tileBottom,y
-	sta Score_tilesBottom+1
-	
-	lda Score_millions,x
-	tay
-	lda @tileTop,y
-	sta Score_tilesTop
-	lda @tileBottom,y
-	sta Score_tilesBottom
-	rts
-@tileTop:
-	.byte ZERO_TOP, ONE_TOP, TWO_TOP, THREE_TOP, FOUR_TOP, FIVE_TOP, SIX_TOP, SEVEN_TOP, EIGHT_TOP, NINE_TOP
-@tileBottom:
-	.byte ZERO_BOTTOM, ONE_BOTTOM, TWO_BOTTOM, THREE_BOTTOM, FOUR_BOTTOM, FIVE_BOTTOM, SIX_BOTTOM, SEVEN_BOTTOM, EIGHT_BOTTOM, NINE_BOTTOM
-ZERO_TOP=$ef
-ZERO_BOTTOM=$e5
-ONE_TOP=$e0
-ONE_BOTTOM=$e1
-TWO_TOP=$e2
-TWO_BOTTOM=$e3
-THREE_TOP=$e4
-THREE_BOTTOM=$e5
-FOUR_TOP=$e6
-FOUR_BOTTOM=$e7
-FIVE_TOP=$e8
-FIVE_BOTTOM=$e5
-SIX_TOP=$e9
-SIX_BOTTOM=$e5
-SEVEN_TOP=$ea
-SEVEN_BOTTOM=$eb
-EIGHT_TOP=$ec
-EIGHT_BOTTOM=$e5
-NINE_TOP=$ed
-NINE_BOTTOM=$ee
 
 Score_convertToDecimal:
 ;Returns decimal value in DecOnes, DecTens, DecHundreds, DecThousands, DecTenThousands.
