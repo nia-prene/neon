@@ -13,9 +13,8 @@ octant: .res 1
 bulletAngle: .res 1
 numberOfBullets: .res 1
 
-
 .data
-MAX_ENEMY_BULLETS=55
+MAX_ENEMY_BULLETS=48
 isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 enemyBulletHitbox1: .res MAX_ENEMY_BULLETS
 enemyBulletHitbox2: .res MAX_ENEMY_BULLETS
@@ -27,6 +26,7 @@ enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
 Bullets_hold: .res MAX_ENEMY_BULLETS
+Bullets_diameter: .res MAX_ENEMY_BULLETS
 
 
 .code

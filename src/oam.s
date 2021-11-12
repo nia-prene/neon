@@ -215,28 +215,6 @@ buildEnemies:
 	bpl @enemyLoop
 	jmp buildSprites
 
-buildHearts:
-	lda #NULL;null terminated
-	pha
-	lda playerHP
-	and #%00000111
-	tay
-@heartLoop:
-	lda #HEART_SPRITE
-	pha
-	lda #220; y value
-	pha
-	lda heartX,y
-	pha
-	lda #0;palette
-	pha
-	dey
-	bpl @heartLoop
-	jmp buildSpritesShort
-heartX:;location of hearts
-	.byte 10, 18, 26, 34, 42, 50, 58
-
-
 .align $100
 buildSprites:
 ;builds collections of sprites

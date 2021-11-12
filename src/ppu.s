@@ -6,6 +6,7 @@
 .include "main.h"
 .include "hud.h"
 .include "palettes.h"
+.include "player.h"
 
 PPUCTRL = $2000;(VPHB SINN) NMI enable (V), PPU master/slave (P), sprite height (H), background tile select (B), sprite tile select (S), increment mode (I), nametable select (NN)
 PPUMASK = $2001;(BGRs bMmG)	color emphasis (BGR), sprite enable (s), background enable (b), sprite left column enable (M), background left column enable (m), greyscale (G)
@@ -174,6 +175,7 @@ PPU_planNMI:
 ;byte writes INCLUDE functions pushed on stack
 MAX_BYTE_WRITES=70
 SCORE_BYTES=24
+HEART_BYTES=14
 ;save the main stack
 	tsx
 	stx Main_stack
@@ -202,6 +204,17 @@ SCORE_BYTES=24
 		lda #SCORE_BYTES
 		adc PPU_bufferBytes
 		sta PPU_bufferBytes
+:	
+	lda Player_haveHeartsChanged
+	beq :+
+		jsr PPU_heartsToBuffer
+		lda #FALSE
+		sta Player_haveHeartsChanged
+		clc
+		lda #HEART_BYTES
+		adc PPU_bufferBytes
+		sta PPU_bufferBytes
+		
 :
 ;swap this NMI stack for the main program stack
 	lda #TRUE
@@ -537,15 +550,21 @@ Y_OFFSET=24
 	sta $2006
 	rts
 
-PPU_scoreToBuffer:
+.macro sws oldStack, newStack
+	tsx
+	stx oldStack
+	ldx newStack
+	txs
+.endmacro
+
+.proc PPU_scoreToBuffer
+SCORE_ADDRESS_TOP=$2436
+SCORE_ADDRESS_BOTTOM=$2456
 ;arguments
 ;y - player
 	ldy #0
 ;swap stacks
-	tsx
-	stx Main_stack
-	ldx PPU_stack
-	txs
+	sws Main_stack, PPU_stack
 ;start at the end (ones digit
 	lda Score_ones,y
 	tax
@@ -588,9 +607,9 @@ PPU_scoreToBuffer:
 	lda @tileBottom,x
 	pha
 	
-	lda #$42
+	lda #<SCORE_ADDRESS_BOTTOM
 	pha
-	lda #$24
+	lda #>SCORE_ADDRESS_BOTTOM
 	pha
 
 ;start at the end (ones digit
@@ -635,9 +654,9 @@ PPU_scoreToBuffer:
 	lda @tileTop,x
 	pha
 	
-	lda #$22
+	lda #<SCORE_ADDRESS_TOP
 	pha
-	lda #$24
+	lda #>SCORE_ADDRESS_TOP
 	pha
 
 ;subroutine that handles nmi rendering
@@ -646,11 +665,7 @@ PPU_scoreToBuffer:
 	lda #<(PPU_renderScore-1)
 	pha
 ;swap back stacks
-	tsx
-	stx PPU_stack
-	ldx Main_stack
-	txs
-
+	sws PPU_stack, Main_stack
 	rts
 @tileTop:
 	.byte ZERO_TOP, ONE_TOP, TWO_TOP, THREE_TOP, FOUR_TOP, FIVE_TOP, SIX_TOP, SEVEN_TOP, EIGHT_TOP, NINE_TOP
@@ -677,7 +692,111 @@ EIGHT_BOTTOM=$e5
 NINE_TOP=$ed
 NINE_BOTTOM=$ee
 COMMA_TOP = $01
-COMMA_BOTTOM = $F5
+COMMA_BOTTOM = $Fb
+.endproc
+
+.proc PPU_heartsToBuffer
+MAX_HEARTS=5
+HEART_FULL_TILE_TOP=$f2	
+HEART_EMPTY_TILE_TOP=$f3	
+HEART_EMPTY_TILE_BOTTOM=$f5
+HEART_FULL_TILE_BOTTOM=$f4
+HEART_ADDRESS_TOP=$2422
+HEART_ADDRESS_BOTTOM=$2442
+	ldy #0;player zero
+;swap stacks
+	sws Main_stack, PPU_stack
+	sec
+	lda #MAX_HEARTS-1
+	sbc Player_hearts,y
+	beq @heartsFullBottom;skip if hearts are full
+		tax
+	@emptyBottomTileLoop:
+		lda #HEART_EMPTY_TILE_BOTTOM
+		pha
+		dex
+		bne @emptyBottomTileLoop
+@heartsFullBottom:
+	ldx Player_hearts,y
+@bottomFullTileLoop:
+	lda #HEART_FULL_TILE_BOTTOM
+	pha
+	dex
+	bpl @bottomFullTileLoop
+	
+;addresses
+	lda #<HEART_ADDRESS_BOTTOM
+	pha
+	lda #>HEART_ADDRESS_BOTTOM
+	pha
+
+	sec
+	lda #MAX_HEARTS-1
+	sbc Player_hearts,y
+	beq @heartsFull;skip if hearts are full
+	tax
+	@emptyTopTileLoop:
+		lda #HEART_EMPTY_TILE_TOP
+		pha
+		dex
+		bne @emptyTopTileLoop
+@heartsFull:
+	ldx Player_hearts,y
+@topFullTileLoop:
+	lda #HEART_FULL_TILE_TOP
+	pha
+	dex
+	bpl @topFullTileLoop
+	
+;addresses
+	lda #<HEART_ADDRESS_TOP
+	pha
+	lda #>HEART_ADDRESS_TOP
+	pha
+
+	lda #>(PPU_renderHeartsNMI-1)
+	pha
+	lda #<(PPU_renderHeartsNMI-1)
+	pha
+
+	sws PPU_stack, Main_stack
+	rts
+.endproc
+
+PPU_renderHeartsNMI:
+;top layer
+	pla
+	sta PPUADDR
+	pla
+	sta PPUADDR
+
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+;bottom layer
+	pla
+	sta PPUADDR
+	pla
+	sta PPUADDR
+
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	rts
 
 .rodata
 nameTableConversionH:

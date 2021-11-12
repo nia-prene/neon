@@ -1,5 +1,4 @@
 .include "lib.h"
-
 .include "player.h"
 
 .include "playerbullets.h"
@@ -17,14 +16,18 @@ playerY_L: .res 1
 speed_H: .res 1
 speed_L: .res 1
 playerSprite: .res 1
-playerHP: .res 1
 Player_powerLevel: .res 1
 Player_killCount: .res 1
+Player_hearts: .res 2
+Player_haveHeartsChanged: .res 1
 
 .code
 Player_initialize:
+	lda #0
+	sta Player_hearts
+	lda #TRUE
+	sta Player_haveHeartsChanged
 	lda #4
-	sta playerHP
 	tay
 	ldx #PALETTE00
 	jsr setPalette;(x, y)
@@ -157,7 +160,7 @@ HITBOX_HEIGHT=2
 	lda enemyBulletXH,x
 	sbc playerX_H
 	bcs @bulletGreaterX
-	eor #%11111111 ;if negative
+		eor #%11111111 ;if negative
 @bulletGreaterX:
 	cmp #MAX_BULLET_DIAMETER; if x distance < width
 	bcs @nextBullet ;else
@@ -165,7 +168,7 @@ HITBOX_HEIGHT=2
 	lda enemyBulletYH,x
 	sbc playerY_H
 	bcs @bulletGreaterY
-	eor #%11111111 ;if negative
+		eor #%11111111 ;if negative
 @bulletGreaterY:
 	cmp #PLAYER_HEIGHT ;if y distance < height
 	bcs @nextBullet
@@ -184,9 +187,8 @@ HITBOX_HEIGHT=2
 	jsr checkCollision
 	bcc @nextBullet;if outside box
 	;copy player y bounded box
-	clc
 	lda playerY_H
-	adc #HITBOX_Y_OFFSET
+	adc #HITBOX_Y_OFFSET-1;carry is set
 	sta sprite1LeftOrTop
 	adc #HITBOX_HEIGHT
 	sta sprite1RightOrBottom
@@ -197,9 +199,8 @@ HITBOX_HEIGHT=2
 	adc enemyBulletHitbox2,x
 	sta sprite2RightOrBottom
 	jsr checkCollision
-	bcc @nextBullet;if outsitde box
-	sec ;mark true
-	rts
+	bcc @nextBullet
+	rts ;return carry set
 @nextBullet:
 	dex
 	bpl @bulletLoop

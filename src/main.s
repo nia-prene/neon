@@ -57,11 +57,15 @@ main:
 	sta framesDropped
 gameLoop:
 ;hold here until previous frame was rendered
+	lda currentMaskSettings
+	sta PPUMASK
 	lda hasFrameBeenRendered
 	beq gameLoop
 ;get the current frame and save it to test for dropped frames
 	lda frame_L
 	sta currentFrame
+;read the gamepad
+	jsr Gamepads_read
 ;load in a new level if the level has changed
 	lda nextScene
 	cmp currentScene
@@ -138,10 +142,10 @@ gameLoop:
 	lda #0
 	sta Player_powerLevel
 @decreaseHP:
-	dec playerHP
+	dec Player_hearts
 	bpl @playerHarmed
 	lda #4;gameover code here
-	sta playerHP
+	sta Player_hearts
 @playerHarmed:
 	inc playerIFrames
 ;when bit 3 of iFrames set
@@ -192,13 +196,12 @@ nmi:
 	Main_NMIReturn:
 		ldx Main_stack
 		txs
+		lda #FALSE
+		sta PPU_willVRAMUpdate
 :
 ;oamdma transfer
 	jsr OAM_beginDMA
-	jsr Gamepads_read
 	jsr PPU_setScroll
-	lda #FALSE
-	sta PPU_willVRAMUpdate
 	lda #TRUE
 	sta hasFrameBeenRendered	
 ;restore registers
