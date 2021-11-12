@@ -47,12 +47,14 @@ OAM_build:;c (c,a)
 ;returns carry clear if oam overflow
 	inc o ;module iterator
 	ldx #32;skip sprite 0-7
-	bcs @buildWithoutPlayer
+	lda Player_willRender
+	beq @buildWithoutPlayer
 ;build hitbox if button a is being pressed
-	and #%10000000
+	lda Player_hitboxWillRender
 	beq :+
 		jsr buildHitbox
-:	jsr buildEnemyBullets
+:
+	jsr buildEnemyBullets
 	bcs @oamFull
 	jsr buildPlayer
 	bcs @oamFull

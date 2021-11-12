@@ -5,10 +5,12 @@
 .include "ppu.h"
 
 .data
+NUMBER_OF_PALETTES=8
 backgroundColor: .res 1
-color1: .res 8
-color2: .res 8
-color3: .res 8
+color1: .res NUMBER_OF_PALETTES
+color2: .res NUMBER_OF_PALETTES
+color3: .res NUMBER_OF_PALETTES
+Palettes_hasChanged: .res NUMBER_OF_PALETTES
 
 .rodata
 PALETTE00=0
@@ -52,6 +54,8 @@ setPalette:;(x, y)
 	sta color2,y
 	lda romColor3,x
 	sta color3,y
+	lda #TRUE
+	sta Palettes_hasChanged,y
 	rts
 
 setPaletteCollection:;(x)
@@ -109,8 +113,6 @@ Palettes_swapEnemyPalettes:
 ;sets new palettes for a new wave of enemies (does not render)
 ;arguments
 ;2 on stack, palettes to set
-	lda #TRUE
-	sta PPU_havePalettesChanged
 	pla
 	tax
 	ldy #5

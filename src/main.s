@@ -26,7 +26,7 @@ framesDropped: .res 1
 currentScene: .res 1
 nextScene: .res 1
 hasFrameBeenRendered: .res 1
-currentPlayer: .res 1
+Main_currentPlayer: .res 1
 .code
 main:
 	NES_init
@@ -35,7 +35,7 @@ main:
 	lda #00
 	sta nextScene
 ;player 0 starts
-	sta currentPlayer
+	sta Main_currentPlayer
 	lda #NULL
 ;currently no scene is loaded
 	sta currentScene
@@ -127,38 +127,27 @@ gameLoop:
 ;create a new enemy
 	jsr dispenseEnemies
 ;add up all points earned this frame
-	ldx currentPlayer
+	ldx Main_currentPlayer
 	jsr Score_tallyFrame;(x)
-;if iframes>0, player harmed recently
-	lda playerIFrames
-	bne @playerHarmed
-;if player unharmed, build normal
+;check if player was hit by bullet
 	jsr Player_isHit
 	bcc @buildSprites
-;decrease hp and power level
-	dec Player_powerLevel
-	bpl @decreaseHP
-;dont let power level go negative
-	lda #0
-	sta Player_powerLevel
-@decreaseHP:
-	dec Player_hearts
-	bpl @playerHarmed
-	lda #4;gameover code here
-	sta Player_hearts
-@playerHarmed:
-	inc playerIFrames
-;when bit 3 of iFrames set
-	lda #%00001000
-;invert it because excluding player sprite requires carry set and we want player turned off right after hit
-	eor playerIFrames
-;shift inverse of bit 3 to carry
-	ror
-	ror
-	ror
-	ror
+	;decrease power level
+		ldx Main_currentPlayer
+		dec Player_powerLevel,x
+		bpl @decreaseHearts
+		;dont let power level go negative
+			lda #0
+			sta Player_powerLevel,x
+	;decrease hearts
+	@decreaseHearts:
+		lda #TRUE
+		sta Player_haveHeartsChanged
+		dec Player_hearts,x
+		bpl @buildSprites
+			lda #5;gameover code here
+			sta Player_hearts,x
 @buildSprites:
-	lda Gamepads_state
 	jsr OAM_build;(c,a)
 	jsr PPU_planNMI
 ;if frame differs from beginning 

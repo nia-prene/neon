@@ -6,6 +6,8 @@
 .globalzp Player_killCount
 .globalzp Player_haveHeartsChanged
 .globalzp Player_hearts
+.globalzp Player_willRender
+.globalzp Player_hitboxWillRender
 
 .global Player_initialize
 .global Player_move

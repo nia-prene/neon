@@ -58,7 +58,6 @@ DISABLE_RENDERING = %11100111	; and
 DIM_SCREEN = %11100000			; or
 
 .zeropage
-PPU_havePalettesChanged: .res 1
 PPU_willVRAMUpdate:.res 1
 currentNameTable: .res 2
 currentPPUSettings: .res 1
@@ -173,14 +172,15 @@ PPU_renderHUD:
 
 PPU_planNMI:
 ;byte writes INCLUDE functions pushed on stack
-MAX_BYTE_WRITES=70
+MAX_BYTES=70
 SCORE_BYTES=24
 HEART_BYTES=14
+PALETTE_BYTES=5
 ;save the main stack
 	tsx
 	stx Main_stack
-;make a new ppu stack, large enough to hold all byte writes
-	ldx #MAX_BYTE_WRITES+2
+;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
+	ldx #MAX_BYTES+8
 	txs
 ;after routine runs, return at the end of NMI
 	lda #>(Main_NMIReturn-1)
@@ -197,31 +197,50 @@ HEART_BYTES=14
 ;check if score needs updating
 	lda Score_hasChanged
 	beq :+
-		jsr PPU_scoreToBuffer
-		lda #FALSE
-		sta Score_hasChanged
 		clc
 		lda #SCORE_BYTES
 		adc PPU_bufferBytes
 		sta PPU_bufferBytes
+		jsr PPU_scoreToBuffer
+	;update has been made
+		lda #FALSE
+		sta Score_hasChanged
 :	
 	lda Player_haveHeartsChanged
 	beq :+
-		jsr PPU_heartsToBuffer
-		lda #FALSE
-		sta Player_haveHeartsChanged
 		clc
 		lda #HEART_BYTES
 		adc PPU_bufferBytes
 		sta PPU_bufferBytes
-		
+		jsr PPU_heartsToBuffer
+	;update has been made
+		lda #FALSE
+		sta Player_haveHeartsChanged
 :
+	ldy #NUMBER_OF_PALETTES-1
+@paletteLoop:
+	lda Palettes_hasChanged,y
+	beq :+
+	;check that byte buffer isnt overflowing
+		clc
+		lda #PALETTE_BYTES
+		adc PPU_bufferBytes
+		cmp #MAX_BYTES
+		bcs @bufferFull
+		;update the palette
+			sta PPU_bufferBytes
+			jsr PPU_paletteToBuffer
+			lda #FALSE
+			sta Palettes_hasChanged,y
+:	dey
+	bpl @paletteLoop
+@bufferFull:
 ;swap this NMI stack for the main program stack
 	lda #TRUE
 	sta PPU_willVRAMUpdate
 	rts
 
-PPU_renderScore:
+PPU_renderScoreNMI:
 	pla
 	sta PPUADDR
 	pla
@@ -285,11 +304,11 @@ renderAllPalettes:
 	sta PPUDATA
 	lda color3,x
 	sta PPUDATA
+	lda #FALSE
+	sta Palettes_hasChanged,x
 	inx
 	cpx #$08;8 palettes
 	bne @storePalettes
-	lda #FALSE
-	sta PPU_havePalettesChanged
 	rts
 
 render32:;(a)
@@ -660,9 +679,9 @@ SCORE_ADDRESS_BOTTOM=$2456
 	pha
 
 ;subroutine that handles nmi rendering
-	lda #>(PPU_renderScore-1)
+	lda #>(PPU_renderScoreNMI-1)
 	pha
-	lda #<(PPU_renderScore-1)
+	lda #<(PPU_renderScoreNMI-1)
 	pha
 ;swap back stacks
 	sws PPU_stack, Main_stack
@@ -706,59 +725,67 @@ HEART_ADDRESS_BOTTOM=$2442
 	ldy #0;player zero
 ;swap stacks
 	sws Main_stack, PPU_stack
+;find how many hearts are empty
 	sec
-	lda #MAX_HEARTS-1
+	lda #MAX_HEARTS
 	sbc Player_hearts,y
 	beq @heartsFullBottom;skip if hearts are full
 		tax
 	@emptyBottomTileLoop:
+	;fill with empty heart tiles
 		lda #HEART_EMPTY_TILE_BOTTOM
 		pha
 		dex
 		bne @emptyBottomTileLoop
 @heartsFullBottom:
 	ldx Player_hearts,y
-@bottomFullTileLoop:
-	lda #HEART_FULL_TILE_BOTTOM
-	pha
-	dex
-	bpl @bottomFullTileLoop
-	
+	beq @heartsEmptyBottom;if hearts are empty, skip
+	@bottomFullTileLoop:
+	;fill in full hearts
+		lda #HEART_FULL_TILE_BOTTOM
+		pha
+		dex
+		bne @bottomFullTileLoop
+@heartsEmptyBottom:
 ;addresses
 	lda #<HEART_ADDRESS_BOTTOM
 	pha
 	lda #>HEART_ADDRESS_BOTTOM
 	pha
-
+;find how many empty hearts there are
 	sec
-	lda #MAX_HEARTS-1
+	lda #MAX_HEARTS
 	sbc Player_hearts,y
-	beq @heartsFull;skip if hearts are full
-	tax
+	beq @heartsFullTop;skip if hearts are full
+		tax
 	@emptyTopTileLoop:
+	;fill in top with empty tiles
 		lda #HEART_EMPTY_TILE_TOP
 		pha
 		dex
 		bne @emptyTopTileLoop
-@heartsFull:
+@heartsFullTop:
+;find how many full hearts there are
 	ldx Player_hearts,y
-@topFullTileLoop:
-	lda #HEART_FULL_TILE_TOP
-	pha
-	dex
-	bpl @topFullTileLoop
-	
+	beq @heartsEmptyTop
+	@topFullTileLoop:
+	;fill in full hearts
+		lda #HEART_FULL_TILE_TOP
+		pha
+		dex
+		bne @topFullTileLoop
+@heartsEmptyTop:
 ;addresses
 	lda #<HEART_ADDRESS_TOP
 	pha
 	lda #>HEART_ADDRESS_TOP
 	pha
-
+;NMI render function pointer
 	lda #>(PPU_renderHeartsNMI-1)
 	pha
 	lda #<(PPU_renderHeartsNMI-1)
 	pha
-
+;swap out the stacks
 	sws PPU_stack, Main_stack
 	rts
 .endproc
@@ -798,6 +825,49 @@ PPU_renderHeartsNMI:
 	sta PPUDATA
 	rts
 
+PPU_paletteToBuffer:;void(y)
+;arguments 
+;y - palette to update
+;swap stacks
+	sws Main_stack, PPU_stack
+;get the colors
+	lda color3,y
+	pha
+	lda color2,y
+	pha
+	lda color1,y
+	pha
+;address
+	lda @paletteAddress_L,y
+	pha
+	lda #$3f
+	pha
+;function address
+	lda #>(PPU_renderPaletteNMI-1)
+	pha
+	lda #<(PPU_renderPaletteNMI-1)
+	pha
+	
+;switch stack back
+	sws PPU_stack, Main_stack 
+	rts
+@paletteAddress_L:
+	.byte $01, $05, $09, $0d, $11, $15, $19, $1d
+
+PPU_renderPaletteNMI:
+;store address
+	pla
+	sta PPUADDR
+	pla
+	sta PPUADDR
+;store colors
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	rts
 .rodata
 nameTableConversionH:
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23

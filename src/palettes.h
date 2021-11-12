@@ -11,10 +11,15 @@
 ;palette collection objects
 .globalzp BEACH_PALETTE
 
+;constants
+.globalzp NUMBER_OF_PALETTES
+
+;attributes
 .global backgroundColor
 .global color1
 .global color2
 .global color3
+.global Palettes_hasChanged
 
 ;functions
 .global setPalette

@@ -8,7 +8,6 @@
 .include "bullets.h"
 
 .zeropage
-playerIFrames: .res 1
 playerX_H: .res 1
 playerX_L: .res 1
 playerY_H: .res 1
@@ -20,10 +19,13 @@ Player_powerLevel: .res 1
 Player_killCount: .res 1
 Player_hearts: .res 2
 Player_haveHeartsChanged: .res 1
+Player_iFrames: .res 1
+Player_willRender: .res 1
+Player_hitboxWillRender: .res 1
 
 .code
 Player_initialize:
-	lda #0
+	lda #5
 	sta Player_hearts
 	lda #TRUE
 	sta Player_haveHeartsChanged
@@ -37,6 +39,8 @@ Player_initialize:
 	sta playerX_H 
 	lda #2
 	sta Player_powerLevel
+	lda #TRUE
+	sta Player_willRender
 	rts
 
 Player_move:;(controller) returns void
@@ -63,12 +67,16 @@ MAX_DOWN = 215
 	sta speed_L
 	lda #FAST_MOVEMENT_H
 	sta speed_H
+	lda #FALSE
+	sta Player_hitboxWillRender
 	jmp @testRight
 @goingSlow:
 	lda #SLOW_MOVEMENT_L
 	sta speed_L
 	lda #SLOW_MOVEMENT_H
 	sta speed_H
+	lda #TRUE
+	sta Player_hitboxWillRender
 @testRight:
 	pla;retrieve controller input
 	ror
@@ -152,6 +160,10 @@ HITBOX_X_OFFSET=3
 HITBOX_Y_OFFSET=12
 HITBOX_WIDTH=2
 HITBOX_HEIGHT=2
+;if player is invincible, theyre unharmed
+	lda Player_iFrames
+	bne @playerInvincible
+;else, check bullets
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
 	lda isEnemyBulletActive,x ;if active
@@ -200,9 +212,26 @@ HITBOX_HEIGHT=2
 	sta sprite2RightOrBottom
 	jsr checkCollision
 	bcc @nextBullet
+	inc Player_iFrames;turn player invincible
 	rts ;return carry set
 @nextBullet:
 	dex
 	bpl @bulletLoop
+@playerUnharmed:
 	clc ;mark false
+	rts
+@playerInvincible:
+;advance i Frames
+	lda Player_iFrames
+	and #%00010000
+	sta Player_willRender
+	inc Player_iFrames	
+	bne :+
+	;reset iframes after 4 seconds
+		lda #0
+		sta Player_iFrames
+		lda #TRUE
+		sta Player_willRender
+:
+	clc ;mark false, playr is unharmed
 	rts
