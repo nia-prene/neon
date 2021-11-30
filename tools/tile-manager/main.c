@@ -69,8 +69,8 @@ typedef struct CollectionBuffer{
 //a screen CAN hold 256 tiles (though unlikely)
 	Tile tiles[256];
 	uint8_t remaps[256];
-//32 rows and 32 columns of 8x8 tiles
-	uint8_t tilemap[32*32];
+//screen tilemap
+	Tilemap tilemap;
 //16x16 palette squares
 	uint8_t palettemap[256];
 }CollectionBuffer;
@@ -79,14 +79,16 @@ typedef struct CollectionBuffer{
 void clearBuffer(CollectionBuffer *cb);
 void addDefaultTiles(TileCollection *tc);
 void readchr(CollectionBuffer *cb, FILE *chrin);
+void readmap(CollectionBuffer *cb, FILE *mapin);
 void findRedundant(CollectionBuffer *cb, TileCollection *tc);
 void insertUnique(CollectionBuffer *cb, TileCollection *tc);
+void remap(CollectionBuffer *cb);
 void printChr(TileCollection *cb, FILE *chrout);
 uint8_t insertTile(Tile *tile, TileCollection *collection);
 
 int main(){
 	FILE *chrin;
-	FILE *intile;
+	FILE *mapin;
 	FILE *inpalette;
 	FILE *chrout;
 	TileCollection tileCollection={0};
@@ -98,18 +100,26 @@ int main(){
 		return 1;
 	}
 	chrout = fopen("out/all.chr", "wb");
-	if (chrin == NULL){
+	if (chrout == NULL){
 		printf("file out not valid");
+		return 1;
+	}
+	mapin = fopen("in/tilemap00.bin", "rb");
+	if (mapin == NULL){
+		printf("map file not valid");
 		return 1;
 	}
 	addDefaultTiles(&tileCollection);
 	readchr(&collectionBuffer, chrin);
+	readmap(&collectionBuffer, mapin);
 	findRedundant(&collectionBuffer, &tileCollection);
 	insertUnique(&collectionBuffer, &tileCollection);
+	remap(&collectionBuffer);
 	printChr(&tileCollection, chrout);
 
 	fclose(chrin);
 	fclose(chrout);
+	fclose(mapin);
 	return 0;
 }
 
@@ -159,6 +169,22 @@ void readchr(CollectionBuffer *cb, FILE *chrin){
 	}
 }
 
+void readmap(CollectionBuffer *cb, FILE *mapin){
+	uint8_t buffer[4];
+	fread(buffer, sizeof(buffer), 1, mapin);
+	cb ->tilemap.header.width = buffer[3];
+	fread(buffer, sizeof(buffer), 1, mapin);
+	cb ->tilemap.header.height = buffer[3];
+	fread(buffer, sizeof(buffer), 1, mapin);
+	cb ->tilemap.header.mapWidth= buffer[3];
+	fread(buffer, sizeof(buffer), 1, mapin);
+	cb ->tilemap.header.mapHeight= buffer[3];
+	for(int i =0; i < (32*32); i++){
+		fread(buffer, sizeof(buffer), 1, mapin);
+		cb ->tilemap.tiles[i] = buffer[3];
+	}
+}
+
 void findRedundant(CollectionBuffer *cb, TileCollection *tc){
 	for(int i = 0; i<256; i++){
 		if(cb->tiles[i].isActive){
@@ -199,3 +225,18 @@ uint8_t insertTile(Tile *tile, TileCollection *collection){
 	printf("collection full");
 	return 0; 
 }
+
+void remap(CollectionBuffer *cb){
+	for(int i=0; i<(32*32);i++){
+		cb->tilemap.tiles[i]=cb->remaps[cb->tilemap.tiles[i]];
+		printf("%x  ",cb->tilemap.tiles[i]);
+	}
+}
+
+
+
+
+
+
+
+
