@@ -79,6 +79,8 @@ typedef struct CollectionBuffer{
 void clearBuffer(CollectionBuffer *cb);
 void addDefaultTiles(TileCollection *tc);
 void readchr(CollectionBuffer *cb, FILE *chrin);
+void findRedundant(CollectionBuffer *cb, TileCollection *tc);
+void insertUnique(CollectionBuffer *cb, TileCollection *tc);
 void printChr(TileCollection *cb, FILE *chrout);
 uint8_t insertTile(Tile *tile, TileCollection *collection);
 
@@ -102,6 +104,8 @@ int main(){
 	}
 	addDefaultTiles(&tileCollection);
 	readchr(&collectionBuffer, chrin);
+	findRedundant(&collectionBuffer, &tileCollection);
+	insertUnique(&collectionBuffer, &tileCollection);
 	printChr(&tileCollection, chrout);
 
 	fclose(chrin);
@@ -155,6 +159,27 @@ void readchr(CollectionBuffer *cb, FILE *chrin){
 	}
 }
 
+void findRedundant(CollectionBuffer *cb, TileCollection *tc){
+	for(int i = 0; i<256; i++){
+		if(cb->tiles[i].isActive){
+			for(int j = 1; j<256; j++){
+				if(tc->tiles[j].isActive){
+					if(!memcmp(tc->tiles[j].bytes, cb->tiles[i].bytes, sizeof(cb->tiles[i].bytes))){
+						cb->tiles[i].isUnique=0;	
+						cb->remaps[i]=j;	
+					}
+				}	
+			}
+		}
+	}
+}
+void insertUnique(CollectionBuffer *cb, TileCollection *tc){
+	for (int i = 0; i < 256; i++){
+		if(cb -> tiles[i].isUnique){
+			cb ->remaps[i] = insertTile(&(cb -> tiles[i]), tc);
+		}
+	}
+}
 void printChr(TileCollection *collection, FILE *chrout){
 	for (int i = 0; i < 256; i++){
 		if(collection-> tiles[i].isActive){
@@ -171,5 +196,6 @@ uint8_t insertTile(Tile *tile, TileCollection *collection){
 			return i;
 		}
 	}
+	printf("collection full");
 	return 0; 
 }
