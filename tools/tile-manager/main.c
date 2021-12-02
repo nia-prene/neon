@@ -84,6 +84,8 @@ void insertUniqueChr(CollectionBuffer *cb, TileCollection *tc);
 void remapTilemap(CollectionBuffer *cb);
 void to16(CollectionBuffer *cb);
 void findRedundant16(CollectionBuffer *cb, TileCollection *tc);
+void insertUnique16(CollectionBuffer *cb, TileCollection *tc);
+void to32(CollectionBuffer *cb);
 void printChr(TileCollection *cb, FILE *chrout);
 uint8_t insertChr(Tile *tile, TileCollection *collection);
 uint8_t insert16(Metatile16 *tile, TileCollection *collection);
@@ -126,6 +128,8 @@ int main(){
 	remapTilemap(&collectionBuffer);
 	to16(&collectionBuffer);
 	findRedundant16(&collectionBuffer, &tileCollection);
+	insertUnique16(&collectionBuffer, &tileCollection);
+	to32(&collectionBuffer);
 	printChr(&tileCollection, chrout);
 
 	fclose(chrin);
@@ -299,7 +303,6 @@ void findRedundant16(CollectionBuffer *cb, TileCollection *tc){
 			for(int j = i+1; j < 256; j++){
 				if((cb -> metatiles16[j].isActive)&&(cb -> metatiles16[j].isUnique)){
 					if(!memcmp(&(cb->metatiles16[i]), &(cb->metatiles16[j]), sizeof(cb->metatiles16[i]))){
-						printf("duplicate at %d and %d\n",i,j);
 						cb -> remaps[j] = i;
 						cb -> metatiles16[j].isUnique = 0;
 					}	
@@ -307,12 +310,16 @@ void findRedundant16(CollectionBuffer *cb, TileCollection *tc){
 			}
 		}
 	}
-
-	int q = 0;
+}
+void insertUnique16(CollectionBuffer *cb, TileCollection *tc){
 	for (int i = 0; i < 256; i++){
 		if((cb -> metatiles16[i].isActive) &&(cb -> metatiles16[i].isUnique)){
-			q++;
-			printf("%d \n",q);
+			cb -> remaps[i]=insert16(&(cb->metatiles16[i]),tc);
+		}
+	}
+	for (int i = 0; i < 256; i++){
+		if((cb -> metatiles16[i].isActive) &&(!cb -> metatiles16[i].isUnique)){
+			cb -> remaps[i]=cb ->remaps[cb ->remaps[i]];
 		}
 	}
 }
@@ -329,4 +336,32 @@ uint8_t insert16(Metatile16 *tile, TileCollection *collection){
 	}
 	printf("collection full");
 	return 0; 
+}
+
+void to32(CollectionBuffer *cb){
+	int i = 0;
+//8 rows
+	for (int j = 0; j < 8; j++){
+	//8 columns
+		for (int k = 0; k < 8; k++){
+			cb->metatiles32[(j*8)+k].topLeft = cb->remaps[i];
+			i++;
+			printf("%.2d ", cb->metatiles32[(j*8)+k].topLeft);
+			cb->metatiles32[(j*8)+k].topRight = cb->remaps[i];
+			printf("%.2d ", cb->metatiles32[(j*8)+k].topRight);
+			i++;
+		}
+		printf("\n");
+		for (int k = 0; k < 8; k++){
+			cb->metatiles32[(j*8)+k].bottomLeft = cb->remaps[i];
+			i++;
+			printf("%.2d ", cb->metatiles32[(j*8)+k].bottomLeft);
+			cb->metatiles32[(j*8)+k].bottomRight = cb->remaps[i];
+			printf("%.2d ", cb->metatiles32[(j*8)+k].bottomRight);
+			i++;
+			cb -> metatiles32[(j*8)+k].isActive = 1;
+			cb -> metatiles32[(j*8)+k].isUnique = 1;
+		}
+		printf("\n");
+	}
 }
