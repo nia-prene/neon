@@ -5,9 +5,8 @@
 typedef struct Tile{
 //8 rows, two bytes each
 	uint8_t bytes[16];
-	uint8_t isActive;
 	uint8_t isUnique;
-	uint8_t id ;
+	int isActive;
 }Tile;
 
 typedef struct Metatile16{
@@ -15,8 +14,8 @@ typedef struct Metatile16{
 	uint8_t bottomRight;
 	uint8_t topLeft;
 	uint8_t bottomLeft;
-	uint8_t id;
 	uint8_t isUnique;
+	int isActive;
 }Metatile16;
 
 typedef struct Metatile32{
@@ -24,14 +23,13 @@ typedef struct Metatile32{
 	uint8_t bottomRight;
 	uint8_t topLeft;
 	uint8_t bottomLeft;
-	uint8_t palette;
-	uint8_t id;
+	uint8_t attribute;
 	uint8_t isUnique;
+	int isActive;
 }Metatile32;
 
 typedef struct Screen{
 	uint8_t metatiles[64];
-	uint8_t id;
 }Screen;
 
 typedef struct TileCollection{
@@ -58,7 +56,7 @@ typedef struct Tilemap{
 typedef struct Palettemap{
 	Header header;
 	//16 rows of 16 columns
-	uint8_t tiles[16*16];
+	uint8_t palettes[16*16];
 }Palettemap;
 
 typedef struct CollectionBuffer{
@@ -72,7 +70,7 @@ typedef struct CollectionBuffer{
 //screen tilemap
 	Tilemap tilemap;
 //16x16 palette squares
-	uint8_t palettemap[256];
+	Palettemap palettemap;
 }CollectionBuffer;
 
 
@@ -80,17 +78,22 @@ void clearBuffer(CollectionBuffer *cb);
 void addDefaultTiles(TileCollection *tc);
 void readchr(CollectionBuffer *cb, FILE *chrin);
 void readmap(CollectionBuffer *cb, FILE *mapin);
-void findRedundant(CollectionBuffer *cb, TileCollection *tc);
-void insertUnique(CollectionBuffer *cb, TileCollection *tc);
-void remap(CollectionBuffer *cb);
+void readpal(CollectionBuffer *cb, FILE *palin);
+void findRedundantChr(CollectionBuffer *cb, TileCollection *tc);
+void insertUniqueChr(CollectionBuffer *cb, TileCollection *tc);
+void remapTilemap(CollectionBuffer *cb);
+void to16(CollectionBuffer *cb);
+void findRedundant16(CollectionBuffer *cb, TileCollection *tc);
 void printChr(TileCollection *cb, FILE *chrout);
-uint8_t insertTile(Tile *tile, TileCollection *collection);
+uint8_t insertChr(Tile *tile, TileCollection *collection);
+uint8_t insert16(Metatile16 *tile, TileCollection *collection);
 
 int main(){
 	FILE *chrin;
 	FILE *mapin;
-	FILE *inpalette;
+	FILE *palin;
 	FILE *chrout;
+
 	TileCollection tileCollection={0};
 	CollectionBuffer collectionBuffer={0};
 
@@ -109,12 +112,20 @@ int main(){
 		printf("map file not valid");
 		return 1;
 	}
+	palin = fopen("in/palettemap00.bin", "rb");
+	if (palin == NULL){
+		printf("pal file not valid");
+		return 1;
+	}
 	addDefaultTiles(&tileCollection);
 	readchr(&collectionBuffer, chrin);
 	readmap(&collectionBuffer, mapin);
-	findRedundant(&collectionBuffer, &tileCollection);
-	insertUnique(&collectionBuffer, &tileCollection);
-	remap(&collectionBuffer);
+	readpal(&collectionBuffer, palin);
+	findRedundantChr(&collectionBuffer, &tileCollection);
+	insertUniqueChr(&collectionBuffer, &tileCollection);
+	remapTilemap(&collectionBuffer);
+	to16(&collectionBuffer);
+	findRedundant16(&collectionBuffer, &tileCollection);
 	printChr(&tileCollection, chrout);
 
 	fclose(chrin);
@@ -132,14 +143,14 @@ void clearBuffer(CollectionBuffer *cb){
 void addDefaultTiles(TileCollection *tc){
 	Tile defaultTile;
 //insert tile of all color zero
-	insertTile(&defaultTile, tc);
+	insertChr(&defaultTile, tc);
 //insert another tile of all color zero
-	insertTile(&defaultTile, tc);
+	insertChr(&defaultTile, tc);
 //insert tile of all color 1
 	for(int i = 0; i < 8; i++){
 		defaultTile.bytes[i]=255;	
 	}
-	insertTile(&defaultTile, tc);
+	insertChr(&defaultTile, tc);
 //insert tile of all color 2
 	for(int i = 0; i < 8; i++){
 		defaultTile.bytes[i]=0;	
@@ -147,12 +158,12 @@ void addDefaultTiles(TileCollection *tc){
 	for(int i = 8; i <16; i++){
 		defaultTile.bytes[i]=255;	
 	}
-	insertTile(&defaultTile, tc);
+	insertChr(&defaultTile, tc);
 //insert tile of all color 3
 	for(int i = 0; i < 8; i++){
 		defaultTile.bytes[i]=255;	
 	}
-	insertTile(&defaultTile, tc);
+	insertChr(&defaultTile, tc);
 }
 
 void readchr(CollectionBuffer *cb, FILE *chrin){
@@ -160,8 +171,6 @@ void readchr(CollectionBuffer *cb, FILE *chrin){
 	for (int i = 0; !(feof(chrin)); i++){
 	//16 bytes (1 tile) at a time
 		fread(cb -> tiles[i].bytes, 16, 1, chrin);
-	//the ID is read in order, this corresponds to the tilemap
-		cb -> tiles[i].id = i;
 	//set it active
 		cb -> tiles[i].isActive = 1;
 	//set it unique
@@ -185,7 +194,23 @@ void readmap(CollectionBuffer *cb, FILE *mapin){
 	}
 }
 
-void findRedundant(CollectionBuffer *cb, TileCollection *tc){
+void readpal(CollectionBuffer *cb, FILE *palin){
+	uint8_t buffer[4];
+	fread(buffer, sizeof(buffer), 1, palin);
+	cb ->palettemap.header.width = buffer[3];
+	fread(buffer, sizeof(buffer), 1, palin);
+	cb ->palettemap.header.height = buffer[3];
+	fread(buffer, sizeof(buffer), 1, palin);
+	cb ->palettemap.header.mapWidth= buffer[3];
+	fread(buffer, sizeof(buffer), 1, palin);
+	cb ->palettemap.header.mapHeight= buffer[3];
+	for(int i =0; i < (16*16); i++){
+		fread(buffer, sizeof(buffer), 1, palin);
+		cb ->palettemap.palettes[i] = buffer[3];
+	}
+}
+
+void findRedundantChr(CollectionBuffer *cb, TileCollection *tc){
 	for(int i = 0; i<256; i++){
 		if(cb->tiles[i].isActive){
 			for(int j = 1; j<256; j++){
@@ -199,10 +224,10 @@ void findRedundant(CollectionBuffer *cb, TileCollection *tc){
 		}
 	}
 }
-void insertUnique(CollectionBuffer *cb, TileCollection *tc){
+void insertUniqueChr(CollectionBuffer *cb, TileCollection *tc){
 	for (int i = 0; i < 256; i++){
 		if(cb -> tiles[i].isUnique){
-			cb ->remaps[i] = insertTile(&(cb -> tiles[i]), tc);
+			cb ->remaps[i] = insertChr(&(cb -> tiles[i]), tc);
 		}
 	}
 }
@@ -214,7 +239,7 @@ void printChr(TileCollection *collection, FILE *chrout){
 	}
 }
 
-uint8_t insertTile(Tile *tile, TileCollection *collection){
+uint8_t insertChr(Tile *tile, TileCollection *collection){
 	for(uint8_t i=0; i<256; i++){
 		if(!collection->tiles[i].isActive){
 			memcpy(collection->tiles[i].bytes, tile->bytes, sizeof(tile->bytes));
@@ -226,17 +251,82 @@ uint8_t insertTile(Tile *tile, TileCollection *collection){
 	return 0; 
 }
 
-void remap(CollectionBuffer *cb){
+void remapTilemap(CollectionBuffer *cb){
+//for every mapped tile
 	for(int i=0; i<(32*32);i++){
+	//replace with the remap equivelant
 		cb->tilemap.tiles[i]=cb->remaps[cb->tilemap.tiles[i]];
-		printf("%x  ",cb->tilemap.tiles[i]);
 	}
 }
 
+void to16(CollectionBuffer *cb){
+	int i = 0;
+//16 rows
+	for (int j = 0; j < 16; j++){
+	//16 columns
+		for (int k = 0; k < 16; k++){
+			cb -> metatiles16[(j*16)+k].topLeft = cb -> tilemap.tiles[i];
+			i++;
+			cb -> metatiles16[(j*16)+k].topRight = cb -> tilemap.tiles[i];
+			i++;
+		}
+		for (int k = 0; k < 16; k++){
+			cb -> metatiles16[(j*16)+k].bottomLeft = cb -> tilemap.tiles[i];
+			i++;
+			cb -> metatiles16[(j*16)+k].bottomRight = cb -> tilemap.tiles[i];
+			i++;
+			cb -> metatiles16[(j*16)+k].isActive = 1;
+			cb -> metatiles16[(j*16)+k].isUnique = 1;
 
+		}
+	}
+}
+void findRedundant16(CollectionBuffer *cb, TileCollection *tc){
+	for(int i = 0; i < 256; i++){
+		if(cb -> metatiles16[i].isActive){
+			for(int j = 0; j < 256; j++){
+				if(tc -> metatiles16[j].isActive){
+					if(!memcmp(&(cb->metatiles16[i]), &(tc->metatiles16[j]), sizeof(cb->metatiles16[i]))){
+						cb -> remaps[i] = j;
+						cb -> metatiles16[i].isUnique = 0;
+					}
+				}
+			}
+		}
+	}
+	for (int i = 0; i < 256; i++){
+		if((cb -> metatiles16[i].isActive) &&(cb -> metatiles16[i].isUnique)){
+			for(int j = i+1; j < 256; j++){
+				if((cb -> metatiles16[j].isActive)&&(cb -> metatiles16[j].isUnique)){
+					if(!memcmp(&(cb->metatiles16[i]), &(cb->metatiles16[j]), sizeof(cb->metatiles16[i]))){
+						printf("duplicate at %d and %d\n",i,j);
+						cb -> remaps[j] = i;
+						cb -> metatiles16[j].isUnique = 0;
+					}	
+				}
+			}
+		}
+	}
 
-
-
-
-
-
+	int q = 0;
+	for (int i = 0; i < 256; i++){
+		if((cb -> metatiles16[i].isActive) &&(cb -> metatiles16[i].isUnique)){
+			q++;
+			printf("%d \n",q);
+		}
+	}
+}
+uint8_t insert16(Metatile16 *tile, TileCollection *collection){
+	for(uint8_t i=0; i<256; i++){
+		if(!collection->metatiles16[i].isActive){
+			collection->metatiles16[i].topLeft = tile->topLeft;
+			collection->metatiles16[i].topRight= tile->topRight;
+			collection->metatiles16[i].bottomLeft= tile->bottomLeft;
+			collection->metatiles16[i].bottomRight= tile->bottomRight;
+			collection->metatiles16[i].isActive = 1;
+			return i;
+		}
+	}
+	printf("collection full");
+	return 0; 
+}
