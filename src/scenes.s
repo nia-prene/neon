@@ -12,7 +12,7 @@ Scenes_screen:
 Scenes_palettes:
 	.byte BEACH_PALETTE
 Scenes_backgroundColor:
-	.byte $0f
+	.byte $2c
 Scenes_waveString:
 	.byte WAVESTRING00
 Scenes_speed:

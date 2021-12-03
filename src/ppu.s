@@ -481,7 +481,7 @@ renderAllTiles:
 	rts
 	
 PPU_resetScroll:
-	lda #1
+	lda #6
 	sta scrollSpeed_H
 	lda #0
 	sta scrollSpeed_L
@@ -710,7 +710,7 @@ EIGHT_TOP=$ec
 EIGHT_BOTTOM=$e5
 NINE_TOP=$ed
 NINE_BOTTOM=$ee
-COMMA_TOP = $01
+COMMA_TOP = $02
 COMMA_BOTTOM = $Fb
 .endproc
 

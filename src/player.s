@@ -46,8 +46,8 @@ Player_initialize:
 Player_move:;(controller) returns void
 ;controller bits are | a b sel st u d l r |
 ;pixel per frame when moving fast
-FAST_MOVEMENT_H = 3
-FAST_MOVEMENT_L = 0
+FAST_MOVEMENT_H = 2
+FAST_MOVEMENT_L = 128
 ;pixel per frame when moving slow
 SLOW_MOVEMENT_H = 1
 SLOW_MOVEMENT_L = 0

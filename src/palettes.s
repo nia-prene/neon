@@ -13,7 +13,7 @@ color3: .res NUMBER_OF_PALETTES
 Palettes_hasChanged: .res NUMBER_OF_PALETTES
 
 .rodata
-PALETTE00=0
+PALETTE00=0;player palette
 PALETTE01=1
 PALETTE02=2
 PALETTE03=3
@@ -22,11 +22,11 @@ PURPLE_BULLET=5
 PALETTE06=6;blue drone palette
 PALETTE07=7;blue drone palette
 romColor1:
-	.byte $07, $17, $2b, $01, $1d, $04, $1d, $15
+	.byte $07, $17, $3b, $01, $1d, $04, $1d, $15
 romColor2:
-	.byte $25, $19, $23, $21, $05, $24, $21, $25
+	.byte $25, $2a, $23, $21, $05, $24, $21, $25
 romColor3:
-	.byte $35, $29, $37, $31, $30, $34, $31, $35
+	.byte $35, $39, $37, $31, $30, $34, $31, $35
 
 ;;;;;;;;;;;;;
 ;collections;

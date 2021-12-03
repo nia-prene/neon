@@ -93,13 +93,15 @@ void findRedundant32(CollectionBuffer *cb, TileCollection *tc);
 void insertUnique32(CollectionBuffer *cb, TileCollection *tc);
 uint8_t insert32(Metatile32 *tile, TileCollection *collection);
 void insertScreen(CollectionBuffer *cb, TileCollection *tc);
-void printChr(TileCollection *cb, FILE *chrout);
+void printChr(TileCollection *collection, FILE *chrout);
+void print16(TileCollection *tc, FILE *out16);
 
 int main(){
 	FILE *chrin;
 	FILE *mapin;
 	FILE *palin;
 	FILE *chrout;
+	FILE *out16;
 
 	TileCollection tileCollection={0};
 	CollectionBuffer collectionBuffer={0};
@@ -124,6 +126,11 @@ int main(){
 		printf("pal file not valid");
 		return 1;
 	}
+	out16= fopen("out/16.txt", "w");
+	if (out16== NULL){
+		printf("16 out not valid");
+		return 1;
+	}
 	addDefaultTiles(&tileCollection);
 	readchr(&collectionBuffer, chrin);
 	readmap(&collectionBuffer, mapin);
@@ -139,10 +146,13 @@ int main(){
 	insertUnique32(&collectionBuffer, &tileCollection);
 	insertScreen(&collectionBuffer, &tileCollection);
 	printChr(&tileCollection, chrout);
-
+	print16(&tileCollection, out16);
+	
 	fclose(chrin);
-	fclose(chrout);
 	fclose(mapin);
+	fclose(palin);
+	fclose(chrout);
+	fclose(out16);
 	return 0;
 }
 
@@ -332,7 +342,7 @@ void insertUnique16(CollectionBuffer *cb, TileCollection *tc){
 	}
 }
 uint8_t insert16(Metatile16 *tile, TileCollection *collection){
-	for(uint8_t i=0; i<256; i++){
+	for(int i=0; i<256; i++){
 		if(!collection->metatiles16[i].isActive){
 			collection->metatiles16[i].topLeft = tile->topLeft;
 			collection->metatiles16[i].topRight= tile->topRight;
@@ -429,11 +439,75 @@ void insertScreen(CollectionBuffer *cb, TileCollection *tc){
 		if(!tc->screens[i].isActive){	
 			for(int j=0;j<64;j++){
 				tc->screens[i].metatiles[j]=cb->remaps[j];
-				if(!(j%8))printf("\n");
-				printf("%.2d ",tc->screens[i].metatiles[j]);
 			}
 			tc->screens[i].isActive=1;
 			return;
+		}
+	}
+}
+void print16(TileCollection *tc, FILE *out16){
+	for(int i=0; i<256; i++){
+		if(tc->screens[i].isActive){
+			fprintf(out16,"screen%.2x:\n\t.byte ",i);
+			for(int j =0;j<8;j++){
+				for(int k =0;k<8;k++){
+					fprintf(out16,"$%.2x, ",tc->screens[i].metatiles[(k*8)+j]);
+				}
+			}		
+		}
+	}
+	fprintf(out16,"\ntopLeft32:\n\t.byte ");
+	for(int i=0; i<256; i++){
+		if(tc->metatiles32[i].isActive){
+			fprintf(out16,"$%.2x, ",tc->metatiles32[i].topLeft);
+		}
+	}
+	fprintf(out16,"\ntopRight32:\n\t.byte ");
+	for(int i=0; i<256; i++){
+		if(tc->metatiles32[i].isActive){
+			fprintf(out16,"$%.2x, ",tc->metatiles32[i].topRight);
+		}
+	}
+	fprintf(out16,"\nbottomLeft32:\n\t.byte ");
+	for(int i=0; i<256; i++){
+		if(tc->metatiles32[i].isActive){
+			fprintf(out16,"$%.2x, ",tc->metatiles32[i].bottomLeft);
+		}
+	}
+	fprintf(out16,"\nbottomRight32:\n\t.byte ");
+	for(int i=0; i<256; i++){
+		if(tc->metatiles32[i].isActive){
+			fprintf(out16,"$%.2x, ",tc->metatiles32[i].bottomRight);
+		}
+	}
+	fprintf(out16,"\ntileAttributeByte:\n\t.byte ");
+	for(int i=0; i<256; i++){
+		if(tc->metatiles32[i].isActive){
+			fprintf(out16,"$%.2x, ",tc->metatiles32[i].attribute);
+		}
+	}
+	fprintf(out16,"\ntopLeft16:\n\t.byte ");
+	for(int i=0; i<256; i++){
+		if(tc->metatiles16[i].isActive){
+			fprintf(out16,"$%.2x, ",tc->metatiles16[i].topLeft);
+		}
+	}
+	fprintf(out16,"\ntopRight16:\n\t.byte ");
+	for(int i=0; i<256; i++){
+		if(tc->metatiles16[i].isActive){
+			fprintf(out16,"$%.2x, ",tc->metatiles16[i].topRight);
+		}
+	}
+	fprintf(out16,"\nbottomLeft16:\n\t.byte ");
+	for(int i=0; i<256; i++){
+		if(tc->metatiles16[i].isActive){
+			fprintf(out16,"$%.2x, ",tc->metatiles16[i].bottomLeft);
+		}
+	}
+	fprintf(out16,"\nbottomRight16:\n\t.byte ");
+	for(int i=0; i<256; i++){
+		if(tc->metatiles16[i].isActive){
+			fprintf(out16,"$%.2x, ",tc->metatiles16[i].bottomRight);
 		}
 	}
 }
