@@ -30,6 +30,7 @@ typedef struct Metatile32{
 
 typedef struct Screen{
 	uint8_t metatiles[64];
+	int isActive;
 }Screen;
 
 typedef struct TileCollection{
@@ -81,14 +82,18 @@ void readmap(CollectionBuffer *cb, FILE *mapin);
 void readpal(CollectionBuffer *cb, FILE *palin);
 void findRedundantChr(CollectionBuffer *cb, TileCollection *tc);
 void insertUniqueChr(CollectionBuffer *cb, TileCollection *tc);
+uint8_t insertChr(Tile *tile, TileCollection *collection);
 void remapTilemap(CollectionBuffer *cb);
 void to16(CollectionBuffer *cb);
 void findRedundant16(CollectionBuffer *cb, TileCollection *tc);
 void insertUnique16(CollectionBuffer *cb, TileCollection *tc);
-void to32(CollectionBuffer *cb);
-void printChr(TileCollection *cb, FILE *chrout);
-uint8_t insertChr(Tile *tile, TileCollection *collection);
 uint8_t insert16(Metatile16 *tile, TileCollection *collection);
+void to32(CollectionBuffer *cb);
+void findRedundant32(CollectionBuffer *cb, TileCollection *tc);
+void insertUnique32(CollectionBuffer *cb, TileCollection *tc);
+uint8_t insert32(Metatile32 *tile, TileCollection *collection);
+void insertScreen(CollectionBuffer *cb, TileCollection *tc);
+void printChr(TileCollection *cb, FILE *chrout);
 
 int main(){
 	FILE *chrin;
@@ -130,6 +135,9 @@ int main(){
 	findRedundant16(&collectionBuffer, &tileCollection);
 	insertUnique16(&collectionBuffer, &tileCollection);
 	to32(&collectionBuffer);
+	findRedundant32(&collectionBuffer, &tileCollection);
+	insertUnique32(&collectionBuffer, &tileCollection);
+	insertScreen(&collectionBuffer, &tileCollection);
 	printChr(&tileCollection, chrout);
 
 	fclose(chrin);
@@ -345,23 +353,87 @@ void to32(CollectionBuffer *cb){
 	//8 columns
 		for (int k = 0; k < 8; k++){
 			cb->metatiles32[(j*8)+k].topLeft = cb->remaps[i];
+			cb->metatiles32[(j*8)+k].attribute= cb->palettemap.palettes[i];
 			i++;
-			printf("%.2d ", cb->metatiles32[(j*8)+k].topLeft);
 			cb->metatiles32[(j*8)+k].topRight = cb->remaps[i];
-			printf("%.2d ", cb->metatiles32[(j*8)+k].topRight);
+			cb->metatiles32[(j*8)+k].attribute= (cb->metatiles32[(j*8)+k].attribute)|((cb->palettemap.palettes[i])<<2);
 			i++;
 		}
-		printf("\n");
 		for (int k = 0; k < 8; k++){
 			cb->metatiles32[(j*8)+k].bottomLeft = cb->remaps[i];
+			cb->metatiles32[(j*8)+k].attribute= (cb->metatiles32[(j*8)+k].attribute)|((cb->palettemap.palettes[i])<<4);
 			i++;
-			printf("%.2d ", cb->metatiles32[(j*8)+k].bottomLeft);
 			cb->metatiles32[(j*8)+k].bottomRight = cb->remaps[i];
-			printf("%.2d ", cb->metatiles32[(j*8)+k].bottomRight);
+			cb->metatiles32[(j*8)+k].attribute= (cb->metatiles32[(j*8)+k].attribute)|((cb->palettemap.palettes[i])<<6);
 			i++;
 			cb -> metatiles32[(j*8)+k].isActive = 1;
 			cb -> metatiles32[(j*8)+k].isUnique = 1;
 		}
-		printf("\n");
+	}
+}
+void findRedundant32(CollectionBuffer *cb, TileCollection *tc){
+	for(int i = 0; i < 64; i++){
+		if(cb -> metatiles32[i].isActive){
+			for(int j = 0; j < 256; j++){
+				if(tc -> metatiles32[j].isActive){
+					if(!memcmp(&(cb->metatiles32[i]), &(tc->metatiles32[j]), sizeof(cb->metatiles32[i]))){
+						cb -> remaps[i] = j;
+						cb -> metatiles32[i].isUnique = 0;
+					}
+				}
+			}
+		}
+	}
+	for (int i = 0; i < 64; i++){
+		if((cb -> metatiles32[i].isActive) &&(cb -> metatiles32[i].isUnique)){
+			for(int j = i+1; j < 64; j++){
+				if((cb -> metatiles32[j].isActive)&&(cb -> metatiles32[j].isUnique)){
+					if(!memcmp(&(cb->metatiles32[i]), &(cb->metatiles32[j]), sizeof(cb->metatiles32[i]))){
+						cb -> remaps[j] = i;
+						cb -> metatiles32[j].isUnique = 0;
+					}	
+				}
+			}
+		}
+	}
+}
+void insertUnique32(CollectionBuffer *cb, TileCollection *tc){
+	for (int i = 0; i < 64; i++){
+		if((cb -> metatiles32[i].isActive) &&(cb -> metatiles32[i].isUnique)){
+			cb -> remaps[i]=insert32(&(cb->metatiles32[i]),tc);
+		}
+	}
+	for (int i = 0; i < 64; i++){
+		if((cb -> metatiles32[i].isActive) &&(!cb -> metatiles32[i].isUnique)){
+			cb->remaps[i]=cb->remaps[cb->remaps[i]];
+		}
+	}
+}
+uint8_t insert32(Metatile32 *tile, TileCollection *collection){
+	for(uint8_t i=0; i<256; i++){
+		if(!collection->metatiles32[i].isActive){
+			collection->metatiles32[i].topLeft=tile->topLeft;
+			collection->metatiles32[i].topRight=tile->topRight;
+			collection->metatiles32[i].bottomLeft=tile->bottomLeft;
+			collection->metatiles32[i].bottomRight=tile->bottomRight;
+			collection->metatiles32[i].attribute=tile->attribute;
+			collection->metatiles32[i].isActive = 1;
+			return i;
+		}
+	}
+	printf("collection full");
+	return 0; 
+}
+void insertScreen(CollectionBuffer *cb, TileCollection *tc){
+	for(int i=0;i<256;i++){
+		if(!tc->screens[i].isActive){	
+			for(int j=0;j<64;j++){
+				tc->screens[i].metatiles[j]=cb->remaps[j];
+				if(!(j%8))printf("\n");
+				printf("%.2d ",tc->screens[i].metatiles[j]);
+			}
+			tc->screens[i].isActive=1;
+			return;
+		}
 	}
 }
