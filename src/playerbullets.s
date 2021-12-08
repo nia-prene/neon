@@ -6,7 +6,7 @@
 .include "sprites.h"
 
 .zeropage
-MAX_PLAYER_BULLETS = 10
+MAX_PLAYER_BULLETS = 10	
 bulletX: .res MAX_PLAYER_BULLETS 
 bulletY: .res MAX_PLAYER_BULLETS 
 PlayerBullet_width: .res MAX_PLAYER_BULLETS

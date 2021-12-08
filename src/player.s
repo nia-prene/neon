@@ -33,7 +33,7 @@ Player_initialize:
 	tay
 	ldx #PALETTE00
 	jsr setPalette;(x, y)
-	lda #200;set to coordinates
+	lda #192;set to coordinates
 	sta playerY_H
 	lda #120
 	sta playerX_H 
@@ -56,9 +56,9 @@ MAX_RIGHT = 249
 ;furthest left player can go
 MAX_LEFT = 07
 ;furthest up player can go
-MAX_UP = 13
+MAX_UP = 0
 ;furthest down player can go
-MAX_DOWN = 215
+MAX_DOWN = 204
 	rol;test bit 7 (A)
 	pha;save controller
 	bcs @goingSlow
@@ -141,7 +141,6 @@ MAX_DOWN = 215
 	sta playerY_L
 	lda playerY_H
 	sbc speed_H
-	cmp #MAX_UP
 	bcs @storeUp
 	lda #MAX_UP
 @storeUp:

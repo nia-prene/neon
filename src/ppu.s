@@ -55,6 +55,7 @@ EMPHASIZE_GREEN = %01000000		; or
 EMPHASIZE_BLUE = %10000000		; or
 ENABLE_RENDERING = %00011000	; or
 DISABLE_RENDERING = %11100111	; and
+DISABLE_SPRITES= %11101111		; and
 DIM_SCREEN = %11100000			; or
 
 .zeropage
@@ -144,15 +145,9 @@ PPU_renderHUD:
 	sta PPUADDR
 	lda #$00
 	sta PPUADDR
-	lda #1;tile 1
-	ldx #32-1;write 32 blank tiles for ntsc covered pixels
-@loop:
-	sta PPUDATA
-	dex
-	bpl @loop
 	ldx #0
 @HUDLoop:
-	lda HUD_tiles,x
+	lda #$02
 	sta PPUDATA
 	inx
 	cpx #64
@@ -481,7 +476,7 @@ renderAllTiles:
 	rts
 	
 PPU_resetScroll:
-	lda #6
+	lda #4
 	sta scrollSpeed_H
 	lda #0
 	sta scrollSpeed_L
@@ -510,55 +505,51 @@ PPU_updateScroll:
 	rts
 
 PPU_setScroll:
+	lda currentMaskSettings
+	sta PPUMASK
 	lda #0
 	sta PPUSCROLL
-	lda #0
+	lda yScroll_H
 	sta PPUSCROLL
-	lda #01
-	ora currentPPUSettings
+	lda currentPPUSettings
 	sta PPUCTRL
 	rts
 
 PPU_waitForSprite0Hit:
-Y_OFFSET=24
-;4th write - Low byte of nametable address to $2006, which is ((Y & $F8) << 2) | (X >> 3)
 	lda #%01000000
 @waitForReset:
 	bit PPUSTATUS
 	bne @waitForReset
-	clc
-	lda yScroll_H
-	adc #Y_OFFSET
-	bcc :+
-		sbc #240
-:
-	cmp #240
-	bcc :+
-		sbc #240
-:
-	and #$f8
-	asl
-	asl
+	lda currentMaskSettings
+	and #DISABLE_SPRITES
+	pha
+;4th write - Low byte nametable address ((Y & $F8) << 2)|(X >> 3)
+	lda #0
 	pha
 ;3rd write - X to $2005
 	lda #0
 	pha
 ;2nd write - Y to $2005
-	clc
-	lda yScroll_H
-	adc #Y_OFFSET
-	cmp #240
-	bcc :+
-		sbc #240
-:
+	lda #0
 	pha
 ;1st write - Nametable number << 2 (that is: $00, $04, $08, or $0C) to $2006
-	lda #0;nametable 0 
+	lda #4;nametable 0 
 	pha
+;turn off sprite rendering
 	lda #%01000000
 @waitForHit:
 	bit PPUSTATUS
 	beq @waitForHit
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
 	pla
 	sta $2006
 	pla 
@@ -567,6 +558,8 @@ Y_OFFSET=24
 	sta $2005
 	pla
 	sta $2006
+	pla
+	sta PPUMASK
 	rts
 
 .macro sws oldStack, newStack
@@ -577,8 +570,8 @@ Y_OFFSET=24
 .endmacro
 
 .proc PPU_scoreToBuffer
-SCORE_ADDRESS_TOP=$2436
-SCORE_ADDRESS_BOTTOM=$2456
+SCORE_ADDRESS_TOP=$2416
+SCORE_ADDRESS_BOTTOM=$2436
 ;arguments
 ;y - player
 	ldy #0
@@ -711,17 +704,17 @@ EIGHT_BOTTOM=$e5
 NINE_TOP=$ed
 NINE_BOTTOM=$ee
 COMMA_TOP = $02
-COMMA_BOTTOM = $Fb
+COMMA_BOTTOM = $F4
 .endproc
 
 .proc PPU_heartsToBuffer
 MAX_HEARTS=5
-HEART_FULL_TILE_TOP=$f2	
-HEART_EMPTY_TILE_TOP=$f3	
-HEART_EMPTY_TILE_BOTTOM=$f5
-HEART_FULL_TILE_BOTTOM=$f4
-HEART_ADDRESS_TOP=$2422
-HEART_ADDRESS_BOTTOM=$2442
+HEART_FULL_TILE_TOP=$f0	
+HEART_EMPTY_TILE_TOP=$f2	
+HEART_EMPTY_TILE_BOTTOM=$f3
+HEART_FULL_TILE_BOTTOM=$f1
+HEART_ADDRESS_TOP=$2402
+HEART_ADDRESS_BOTTOM=$2422
 	ldy #0;player zero
 ;swap stacks
 	sws Main_stack, PPU_stack

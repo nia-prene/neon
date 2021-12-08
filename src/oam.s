@@ -26,10 +26,10 @@ OAM: .res 256
 
 .code
 .proc OAM_setSprite0
-SPRITE_Y=7
-SPRITE_TILE=$0c
-SPRITE_ATTRIBUTE=%00100000
-SPRITE_X=180
+SPRITE_Y=218
+SPRITE_TILE=$20
+SPRITE_ATTRIBUTE=%01100000;flip and place behind
+SPRITE_X=112
 	lda #SPRITE_Y
 	sta OAM
 	lda #SPRITE_TILE
@@ -46,7 +46,7 @@ OAM_build:;c (c,a)
 ;a - gamepad
 ;returns carry clear if oam overflow
 	inc o ;module iterator
-	ldx #32;skip sprite 0-7
+	ldx #4;skip sprite 0
 	lda Player_willRender
 	beq @buildWithoutPlayer
 ;build hitbox if button a is being pressed
@@ -73,23 +73,6 @@ OAM_build:;c (c,a)
 	bcs @oamFull
 	jsr clearRemaining
 @oamFull:
-	rts
-
-OAM_setHUDCover:
-	ldy #6;put 7 sprites to cover hud
-	ldx #4;starting at oam address 4
-@loop:
-	lda #7;put at y=7
-	sta OAM,x
-	inx
-	lda $0c;use sprite 0 tile, its mostly blank
-	sta OAM,x
-	inx;doesnt need attribute
-	inx
-	lda #$FF;put offscreen
-	inx
-	dey
-	bpl @loop
 	rts
 
 buildHitbox:

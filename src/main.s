@@ -57,8 +57,6 @@ main:
 	sta framesDropped
 gameLoop:
 ;hold here until previous frame was rendered
-	lda currentMaskSettings
-	sta PPUMASK
 	lda hasFrameBeenRendered
 	beq gameLoop
 ;get the current frame and save it to test for dropped frames
@@ -93,8 +91,6 @@ gameLoop:
 		jsr Speed_setLevel
 	;set sprite 0 hit
 		jsr OAM_setSprite0
-	;cover hud with 7 sprites to block out other sprites
-		jsr OAM_setHUDCover
 	;move the scoreboard to the right position
 		jsr enableRendering;(a, x)
 	;set current to next
@@ -120,7 +116,6 @@ gameLoop:
 ;shoot new bullets
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
-	jsr PPU_waitForSprite0Hit
 	jsr updateEnemyBullets
 ;move enemies
 	jsr updateEnemies
@@ -151,6 +146,7 @@ gameLoop:
 	jsr OAM_build;(c,a)
 	jsr PPU_planNMI
 ;if frame differs from beginning 
+	jsr PPU_waitForSprite0Hit
 	lda frame_L
 	cmp currentFrame
 	beq :+
