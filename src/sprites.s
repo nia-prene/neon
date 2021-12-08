@@ -35,7 +35,7 @@ SPRITE1D=$1d;score 6
 SPRITE1E=$1e;score 7
 SPRITE1F=$1f;score 8
 SPRITE20=$20;score 9
-SPRITE21=$21;player large star bullet #2
+SPRITE21=$21;piper frame 0
 
 ;format
 ;name:
@@ -177,9 +177,13 @@ sprite20:
 	.byte 0, $d0, %0, 0
 	.byte NULL
 sprite21:
-	.byte 0, $20, %01000000, 8
-	.byte 0, $20, %0, 0
+	.byte 0, $a0, %01, 0
+	.byte 0, $a2, %01, 8
+	.byte 16, $a4, %10, 0
+	.byte 16, $a6, %10, 8
 	.byte NULL
+sprite22:
+	
 ;pointer table
 spritesH:
 	.byte >sprite00, >sprite01, >sprite02, >sprite03, >sprite04, >sprite05, >sprite06, >sprite07, >sprite08, >sprite09, >sprite0A, >sprite0B, >sprite0C, >sprite0D, >sprite0E, >sprite0F

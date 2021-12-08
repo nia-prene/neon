@@ -142,7 +142,7 @@ waveStrings_H:
 waveStrings_L:
 	.byte <waveString00
 waveString00:
-	.byte WAVE00, WAVE01, WAVE02, WAVE03, WAVE04, WAVE03, WAVE06, WAVE05, WAVE02, WAVE01
+	.byte WAVE07, WAVE00, WAVE01, WAVE02, WAVE03, WAVE04, WAVE03, WAVE06, WAVE05, WAVE02, WAVE01
 ;pointers to individual enemy waves (below)
 
 WAVE00=$00;Ready? Go!
@@ -152,7 +152,8 @@ WAVE03=$03;medium drones moving left
 WAVE04=$04;left baloon with light right moving drones
 WAVE05=$05
 WAVE06=$06
-WAVE07=$07
+WAVE07=$07;piper boss fight
+
 wavePointerH:
 	.byte >wave00, >wave01, >wave02, >wave03, >wave04, >wave05, >wave06, >wave07
 wavePointerL:
@@ -192,6 +193,9 @@ wave06:
 	.byte PALETTE06, PALETTE06 
 	.byte 5, 24, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, 1, 16, 1, 15, 1, 14, NULL
 wave07:
+	.byte 0, 1, 1
+	.byte PALETTE08, PALETTE09 
+	.byte 8, 24, NULL
 ;Coordinate Table
 ;x and y coordinate decoder table for enemy spawn locations
 waveX:
