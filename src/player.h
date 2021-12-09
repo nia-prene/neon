@@ -9,8 +9,8 @@
 .globalzp Player_willRender
 .globalzp Player_hitboxWillRender
 
-.global Player_initialize
+.global Player_init
 .global Player_move
 .global Player_shoot
 .global Player_isHit
-
+.global Player_prepare

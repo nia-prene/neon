@@ -1,4 +1,3 @@
-.globalzp frame_L
 .globalzp PPU_stack
 .globalzp PPU_havePalettesChanged
 .globalzp PPU_willVRAMUpdate

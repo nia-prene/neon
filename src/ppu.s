@@ -67,8 +67,6 @@ tile16a: .res 1
 tile16b: .res 1
 tile16c: .res 1
 tile16d: .res 1
-frame_H: .res 1
-frame_L: .res 1
 xScroll: .res 1
 yScroll_H: .res 1
 yScroll_L: .res 1
@@ -102,9 +100,9 @@ PPU_init:
 
 disableRendering:;(void)
 ;holds cpu in loop until next nmi, then disables rendering via PPUMASK
-	lda frame_L
+	lda Main_frame_L
 @waitForBlank:
-	cmp frame_L
+	cmp Main_frame_L
 	beq @waitForBlank
 	lda currentMaskSettings
 	and #DISABLE_RENDERING
@@ -112,29 +110,16 @@ disableRendering:;(void)
 	sta currentMaskSettings
 	rts
 
-enableRendering:;(void)
+enableRendering:;(a)
 ;holds cpu in loop until next nmi, then disables rendering via PPUMASK
-	lda frame_L
+	lda Main_frame_L
 @waitForBlank:
-	cmp frame_L
+	cmp Main_frame_L
 	beq @waitForBlank
 	lda currentMaskSettings
 	ora #ENABLE_RENDERING
 	sta PPUMASK
 	sta currentMaskSettings
-	rts
-
-PPU_resetClock:
-	lda #0
-	sta frame_L
-	sta frame_H
-
-PPU_advanceClock:
-	inc frame_L
-	beq @overflow
-	rts
-@overflow:
-	inc frame_H
 	rts
 
 PPU_renderHUD:

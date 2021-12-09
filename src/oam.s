@@ -20,13 +20,15 @@ buildX: .res 1
 buildY: .res 1
 buildPalette: .res 1
 spritePointer: .res 2
-OAM_overflowTimer: .res 1
+sprite0YPos: .res 1;y position of sprite 0'
+OAM_sprite0State: .res 1
+
 .segment "OAM"
 OAM: .res 256
 
 .code
-.proc OAM_setSprite0
-SPRITE_Y=218
+.proc OAM_initSprite0
+SPRITE_Y=238
 SPRITE_TILE=$20
 SPRITE_ATTRIBUTE=%01100000;flip and place behind
 SPRITE_X=112
@@ -39,6 +41,8 @@ SPRITE_X=112
 	lda #SPRITE_X
 	sta OAM+3
 .endproc
+
+OAM_updateSprite0:
 
 OAM_build:;c (c,a)
 ;builds oam 

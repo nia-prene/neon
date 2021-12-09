@@ -15,8 +15,7 @@ playerY_L: .res 1
 speed_H: .res 1
 speed_L: .res 1
 playerSprite: .res 1
-Player_powerLevel: .res 1
-Player_killCount: .res 1
+Player_powerLevel: .res 2
 Player_hearts: .res 2
 Player_haveHeartsChanged: .res 1
 Player_iFrames: .res 1
@@ -24,21 +23,25 @@ Player_willRender: .res 1
 Player_hitboxWillRender: .res 1
 
 .code
-Player_initialize:
+Player_init:;(x)
+;initializes player to blank slate values
 	lda #5
-	sta Player_hearts
+	sta Player_hearts,x
 	lda #TRUE
 	sta Player_haveHeartsChanged
-	lda #4
-	tay
-	ldx #PALETTE00
-	jsr setPalette;(x, y)
-	lda #192;set to coordinates
-	sta playerY_H
-	lda #120
-	sta playerX_H 
-	lda #2
+	lda #0
 	sta Player_powerLevel
+	rts
+
+Player_prepare:;(x)
+;prepares player for level, call in level loading code
+;x player to initialize
+X_START_COORD=120
+Y_START_COORD=255
+	lda #X_START_COORD
+	sta playerX_H
+	lda #Y_START_COORD
+	sta playerY_H
 	lda #TRUE
 	sta Player_willRender
 	rts

@@ -1,1 +1,2 @@
-.global HUD_tiles
+.globalzp HUD_willShow
+
