@@ -11,7 +11,8 @@
 .global PPU_waitForSprite0Hit
 .global PPU_renderScore
 .global PPU_scoreToBuffer
-.global PPU_planNMI
+.global PPU_NMIPlan00
+.global PPU_NMIPlan01
 .global enableRendering
 .global disableRendering
 .global renderAllPalettes

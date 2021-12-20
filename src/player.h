@@ -14,3 +14,4 @@
 .global Player_shoot
 .global Player_isHit
 .global Player_prepare
+.global Player_toStartingPos

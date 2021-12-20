@@ -25,7 +25,7 @@ SPRITE13=$13;submarine middle frame
 SPRITE14=$14;submarine below water
 SPRITE15=$15;Ready?
 SPRITE16=$16;Go!
-SPRITE17=$17;score 0
+SPRITE17=$17;Piper attack animation
 SPRITE18=$18;score 1
 SPRITE19=$19;score 2
 SPRITE1A=$1a;score 3
@@ -150,7 +150,10 @@ sprite17:
 	.byte 0, $d2, %0, 0
 	.byte NULL
 sprite18:
-	.byte 0, $C0, %0, 0
+	.byte 0, $a8, %01, 0
+	.byte 0, $aa, %01, 8
+	.byte 16, $ac, %10, 0
+	.byte 16, $ae, %10, 8
 	.byte NULL
 sprite19:
 	.byte 0, $c2, %0, 0

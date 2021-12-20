@@ -21,6 +21,7 @@ Enemies_pointValue_H: .res MAX_ENEMIES
 Enemies_pointValue_L: .res MAX_ENEMIES
 i: .res MAX_ENEMIES
 j: .res MAX_ENEMIES
+k: .res 1
 enemyBehaviorH: .res MAX_ENEMIES
 enemyBehaviorL: .res MAX_ENEMIES
 enemyMetasprite: .res MAX_ENEMIES
@@ -735,10 +736,47 @@ X_OFFSET=116
 Y_OFFSET=32
 	pla
 	tax
+	sec
+	lda #$18
+	sta enemyMetasprite,x
 	lda #Y_OFFSET
 	sta enemyYH,x
+	sbc #32
+	pha
 	lda #X_OFFSET
 	sta enemyXH,x
+	adc #4
+	pha
 	jsr Enemies_isAlive
+	lda k
+	and #%00000001
+	bne @return
+	lda k
+	and #%00000100
+	;bne @shot2
+	lda i
+	pha
+	clc
+	adc #34
+	and #%01111111
+	sta i
+	inc k
+	jmp Enemy_Bullet
+@shot2:
+	pla
+	pla
+	inc k
+	rts
+	lda j
+	pha
+	sec
+	sbc #34
+	sta j
+	inc k
+	jmp Enemy_Bullet
+@return:
+	pla
+	pla
+	inc k
 	rts
 .endproc

@@ -29,7 +29,7 @@ Player_init:;(x)
 	sta Player_hearts,x
 	lda #TRUE
 	sta Player_haveHeartsChanged
-	lda #0
+	lda #2
 	sta Player_powerLevel
 	rts
 
@@ -45,6 +45,25 @@ Y_START_COORD=255
 	lda #TRUE
 	sta Player_willRender
 	rts
+
+.proc Player_toStartingPos
+Y_SPEED_H=1
+Y_SPEED_L=128
+MAX_Y=144
+	sec
+	lda playerY_L
+	sbc #Y_SPEED_L
+	sta playerY_L
+	lda playerY_H
+	sbc #Y_SPEED_H
+	cmp #MAX_Y
+	bcs :+
+		lda #MAX_Y
+:
+	sta playerY_H
+;do animations
+	rts
+.endproc
 
 Player_move:;(controller) returns void
 ;controller bits are | a b sel st u d l r |

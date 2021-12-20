@@ -1,2 +1,1 @@
-.globalzp HUD_willShow
-
+.global HUD_easeIn

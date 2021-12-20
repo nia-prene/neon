@@ -20,8 +20,8 @@ buildX: .res 1
 buildY: .res 1
 buildPalette: .res 1
 spritePointer: .res 2
-sprite0YPos: .res 1;y position of sprite 0'
-OAM_sprite0State: .res 1
+
+Sprite0_destination: .res 1
 
 .segment "OAM"
 OAM: .res 256
@@ -40,9 +40,16 @@ SPRITE_X=112
 	sta OAM+2
 	lda #SPRITE_X
 	sta OAM+3
+	rts
 .endproc
 
-OAM_updateSprite0:
+Sprite0_setSplit:
+	sta OAM
+	rts
+
+Sprite0_setDestination:
+	sta Sprite0_destination
+	rts
 
 OAM_build:;c (c,a)
 ;builds oam 
@@ -60,13 +67,13 @@ OAM_build:;c (c,a)
 :
 	jsr buildEnemyBullets
 	bcs @oamFull
-	jsr buildPlayer
+	jsr OAM_buildPlayer
 	bcs @oamFull
 	jsr buildEnemies
 	bcs @oamFull
 	jsr buildPlayerBullets
 	bcs @oamFull
-	jsr clearRemaining
+	jsr OAM_clearRemaining
 	rts
 @buildWithoutPlayer:
 	jsr buildEnemyBullets
@@ -75,7 +82,7 @@ OAM_build:;c (c,a)
 	bcs @oamFull
 	jsr buildPlayerBullets
 	bcs @oamFull
-	jsr clearRemaining
+	jsr OAM_clearRemaining
 @oamFull:
 	rts
 
@@ -124,7 +131,7 @@ buildEnemyBullets:
 	bpl @enemyBulletLoop
 	jmp buildSpritesShort
 
-buildPlayer:
+OAM_buildPlayer:
 ;prepares player sprite for oam
 ;first push a null to terminate 
 ;then push sprite, y, x, palette
@@ -354,7 +361,7 @@ buildSpritesShort:
 	rts
 
 .align $100
-clearRemaining:
+OAM_clearRemaining:
 ;arguments
 ;x-starting point to clear
 	lda #$ff
