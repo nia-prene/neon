@@ -38,6 +38,7 @@ Player_prepare:;(x)
 ;x player to initialize
 X_START_COORD=120
 Y_START_COORD=255
+;TODO select between one of two players.
 	lda #X_START_COORD
 	sta playerX_H
 	lda #Y_START_COORD
@@ -256,3 +257,34 @@ HITBOX_HEIGHT=2
 :
 	clc ;mark false, playr is unharmed
 	rts
+
+Player_toConvo:;void()
+;moves the player to the appropriate spot to have a conversation
+CONVO_Y=128
+CONVO_X=120
+	lda playerX_H
+	and #%11111110
+	cmp #CONVO_X
+	beq @doY;where we want it
+	bcs @playerRight
+		adc #2
+		sta playerX_H
+		jmp @doY
+@playerRight:
+	sbc #2
+	sta playerX_H
+@doY:
+	lda playerY_H
+	and #%11111110
+	cmp #CONVO_Y
+	beq @return
+	bcs @playerDown
+		adc #2
+		sta playerY_H
+		jmp @return
+@playerDown:
+	sbc #2
+	sta playerY_H
+@return:
+	rts
+

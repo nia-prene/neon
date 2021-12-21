@@ -19,6 +19,7 @@
 .include "score.h"
 .include "speed.h"
 .include "hud.h"
+.include "textbox.h"
 
 .zeropage
 Gamestate_current: .res 1
@@ -30,12 +31,15 @@ g:.res 1
 .code
 GAMESTATE00=$00;main game loop
 GAMESTATE01=$01;loading a level
-GAMESTATE02=$02;fade in screen
-GAMESTATE03=$03;move player to start pos, show status bar, rdy go
+GAMESTATE02=$02;fade in screen while scroll
+GAMESTATE03=$03;move player to start pos, ease in status bar
+GAMESTATE04=$04;ease out status bar, move player to dialogue spt
+GAMESTATE05=$05;ease in textbox, move player/boss to dialogue spt
+
 Gamestates_H:
-	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1)
+	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1)
 Gamestates_L:
-	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1)
+	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1)
 
 gamestate00:
 ;the main gameplay loop
@@ -75,8 +79,8 @@ gamestate00:
 			sta Player_hearts,x
 @buildSprites:
 	jsr OAM_build;(c,a)
-	jsr PPU_NMIPlan00
 	jsr PPU_waitForSprite0Hit
+	jsr PPU_NMIPlan00
 	rts
 
 gamestate01:;void(currentPlayer, currentScene)
@@ -96,7 +100,7 @@ gamestate01:;void(currentPlayer, currentScene)
 	ldx nextScene
 	jsr Tiles_getScreenPointer
 	jsr renderAllTiles;()
-	jsr PPU_renderHUD
+	jsr PPU_renderRightScreen
 	ldx nextScene
 	jsr Waves_reset;(x)
 	ldx nextScene
@@ -123,7 +127,8 @@ gamestate02:
 		lda #GAMESTATE03
 		sta Gamestate_current
 		rts
-:	and #%11000000
+:	clc
+	and #%11000000
 	rol
 	rol
 	rol
@@ -136,20 +141,55 @@ SCORE_OFFSET=7
 ;move player into place, show status, ready? Go!
 	jsr PPU_updateScroll
 	lda #SCORE_OFFSET
-	jsr Sprite0_setDestination
+	jsr Sprite0_setDestination;(a)
 	jsr Player_toStartingPos
 	jsr HUD_easeIn;a()
 	jsr Sprite0_setSplit;(a)
 	ldx #4;skip sprite0
-	jsr OAM_buildPlayer
-	jsr OAM_clearRemaining
+	jsr OAM_buildPlayer;(x)
+	jsr OAM_clearRemaining;(x)
 	jsr PPU_NMIPlan00
 	jsr PPU_waitForSprite0Hit
 	lda g
-	adc #4
+	adc #4;this state lasts 256/4 frames
 	sta g
 	bne :+
-		lda #GAMESTATE00
+		lda #GAMESTATE04
 		sta Gamestate_current
 :
 	rts
+
+gamestate04:
+;hide HUD and move player into boss dialogue position
+	jsr PPU_updateScroll
+	jsr Player_toConvo
+	jsr HUD_easeOut;a()
+	jsr Sprite0_setSplit;(a)
+	ldx #4;skip sprite0
+	jsr OAM_buildPlayer;(x)
+	jsr OAM_clearRemaining;(x)
+	jsr PPU_waitForSprite0Hit
+	clc
+	lda g
+	adc #8
+	sta g
+	bne :+
+		lda #GAMESTATE05
+		sta Gamestate_current
+:	rts
+
+gamestate05:
+TEXTBOX_OFFSET=30
+;show textbox and move boss into view
+	jsr PPU_updateScroll
+	jsr Player_toConvo
+	lda #TEXTBOX_OFFSET
+	jsr Sprite0_setDestination;(a)
+	jsr Textbox_easeIn;a()
+	jsr Sprite0_setSplit;(a)
+	ldx #4;skip sprite0
+	jsr OAM_buildPlayer;(x)
+	jsr OAM_clearRemaining;(x)
+	jsr PPU_waitForSprite0Hit
+	rts
+

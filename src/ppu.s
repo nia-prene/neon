@@ -128,7 +128,7 @@ enableRendering:;(a)
 	sta currentMaskSettings
 	rts
 
-PPU_renderHUD:
+PPU_renderRightScreen:
 	lda currentPPUSettings
 	and #INCREMENT_1
 	sta PPUCTRL
@@ -136,12 +136,39 @@ PPU_renderHUD:
 	sta PPUADDR
 	lda #$00
 	sta PPUADDR
-	ldx #128-1
+	ldx #192
 	lda #$02
 @HUDLoop:
 	sta PPUDATA
 	dex
-	bpl @HUDLoop
+	bne @HUDLoop
+	ldx #7-1
+@textbox:
+	ldy #8-1
+	lda #$2
+@left:
+	sta PPUDATA
+	dey
+	bpl @left
+	lda #$4
+	ldy #21-1
+@center:
+	sta PPUDATA
+	dey
+	bpl @center
+	ldy #3-1
+	lda #$2
+@right:
+	sta PPUDATA
+	dey
+	bpl @right
+	dex
+	bpl @textbox
+	ldx #31
+@bottom:
+	sta PPUDATA
+	dex
+	bpl @bottom
 ;render attribute bytes
 	lda #$27
 	sta PPUADDR

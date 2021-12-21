@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #define FRAMES 32 
-#define DISTANCE 20
+#define DISTANCE 88
 #define STEPS 1.0/FRAMES
 #define START 238
 

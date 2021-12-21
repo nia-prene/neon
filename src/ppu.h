@@ -7,7 +7,7 @@
 .global PPU_resetScroll
 .global PPU_setScroll
 .global PPU_updateScroll
-.global PPU_renderHUD
+.global PPU_renderRightScreen
 .global PPU_waitForSprite0Hit
 .global PPU_renderScore
 .global PPU_scoreToBuffer

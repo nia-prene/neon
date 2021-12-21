@@ -15,3 +15,5 @@
 .global Player_isHit
 .global Player_prepare
 .global Player_toStartingPos
+.global Player_toConvo
+
