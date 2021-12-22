@@ -13,6 +13,7 @@
 .global PPU_scoreToBuffer
 .global PPU_NMIPlan00
 .global PPU_NMIPlan01
+.global PPU_NMIPlan02
 .global enableRendering
 .global disableRendering
 .global renderAllPalettes

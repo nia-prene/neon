@@ -64,7 +64,6 @@ Enemy_Bullet:
 	pla
 	rts
 
-.align $100
 Enemy_Bullets:
 ;quickBulletY - y coordinate
 ;save bullet
@@ -107,7 +106,6 @@ Enemy_Bullets:
 	bne @bulletsFull
 	rts
 
-.align $100
 Enemy_Bullets_getAvailable:; c,x (void)
 ;loops through bullet collection, finds inactive bullet, sets to active, returns offset
 ;returns
@@ -197,59 +195,6 @@ romEnemyBulletHitbox2:
 	.byte 4, 8
 romEnemyBulletMetasprite:
 	.byte BULLET_SPRITE_0, BULLET_SPRITE_1
-
-.macro mainFib quadrant, xPixelsH, xPixelsL, yPixelsH, yPixelsL
-	pla
-	tax
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))
-	sec
-	lda enemyBulletYL,x
-	sbc yPixelsL
-.elseif (.xmatch ({quadrant}, 3) .or .xmatch ({quadrant}, 4))
-	clc
-	lda enemyBulletYL,x
-	adc yPixelsL
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletYL,x
-	lda enemyBulletYH,x
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))
-	sbc yPixelsH
-	bcc @clearBullet
-.elseif (.xmatch ({quadrant}, 3) .or .xmatch ({quadrant}, 4))
-	adc yPixelsH
-	bcs @clearBullet
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletYH,x
-	lda enemyBulletXL,x
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 4))
-	adc xPixelsL
-.elseif (.xmatch ({quadrant}, 2) .or .xmatch ({quadrant}, 3))
-	sbc xPixelsL
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletXL,x
-	lda enemyBulletXH,x
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 4))
-	adc xPixelsH
-	bcs @clearBullet
-.elseif (.xmatch ({quadrant}, 2) .or .xmatch ({quadrant}, 3))
-	sbc xPixelsH
-	bcc @clearBullet
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletXH,x
-	rts
-@clearBullet:
-;shift bit out
-	lsr isEnemyBulletActive,x
-	rts
-.endmacro 
 
 .macro bulletFib quadrant, xOffset_L, xOffset_H, yOffset_L, yOffset_H 
 	pla

@@ -149,7 +149,6 @@ updateEnemies:
 	bpl @enemyUpdateLoop
 	rts
 
-.align $100
 Enemies_isAlive:
 ;compares enemies to the player bullets and determines if they overlap
 ;arguments

@@ -23,13 +23,14 @@ PALETTE06=6;blue drone palette
 PALETTE07=7;blue drone palette
 PALETTE08=$08;orange piper palette
 PALETTE09=$09;green piper palette palette
+PALETTE0A=$0a;player 1 portrait
 
 romColor1:
-	.byte $07, $17, $3b, $01, $1d, $04, $1d, $15, $07, $07
+	.byte $07, $17, $3b, $01, $1d, $04, $1d, $15, $07, $07, $07
 romColor2:
-	.byte $25, $2a, $23, $21, $05, $24, $21, $25, $26, $29
+	.byte $25, $2a, $23, $21, $05, $24, $21, $25, $26, $29, $15
 romColor3:
-	.byte $35, $39, $37, $31, $30, $34, $31, $35, $36, $36
+	.byte $35, $39, $37, $31, $30, $34, $31, $35, $36, $36, $35
 
 ;;;;;;;;;;;;;
 ;collections;

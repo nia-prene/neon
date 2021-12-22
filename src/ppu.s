@@ -8,6 +8,7 @@
 .include "palettes.h"
 .include "player.h"
 .include "oam.h"
+.include "textbox.h"
 
 PPUCTRL = $2000;(VPHB SINN) NMI enable (V), PPU master/slave (P), sprite height (H), background tile select (B), sprite tile select (S), increment mode (I), nametable select (NN)
 PPUMASK = $2001;(BGRs bMmG)	color emphasis (BGR), sprite enable (s), background enable (b), sprite left column enable (M), background left column enable (m), greyscale (G)
@@ -359,6 +360,48 @@ PPU_NMIPlan01:
 @colorMutator:
 	.byte $30, $20, $10, $00
 
+PPU_NMIPlan02:
+;byte writes INCLUDE functions pushed on stack
+PORTRAIT_BYTES=18
+;save the main stack
+	tsx
+	stx Main_stack
+;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
+	ldx #MAX_BYTES+8
+	txs
+;after routine runs, return at the end of NMI
+	lda #>(Main_NMIReturn-1)
+	pha
+	lda #<(Main_NMIReturn-1)
+	pha
+	sws PPU_stack, Main_stack
+;we just stored 2 bytes
+	lda #2
+	sta PPU_bufferBytes
+;check if portrait needs updating
+	lda Portraits_hasChanged
+	beq :+
+		clc
+		lda #PORTRAIT_BYTES
+		adc PPU_bufferBytes
+		sta PPU_bufferBytes
+		jsr PPU_portraitToBuffer
+	;update has been made
+		lda #FALSE
+		sta Portraits_hasChanged
+:	
+	ldy #3
+	lda Palettes_hasChanged,y
+	beq :+
+		jsr PPU_paletteToBuffer
+		lda #FALSE
+		sta Palettes_hasChanged,y
+:
+@bufferFull:
+	lda #TRUE
+	sta PPU_willVRAMUpdate
+	rts
+
 PPU_renderAllPalettesNMI:
 	pla
 	sta PPUADDR
@@ -625,7 +668,7 @@ render32:;(a)
 	pla
 	tay;y is tile pos in tiles32 array
 	tax;x is position in conversion
-	lda attributeTableConversionH,x
+	lda #$23
 	;store address (big endian)
 	sta PPUADDR
 	lda attributeTableConversionL,x
@@ -941,39 +984,99 @@ PPU_renderPaletteNMI:
 	pla
 	sta PPUDATA
 	rts
+
+PPU_portraitToBuffer:
+	sws Main_stack, PPU_stack
+;set up pointer
+	ldy Portraits_current
+	lda Portraits_L,y
+	sta Portraits_pointer
+	lda Portraits_H,y
+	sta Portraits_pointer+1
+	ldy #16-1;16 tiles
+@loop:
+	lda (Portraits_pointer),y
+	pha
+	dey
+	bpl @loop
+	lda #>(PPU_renderPortraitNMI-1)
+	pha
+	lda #<(PPU_renderPortraitNMI-1)
+	pha
+	sws PPU_stack, Main_stack
+	rts
+
+PPU_renderPortraitNMI:
+PORTRAIT_ADDRESS=$24c3
+	lda #>PORTRAIT_ADDRESS
+	sta PPUADDR
+	lda #<PORTRAIT_ADDRESS
+	sta PPUADDR
+
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+
+	lda #>(PORTRAIT_ADDRESS+$20)
+	sta PPUADDR
+	lda #<(PORTRAIT_ADDRESS+$20)
+	sta PPUADDR
+	
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+
+	lda #>(PORTRAIT_ADDRESS+$40)
+	sta PPUADDR
+	lda #<(PORTRAIT_ADDRESS+$40)
+	sta PPUADDR
+
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+
+	lda #>(PORTRAIT_ADDRESS+$60)
+	sta PPUADDR
+	lda #<(PORTRAIT_ADDRESS+$60)
+	sta PPUADDR
+
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	rts
+
 .rodata
 nameTableConversionH:
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
-	.byte $24, $24, $25, $25, $26, $26, $27, $27, $24, $24, $25, $25, $26, $26, $27, $27
-	.byte $24, $24, $25, $25, $26, $26, $27, $27, $24, $24, $25, $25, $26, $26, $27, $27
-	.byte $24, $24, $25, $25, $26, $26, $27, $27, $24, $24, $25, $25, $26, $26, $27, $27
-	.byte $24, $24, $25, $25, $26, $26, $27, $27, $24, $24, $25, $25, $26, $26, $27, $27
 nameTableConversionL:
 	.byte $00, $80, $00, $80, $00, $80, $00, $80, $04, $84, $04, $84, $04, $84, $04, $84 
 	.byte $08, $88, $08, $88, $08, $88, $08, $88, $0c, $8c, $0c, $8c, $0c, $8c, $0c, $8c 
 	.byte $10, $90, $10, $90, $10, $90, $10, $90, $14, $94, $14, $94, $14, $94, $14, $94 
 	.byte $18, $98, $18, $98, $18, $98, $18, $98, $1c, $9c, $1c, $9c, $1c, $9c, $1c, $9c
-	.byte $00, $80, $00, $80, $00, $80, $00, $80, $04, $84, $04, $84, $04, $84, $04, $84
-	.byte $08, $88, $08, $88, $08, $88, $08, $88, $0c, $8c, $0c, $8c, $0c, $8c, $0c, $8c
-	.byte $10, $90, $10, $90, $10, $90, $10, $90, $14, $94, $14, $94, $14, $94, $14, $94
-	.byte $18, $98, $18, $98, $18, $98, $18, $98, $1c, $9c, $1c, $9c, $1c, $9c, $1c, $9c
-attributeTableConversionH:
-	.byte $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23
-	.byte $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23 
-	.byte $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23 
-	.byte $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23
-	.byte $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27 
-	.byte $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27 
-	.byte $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27 
-	.byte $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27
 attributeTableConversionL:
-	.byte $c0, $c8, $d0, $d8, $e0, $e8, $f0, $f8, $c1, $c9, $d1, $d9, $e1, $e9, $f1, $f9
-	.byte $c2, $ca, $d2, $da, $e2, $ea, $f2, $fa, $c3, $cb, $d3, $db, $e3, $eb, $f3, $fb
-	.byte $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc, $c5, $cd, $d5, $dd, $e5, $ed, $f5, $fd
-	.byte $c6, $ce, $d6, $de, $e6, $ee, $f6, $fe, $c7, $cf, $d7, $df, $e7, $ef, $f7, $ff
 	.byte $c0, $c8, $d0, $d8, $e0, $e8, $f0, $f8, $c1, $c9, $d1, $d9, $e1, $e9, $f1, $f9
 	.byte $c2, $ca, $d2, $da, $e2, $ea, $f2, $fa, $c3, $cb, $d3, $db, $e3, $eb, $f3, $fb
 	.byte $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc, $c5, $cd, $d5, $dd, $e5, $ed, $f5, $fd

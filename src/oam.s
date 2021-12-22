@@ -147,7 +147,6 @@ OAM_buildPlayer:
 	pha
 	jmp buildSprites
 
-.align $100
 buildPlayerBullets:
 	lda #NULL;terminate
 	pha
@@ -190,7 +189,6 @@ buildPlayerBullets:
 	bcc @loop1
 	jmp buildSpritesShort
 
-.align $100
 buildEnemies:
 	lda #NULL
 	pha
@@ -211,7 +209,6 @@ buildEnemies:
 	bpl @enemyLoop
 	jmp buildSprites
 
-.align $100
 buildSprites:
 ;builds collections of sprites
 ;push tile, y, x, palette
@@ -360,7 +357,6 @@ buildSpritesShort:
 	sec
 	rts
 
-.align $100
 OAM_clearRemaining:
 ;arguments
 ;x-starting point to clear

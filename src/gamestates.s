@@ -176,6 +176,13 @@ gamestate04:
 	bne :+
 		lda #GAMESTATE05
 		sta Gamestate_current
+		lda #0
+		sta Portraits_current
+		lda #1
+		sta Portraits_hasChanged
+		ldy #3
+		ldx #PALETTE0A
+		jsr setPalette
 :	rts
 
 gamestate05:
@@ -187,6 +194,7 @@ TEXTBOX_OFFSET=30
 	jsr Sprite0_setDestination;(a)
 	jsr Textbox_easeIn;a()
 	jsr Sprite0_setSplit;(a)
+	jsr PPU_NMIPlan02
 	ldx #4;skip sprite0
 	jsr OAM_buildPlayer;(x)
 	jsr OAM_clearRemaining;(x)

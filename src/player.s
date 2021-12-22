@@ -268,23 +268,21 @@ CONVO_X=120
 	beq @doY;where we want it
 	bcs @playerRight
 		adc #2
-		sta playerX_H
 		jmp @doY
 @playerRight:
 	sbc #2
-	sta playerX_H
 @doY:
+	sta playerX_H
 	lda playerY_H
 	and #%11111110
 	cmp #CONVO_Y
 	beq @return
 	bcs @playerDown
 		adc #2
-		sta playerY_H
 		jmp @return
 @playerDown:
 	sbc #2
-	sta playerY_H
 @return:
+	sta playerY_H
 	rts
 

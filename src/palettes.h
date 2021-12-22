@@ -9,6 +9,7 @@
 .globalzp PALETTE07
 .globalzp PALETTE08
 .globalzp PALETTE09
+.globalzp PALETTE0A
 
 
 ;palette collection objects
