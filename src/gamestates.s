@@ -58,6 +58,7 @@ gamestate00:
 	jsr PlayerBullets_move
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
+	jsr PPU_waitForSprite0Reset;()
 	jsr updateEnemyBullets
 	jsr updateEnemies
 	jsr dispenseEnemies
@@ -139,6 +140,7 @@ gamestate02:
 gamestate03:
 SCORE_OFFSET=7
 ;move player into place, show status, ready? Go!
+	jsr PPU_waitForSprite0Reset;()
 	jsr PPU_updateScroll
 	lda #SCORE_OFFSET
 	jsr Sprite0_setDestination;(a)
@@ -162,11 +164,12 @@ SCORE_OFFSET=7
 gamestate04:
 ;hide HUD and move player into boss dialogue position
 	jsr PPU_updateScroll
+	jsr PPU_waitForSprite0Reset;()
 	jsr Player_toConvo
 	jsr HUD_easeOut;a()
 	jsr Sprite0_setSplit;(a)
 	ldx #4;skip sprite0
-	jsr OAM_buildPlayer;(x)
+	jsr OAM_buildPlayer;x(x)
 	jsr OAM_clearRemaining;(x)
 	jsr PPU_waitForSprite0Hit
 	clc
@@ -176,18 +179,19 @@ gamestate04:
 	bne :+
 		lda #GAMESTATE05
 		sta Gamestate_current
-		lda #0
-		sta Portraits_current
-		lda #1
-		sta Portraits_hasChanged
-		ldy #3
-		ldx #PALETTE0A
-		jsr setPalette
 :	rts
 
 gamestate05:
 TEXTBOX_OFFSET=30
-;show textbox and move boss into view
+;load and show textbox and move boss into view
+	lda #0
+	sta Portraits_current
+	lda #1
+	sta Portraits_hasChanged
+	ldy #3
+	ldx #PALETTE0A
+	jsr setPalette
+	jsr PPU_waitForSprite0Reset;()
 	jsr PPU_updateScroll
 	jsr Player_toConvo
 	lda #TEXTBOX_OFFSET

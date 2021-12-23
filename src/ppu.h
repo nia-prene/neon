@@ -9,6 +9,7 @@
 .global PPU_updateScroll
 .global PPU_renderRightScreen
 .global PPU_waitForSprite0Hit
+.global PPU_waitForSprite0Reset
 .global PPU_renderScore
 .global PPU_scoreToBuffer
 .global PPU_NMIPlan00

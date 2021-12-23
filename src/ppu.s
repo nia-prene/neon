@@ -183,11 +183,15 @@ PPU_renderRightScreen:
 	bpl @attributeLoop
 	rts
 
-PPU_waitForSprite0Hit:
+PPU_waitForSprite0Reset:;void()
+;waits for sprite 0 hit to turn off at beginnign of frame
 	lda #%01000000
 @waitForReset:
 	bit PPUSTATUS
 	bne @waitForReset
+	rts
+
+PPU_waitForSprite0Hit:
 	lda currentMaskSettings
 	and #DISABLE_SPRITES
 	pha
