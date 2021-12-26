@@ -157,13 +157,13 @@ aimBullet:
 ;returns:
 ;a - degree from 0-256 to shoot bullet. use this degree to fetch correct bullet
 	sec
-	lda playerX_H
+	lda Player_xPos_H
 	sbc quickBulletX
 	bcs *+4
 	eor #$ff
 	tax
 	rol octant
-	lda playerY_H
+	lda Player_yPos_H
 	adc #10
 	sec
 	sbc quickBulletY

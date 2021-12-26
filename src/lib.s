@@ -2,7 +2,7 @@
 
 TRUE = $01 
 FALSE = $00
-NULL = $ff
+TERMINATE = $ff
 
 .zeropage
 mathTemp: .res 2

@@ -88,7 +88,7 @@ OAM_build:;c (c,a)
 
 buildHitbox:
 PLAYER_HITBOX_Y_OFFSET=5
-	lda #NULL;terminate
+	lda #TERMINATE;terminate
 	pha
 	lda o
 	and #%00001000
@@ -99,10 +99,10 @@ PLAYER_HITBOX_Y_OFFSET=5
 	lda @hitboxAnimation,y
 	pha
 	clc
-	lda playerY_H
+	lda Player_yPos_H
 	adc #PLAYER_HITBOX_Y_OFFSET
 	pha
-	lda playerX_H
+	lda Player_xPos_H
 	pha
 	lda #00
 	pha
@@ -112,7 +112,7 @@ PLAYER_HITBOX_Y_OFFSET=5
 
 .align $100
 buildEnemyBullets:
-	lda #NULL;terminate
+	lda #TERMINATE;terminate
 	pha
 	ldy #MAX_ENEMY_BULLETS-1
 @enemyBulletLoop:
@@ -135,20 +135,20 @@ OAM_buildPlayer:
 ;prepares player sprite for oam
 ;first push a null to terminate 
 ;then push sprite, y, x, palette
-	lda #NULL;terminator
+	lda #TERMINATE;terminator
 	pha
-	lda playerSprite
+	lda Player_sprite
 	pha
-	lda playerY_H
+	lda Player_yPos_H
 	pha
-	lda playerX_H
+	lda Player_xPos_H
 	pha
 	lda #0;palette implied
 	pha
 	jmp buildSprites
 
 buildPlayerBullets:
-	lda #NULL;terminate
+	lda #TERMINATE;terminate
 	pha
 	lda o
 	ror
@@ -190,7 +190,7 @@ buildPlayerBullets:
 	jmp buildSpritesShort
 
 buildEnemies:
-	lda #NULL
+	lda #TERMINATE
 	pha
 	ldy #MAX_ENEMIES-1
 @enemyLoop:
@@ -216,7 +216,7 @@ buildSprites:
 ;returns
 ;x - current OAM position
 	pla
-	cmp #NULL
+	cmp #TERMINATE
 	beq @return
 @metaspriteLoop:
 	sta buildPalette
@@ -258,10 +258,10 @@ buildSprites:
 		beq @oamFull
 		iny
 		lda (spritePointer),y
-		cmp #NULL
+		cmp #TERMINATE
 		bne @tileLoop
 	pla
-	cmp #NULL
+	cmp #TERMINATE
 	bne @metaspriteLoop
 @return:
 	clc ;build successful
@@ -276,7 +276,7 @@ buildSprites:
 	jmp @returnX
 @oamFull:
 	pla ;null or palette
-	cmp #NULL
+	cmp #TERMINATE
 	beq @returnFull
 	pla ;x
 	pla ;y
@@ -296,7 +296,7 @@ buildSpritesShort:
 
 ;if first byte = null, no sprites
 	pla
-	cmp #NULL
+	cmp #TERMINATE
 	beq @return
 @metaspriteLoop:
 	pla
@@ -333,10 +333,10 @@ buildSpritesShort:
 		beq @oamFull
 		iny
 		lda (spritePointer),y
-		cmp #NULL
+		cmp #TERMINATE
 		bne @tileLoop
 	pla
-	cmp #NULL
+	cmp #TERMINATE
 	bne @metaspriteLoop
 @return:
 	clc
@@ -347,7 +347,7 @@ buildSpritesShort:
 	jmp @returnX
 @oamFull:
 	pla ;null or palette
-	cmp #NULL
+	cmp #TERMINATE
 	beq @returnFull
 	pla ;x
 	pla ;y

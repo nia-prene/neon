@@ -43,7 +43,7 @@ PICKUP_WIDTH=16
 PICKUP_HEIGHT=16
 	sec
 	lda enemyXH,x
-	sbc playerX_H
+	sbc Player_xPos_H
 	bcs @pickupGreaterX
 	eor #%11111111
 @pickupGreaterX:
@@ -51,7 +51,7 @@ PICKUP_HEIGHT=16
 	bcs @noCollision
 	sec
 	lda enemyYH,x
-	sbc playerY_H
+	sbc Player_yPos_H
 	bcs @pickupGreaterY
 	eor #%11111111
 @pickupGreaterY:
@@ -61,7 +61,7 @@ PICKUP_HEIGHT=16
 	sta sprite1LeftOrTop
 	adc #PICKUP_WIDTH
 	sta sprite1RightOrBottom
-	lda playerX_H
+	lda Player_xPos_H
 	sta sprite2LeftOrTop
 	adc #PLAYER_WIDTH
 	sta sprite2RightOrBottom
@@ -71,7 +71,7 @@ PICKUP_HEIGHT=16
 	sta sprite1LeftOrTop
 	adc #PICKUP_HEIGHT
 	sta sprite1RightOrBottom
-	lda playerY_H
+	lda Player_yPos_H
 	sta sprite2LeftOrTop
 	adc #PLAYER_HEIGHT
 	sta sprite2RightOrBottom

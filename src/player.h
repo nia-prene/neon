@@ -1,7 +1,7 @@
 .globalzp playerIFrames
-.globalzp playerX_H
-.globalzp playerY_H
-.globalzp playerSprite
+.globalzp Player_xPos_H
+.globalzp Player_yPos_H
+.globalzp Player_sprite
 .globalzp Player_powerLevel
 .globalzp Player_killCount
 .globalzp Player_haveHeartsChanged

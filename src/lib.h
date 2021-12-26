@@ -1,5 +1,5 @@
 ;constants
-.globalzp NULL
+.globalzp TERMINATE
 .globalzp TRUE
 .globalzp FALSE
 

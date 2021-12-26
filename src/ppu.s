@@ -406,6 +406,65 @@ PORTRAIT_BYTES=18
 	sta PPU_willVRAMUpdate
 	rts
 
+PPU_NMIPlan03:
+;fades out colors
+;save the main stack
+	tsx
+	stx Main_stack
+;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
+	ldx #MAX_BYTES+8
+	txs
+;after routine runs, return at the end of NMI
+	lda #>(Main_NMIReturn-1)
+	pha
+	lda #<(Main_NMIReturn-1)
+	pha
+	ldx #7
+@loop:
+	sec
+	lda color3,x
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	lda color2,x
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	lda color1,x
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	lda backgroundColor
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	dex
+	bpl @loop
+	lda #$00
+	pha
+	lda #$3f
+	pha
+	lda #>(PPU_renderAllPalettesNMI-1)
+	pha
+	lda #<(PPU_renderAllPalettesNMI-1)
+	pha
+	sws PPU_stack, Main_stack
+;do this during nmi
+	lda #TRUE
+	sta PPU_willVRAMUpdate
+	rts
+@colorMutator:
+	.byte $00, $10, $20, $30
+
+
 PPU_renderAllPalettesNMI:
 	pla
 	sta PPUADDR

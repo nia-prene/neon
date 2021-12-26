@@ -20,6 +20,8 @@
 .include "speed.h"
 .include "hud.h"
 .include "textbox.h"
+.include "apu.h"
+
 
 .zeropage
 Gamestate_current: .res 1
@@ -35,11 +37,13 @@ GAMESTATE02=$02;fade in screen while scroll
 GAMESTATE03=$03;move player to start pos, ease in status bar
 GAMESTATE04=$04;ease out status bar, move player to dialogue spt
 GAMESTATE05=$05;ease in textbox, move player/boss to dialogue spt
+GAMESTATE06=$06;fade out screen while scroll
+GAMESTATE07=$07;music test state
 
 Gamestates_H:
-	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1)
+	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1)
 Gamestates_L:
-	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1)
+	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1)
 
 gamestate00:
 ;the main gameplay loop
@@ -108,6 +112,7 @@ gamestate01:;void(currentPlayer, currentScene)
 	jsr Speed_setLevel
 	jsr OAM_initSprite0
 	jsr PPU_resetScroll
+	jsr APU_init
 	jsr enableRendering;()
 	lda #GAMESTATE02
 	sta Gamestate_current
@@ -125,7 +130,7 @@ gamestate02:
 	adc #8
 	sta g
 	bne :+
-		lda #GAMESTATE03
+		lda #GAMESTATE07
 		sta Gamestate_current
 		rts
 :	clc
@@ -156,7 +161,7 @@ SCORE_OFFSET=7
 	adc #4;this state lasts 256/4 frames
 	sta g
 	bne :+
-		lda #GAMESTATE04
+		lda #GAMESTATE00
 		sta Gamestate_current
 :
 	rts
@@ -205,3 +210,28 @@ TEXTBOX_OFFSET=30
 	jsr PPU_waitForSprite0Hit
 	rts
 
+gamestate06:
+;fades screen out and updates scroll
+	jsr PPU_updateScroll
+	lda g
+	clc
+	adc #8
+	sta g
+	bne :+
+		lda #GAMESTATE02
+		sta Gamestate_current
+		rts
+:	clc
+	and #%11000000
+	rol
+	rol
+	rol
+	tay
+	jsr PPU_NMIPlan03;(y)
+	rts
+
+gamestate07:
+	jsr PPU_updateScroll
+	jsr APU_advance 
+
+	rts

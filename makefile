@@ -1,4 +1,4 @@
-objects = bullets.o enemies.o gamepads.o gamestates.o hud.o lib.o main.o oam.o palettes.o playerbullets.o player.o pickups.o ppu.o scenes.o score.o speed.o sprites.o tiles.o textbox.o waves.o
+objects = apu.o bullets.o enemies.o gamepads.o gamestates.o hud.o lib.o main.o oam.o palettes.o playerbullets.o player.o pickups.o ppu.o scenes.o score.o speed.o sprites.o tiles.o textbox.o waves.o
 game = neon.nes
 source = src/
 builddir = build/

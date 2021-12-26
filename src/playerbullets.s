@@ -112,10 +112,10 @@ DAMAGE=3
 WIDTH=16
 	jsr getAvailableBullet
 	bcc @return
-	lda playerX_H
+	lda Player_xPos_H
 	sbc #X_OFFSET
 	sta bulletX,x
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bulletOffscreen
 	sta bulletY,x
@@ -142,11 +142,11 @@ WIDTH=8
 	jsr getAvailableBullet
 	bcc @return
 ;calculate x offset
-	lda playerX_H
+	lda Player_xPos_H
 	sbc #X_OFFSET
 	bcc @bullet1Offscreen
 	sta bulletX,x
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bullet1Offscreen
 	sta bulletY,x;y offset
@@ -159,12 +159,12 @@ WIDTH=8
 @bullet2:
 	jsr getAvailableBullet
 	bcc @return
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bullet2Offscreen
 	sta bulletY,x
 	clc
-	lda playerX_H
+	lda Player_xPos_H
 	adc #X_OFFSET
 	bcs @bullet2Offscreen
 	sta bulletX,x;x offset
@@ -194,11 +194,11 @@ WIDTH=8
 ;start with left bullet
 	jsr getAvailableBullet
 	bcc @return
-	lda playerX_H
+	lda Player_xPos_H
 	sbc #X_OFFSET
 	bcc @bullet1Offscreen
 	sta bulletX,x;x offset
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bullet1Offscreen
 	sta bulletY,x;y offset
@@ -211,12 +211,12 @@ WIDTH=8
 @bullet2:	
 	jsr getAvailableBullet
 	bcc @return
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bullet2Offscreen
 	sta bulletY,x;y offset
 	clc
-	lda playerX_H
+	lda Player_xPos_H
 	adc #X_OFFSET
 	bcs @bullet2Offscreen
 	sta bulletX,x;x offset

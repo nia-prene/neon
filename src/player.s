@@ -8,13 +8,13 @@
 .include "bullets.h"
 
 .zeropage
-playerX_H: .res 1
-playerX_L: .res 1
-playerY_H: .res 1
-playerY_L: .res 1
-speed_H: .res 1
-speed_L: .res 1
-playerSprite: .res 1
+Player_xPos_H: .res 1
+Player_xPos_L: .res 1
+Player_yPos_H: .res 1
+Player_yPos_L: .res 1
+Player_speed_H: .res 1
+Player_speed_L: .res 1
+Player_sprite: .res 1
 Player_powerLevel: .res 2
 Player_hearts: .res 2
 Player_haveHeartsChanged: .res 1
@@ -40,9 +40,9 @@ X_START_COORD=120
 Y_START_COORD=255
 ;TODO select between one of two players.
 	lda #X_START_COORD
-	sta playerX_H
+	sta Player_xPos_H
 	lda #Y_START_COORD
-	sta playerY_H
+	sta Player_yPos_H
 	lda #TRUE
 	sta Player_willRender
 	rts
@@ -52,16 +52,16 @@ Y_SPEED_H=1
 Y_SPEED_L=128
 MAX_Y=144
 	sec
-	lda playerY_L
+	lda Player_yPos_L
 	sbc #Y_SPEED_L
-	sta playerY_L
-	lda playerY_H
+	sta Player_yPos_L
+	lda Player_yPos_H
 	sbc #Y_SPEED_H
 	cmp #MAX_Y
 	bcs :+
 		lda #MAX_Y
 :
-	sta playerY_H
+	sta Player_yPos_H
 ;do animations
 	rts
 .endproc
@@ -70,7 +70,7 @@ Player_move:;(controller) returns void
 ;controller bits are | a b sel st u d l r |
 ;pixel per frame when moving fast
 FAST_MOVEMENT_H = 2
-FAST_MOVEMENT_L = 128
+FAST_MOVEMENT_L = 0
 ;pixel per frame when moving slow
 SLOW_MOVEMENT_H = 1
 SLOW_MOVEMENT_L = 0
@@ -87,17 +87,17 @@ MAX_DOWN = 204
 	bcs @goingSlow
 @goingFast:
 	lda #FAST_MOVEMENT_L
-	sta speed_L
+	sta Player_speed_L
 	lda #FAST_MOVEMENT_H
-	sta speed_H
+	sta Player_speed_H
 	lda #FALSE
 	sta Player_hitboxWillRender
 	jmp @testRight
 @goingSlow:
 	lda #SLOW_MOVEMENT_L
-	sta speed_L
+	sta Player_speed_L
 	lda #SLOW_MOVEMENT_H
-	sta speed_H
+	sta Player_speed_H
 	lda #TRUE
 	sta Player_hitboxWillRender
 @testRight:
@@ -108,16 +108,16 @@ MAX_DOWN = 204
 ;if bit 0 set then move right
 	pha
 	clc
-	lda playerX_L
-	adc speed_L
-	sta playerX_L
-	lda playerX_H
-	adc speed_H
+	lda Player_xPos_L
+	adc Player_speed_L
+	sta Player_xPos_L
+	lda Player_xPos_H
+	adc Player_speed_H
 	cmp #MAX_RIGHT
 	bcc @storeRight
 	lda #MAX_RIGHT
 @storeRight:
-	sta playerX_H
+	sta Player_xPos_H
 	pla
 @testLeft:
 	ror
@@ -125,16 +125,16 @@ MAX_DOWN = 204
 	bcc @testDown
 	pha
 	sec
-	lda playerX_L
-	sbc speed_L
-	sta playerX_L
-	lda playerX_H
-	sbc speed_H
+	lda Player_xPos_L
+	sbc Player_speed_L
+	sta Player_xPos_L
+	lda Player_xPos_H
+	sbc Player_speed_H
 	cmp #MAX_LEFT
 	bcs @storeLeft
 	lda #MAX_LEFT
 @storeLeft:
-	sta playerX_H
+	sta Player_xPos_H
 	pla
 @testDown:
 ;if bit 2 set then move down
@@ -142,16 +142,16 @@ MAX_DOWN = 204
 	bcc @testUp
 	pha
 	clc
-	lda playerY_L
-	adc speed_L
-	sta playerY_L
-	lda playerY_H
-	adc speed_H
+	lda Player_yPos_L
+	adc Player_speed_L
+	sta Player_yPos_L
+	lda Player_yPos_H
+	adc Player_speed_H
 	cmp #MAX_DOWN
 	bcc @storeDown
 	lda #MAX_DOWN
 @storeDown:
-	sta playerY_H
+	sta Player_yPos_H
 	pla
 @testUp:
 ;if bit 3 set then move down
@@ -159,22 +159,22 @@ MAX_DOWN = 204
 	bcc @return
 	pha
 	sec
-	lda playerY_L
-	sbc speed_L
-	sta playerY_L
-	lda playerY_H
-	sbc speed_H
+	lda Player_yPos_L
+	sbc Player_speed_L
+	sta Player_yPos_L
+	lda Player_yPos_H
+	sbc Player_speed_H
 	bcs @storeUp
 	lda #MAX_UP
 @storeUp:
-	sta playerY_H
+	sta Player_yPos_H
 	pla
 @return:
 	lda #PLAYER_SPRITE
-	sta playerSprite;set sprite
+	sta Player_sprite;set sprite
 	rts
 
-.align $100
+.align $80
 Player_isHit:;(void)
 PLAYER_HEIGHT=16
 MAX_BULLET_DIAMETER=16
@@ -192,7 +192,7 @@ HITBOX_HEIGHT=2
 	beq @nextBullet ;else
 	sec ;find x distance
 	lda enemyBulletXH,x
-	sbc playerX_H
+	sbc Player_xPos_H
 	bcs @bulletGreaterX
 		eor #%11111111 ;if negative
 @bulletGreaterX:
@@ -200,14 +200,14 @@ HITBOX_HEIGHT=2
 	bcs @nextBullet ;else
 	sec ;find y distance
 	lda enemyBulletYH,x
-	sbc playerY_H
+	sbc Player_yPos_H
 	bcs @bulletGreaterY
 		eor #%11111111 ;if negative
 @bulletGreaterY:
 	cmp #PLAYER_HEIGHT ;if y distance < height
 	bcs @nextBullet
 	;copy player x bounded box
-	lda playerX_H
+	lda Player_xPos_H
 	adc #HITBOX_X_OFFSET
 	sta sprite1LeftOrTop
 	adc #HITBOX_WIDTH
@@ -221,7 +221,7 @@ HITBOX_HEIGHT=2
 	jsr checkCollision
 	bcc @nextBullet;if outside box
 	;copy player y bounded box
-	lda playerY_H
+	lda Player_yPos_H
 	adc #HITBOX_Y_OFFSET-1;carry is set
 	sta sprite1LeftOrTop
 	adc #HITBOX_HEIGHT
@@ -250,8 +250,6 @@ HITBOX_HEIGHT=2
 	inc Player_iFrames	
 	bne :+
 	;reset iframes after 4 seconds
-		lda #0
-		sta Player_iFrames
 		lda #TRUE
 		sta Player_willRender
 :
@@ -262,7 +260,7 @@ Player_toConvo:;void()
 ;moves the player to the appropriate spot to have a conversation
 CONVO_Y=128
 CONVO_X=120
-	lda playerX_H
+	lda Player_xPos_H
 	and #%11111110
 	cmp #CONVO_X
 	beq @doY;where we want it
@@ -272,8 +270,8 @@ CONVO_X=120
 @playerRight:
 	sbc #2
 @doY:
-	sta playerX_H
-	lda playerY_H
+	sta Player_xPos_H
+	lda Player_yPos_H
 	and #%11111110
 	cmp #CONVO_Y
 	beq @return
@@ -283,6 +281,6 @@ CONVO_X=120
 @playerDown:
 	sbc #2
 @return:
-	sta playerY_H
+	sta Player_yPos_H
 	rts
 
