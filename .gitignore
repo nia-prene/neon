@@ -1,3 +1,2 @@
-/build
-build/*.o
-build/*.nes
+doc/
+build/
