@@ -89,7 +89,7 @@ gamestate00:
 	rts
 
 gamestate01:;void(currentPlayer, currentScene)
-;loads level with current player.
+;load level with current player.
 	jsr disableRendering;()
 	ldx Main_currentPlayer
 	lda @playerPalette,x
@@ -113,6 +113,7 @@ gamestate01:;void(currentPlayer, currentScene)
 	jsr OAM_initSprite0
 	jsr PPU_resetScroll
 	jsr APU_init
+	jsr APU_setSong
 	jsr enableRendering;()
 	lda #GAMESTATE02
 	sta Gamestate_current

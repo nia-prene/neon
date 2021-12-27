@@ -1,4 +1,5 @@
 .include "apu.h"
+.include "lib.h"
 
 ;apu registers
 SQ1_VOL = $4000;Duty and volume for square wave 1
@@ -23,7 +24,18 @@ SND_CHN = $4015;Sound channels enable and status
 
 .zeropage
 m: .res 1
-note: .res 1
+SQ1_loopPointer: .res 2
+SQ1_songPointer: .res 2
+SQ1_loopIndex: .res 1
+SQ1_songIndex: .res 1
+SQ2_loopPointer: .res 2
+SQ2_songPointer: .res 2
+TRI_loopPointer: .res 2
+TRI_songPointer: .res 2
+
+.data
+SQ1_length: .res 1
+SQ1_rest: .res 1
 
 .code
 APU_init:
@@ -47,32 +59,113 @@ APU_init:
         .byte $80,$00,$00,$00
         .byte $30,$00,$00,$00
         .byte $00,$00,$00,$00
+APU_setSong:;void(x)
+;x song to set
+	ldx #0;force arg 0
+;zero out loop counters
+	ldy #0
+	sty SQ1_loopIndex
+	sty SQ1_songIndex
+;get sq1 song
+	lda songs_L,x
+	sta SQ1_songPointer
+	lda songs_H,x
+	sta SQ1_songPointer+1
+;get the first loop ready
+	lda (SQ1_songPointer),y
+	tay 
+	lda loops_L,y
+	sta SQ1_loopPointer
+	lda loops_H,x
+	sta SQ1_loopPointer+1
+	rts
 
 APU_advance:
 	lda m
-	and #%111
+	and #%01
 	bne @return
-	lda note
-	and #%11111
-	tax
-	lda song,x
-	tax
-	lda periodTable_L,x
-	sta $4002
-	lda periodTable_H,x
-	sta $4003
-	lda #%10111111
-	sta $4000
-	inc note
+@updateS1:
+	lda SQ1_length
+	bne @stillPlaying
+		lda SQ1_rest
+		bne @stillResting
+			ldy SQ1_loopIndex
+			lda (SQ1_loopPointer),y
+			cmp #TERMINATE;end when $FF
+			bne @loopContinues
+				inc SQ1_songIndex;advance song
+				ldy SQ1_songIndex;get new loop
+				lda (SQ1_songPointer),y
+				tay
+				lda loops_L,y
+				sta SQ1_loopPointer
+				lda loops_H,y
+				sta SQ1_loopPointer+1
+				ldy #0;reset index
+				sty SQ1_loopIndex
+				lda (SQ1_loopPointer),y;get a note
+		@loopContinues:
+			tax;play a note
+			lda periodTable_L,x
+			sta SQ1_LO
+			lda periodTable_H,x
+			sta SQ1_HI
+			iny;set length
+			lda (SQ1_loopPointer),y
+			sta SQ1_length
+			iny;set rest
+			lda (SQ1_loopPointer),y
+			sta SQ1_rest
+			lda #%10111111;todo pulse width/volume
+			sta SQ1_VOL
+			iny;advance loop
+			sty SQ1_loopIndex
+			jmp @updateS2
+@stillPlaying:
+	dec SQ1_length
+	jmp @updateS2
+@stillResting:
+;silence channel
+	lda #%10110000
+	sta SQ1_VOL 
+	dec SQ1_rest
+
+@updateS2:
+	;todo
 @return:
 	inc m
 	rts
 .rodata	
-song:
-	.byte C1, D1, E1, F1, G1, A1, B1, C2
-	.byte C2, D2, E2, F2, G2, A2, B2, C3
-	.byte C3, D3, E3, F3, G3, A3, B3, C4
-	.byte C4, D4, E4, F4, G4, A4, B4, C5
+SONG00=$00
+songs_H:
+	.byte >song00
+songs_L:
+	.byte <song00
+
+song00:
+	.byte LOOP00, LOOP00, LOOP00, LOOP00, LOOP00
+LOOP00=$00
+
+loops_H:
+	.byte >loop00
+loops_L:
+	.byte <loop00
+	
+loop00:
+	.byte B2, 4, 2, G3, 4, 1
+	.byte Gb3, 4, 1, E3, 5, 1
+	.byte D3, 4, 1, Db3, 4, 1
+	.byte D3, 4, 0, E3, 2, 0
+	.byte Gb3, 5, 1, A2, 4, 0
+	.byte B2, 4, 0, A2, 2, 0
+	.byte G2, 6, 1, A2, 2, 1
+	.byte B2, 4, 2, G3, 4, 1
+	.byte Gb3, 4, 1, E3, 5, 1
+	.byte D3, 4, 1, Db3, 4, 1
+	.byte D3, 4, 2, Db3, 4, 1
+	.byte A2, 4, 1, D3, 12, 1
+	.byte A2, 2, 1, TERMINATE
+
 A0=$00
 Bb0=$01
 B0=$02
