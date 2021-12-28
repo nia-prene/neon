@@ -25,17 +25,27 @@ SND_CHN = $4015;Sound channels enable and status
 .zeropage
 m: .res 1
 SQ1_loopPointer: .res 2
-SQ1_songPointer: .res 2
+SQ1_trackPointer: .res 2
 SQ1_loopIndex: .res 1
-SQ1_songIndex: .res 1
-SQ2_loopPointer: .res 2
-SQ2_songPointer: .res 2
-TRI_loopPointer: .res 2
-TRI_songPointer: .res 2
-
-.data
+SQ1_trackIndex: .res 1
+SQ1_ctrl: .res 1
+SQ1_sweep: .res 1
 SQ1_length: .res 1
 SQ1_rest: .res 1
+
+SQ2_loopPointer: .res 2
+SQ2_trackPointer: .res 2
+SQ2_loopIndex: .res 1
+SQ2_trackIndex: .res 1
+SQ2_ctrl: .res 1
+SQ2_sweep: .res 1
+SQ2_length: .res 1
+SQ2_rest: .res 1
+
+TRI_loopPointer: .res 2
+TRI_trackPointer: .res 2
+
+.data
 
 .code
 APU_init:
@@ -60,30 +70,61 @@ APU_init:
         .byte $30,$00,$00,$00
         .byte $00,$00,$00,$00
 APU_setSong:;void(x)
-;x song to set
+;stage to set
 	ldx #0;force arg 0
 ;zero out loop counters
 	ldy #0
 	sty SQ1_loopIndex
-	sty SQ1_songIndex
-;get sq1 song
-	lda songs_L,x
-	sta SQ1_songPointer
-	lda songs_H,x
-	sta SQ1_songPointer+1
-;get the first loop ready
-	lda (SQ1_songPointer),y
-	tay 
+	sty SQ1_trackIndex
+	sty SQ1_length
+	sty SQ1_rest
+	sty SQ2_loopIndex
+	sty SQ2_trackIndex
+	sty SQ2_length
+	sty SQ2_rest
+;get sq1 track
+	lda tracks_L,x
+	sta SQ1_trackPointer
+	lda tracks_H,x
+	sta SQ1_trackPointer+1
+	lda (SQ1_trackPointer),y
+	sta SQ1_ctrl
+	iny
+	lda (SQ1_trackPointer),y
+	sta SQ1_sweep
+	iny
+	lda (SQ1_trackPointer),y
+	iny
+	sty SQ1_trackIndex
+	tay
 	lda loops_L,y
 	sta SQ1_loopPointer
-	lda loops_H,x
+	lda loops_H,y
 	sta SQ1_loopPointer+1
+;get sq2 track
+	ldx #1
+	ldy #0
+	lda tracks_L,x
+	sta SQ2_trackPointer
+	lda tracks_H,x
+	sta SQ2_trackPointer+1
+	lda (SQ2_trackPointer),y
+	sta SQ2_ctrl
+	iny
+	lda (SQ2_trackPointer),y
+	sta SQ2_sweep
+	iny
+	lda (SQ2_trackPointer),y
+	iny
+	sty SQ2_trackIndex
+	tay
+	lda loops_L,y
+	sta SQ2_loopPointer
+	lda loops_H,y
+	sta SQ2_loopPointer+1
 	rts
 
 APU_advance:
-	lda m
-	and #%01
-	bne @return
 @updateS1:
 	lda SQ1_length
 	bne @stillPlaying
@@ -93,9 +134,16 @@ APU_advance:
 			lda (SQ1_loopPointer),y
 			cmp #TERMINATE;end when $FF
 			bne @loopContinues
-				inc SQ1_songIndex;advance song
-				ldy SQ1_songIndex;get new loop
-				lda (SQ1_songPointer),y
+				ldy SQ1_trackIndex;get new loop
+				lda (SQ1_trackPointer),y;get duty/vol
+				sta SQ1_ctrl
+				iny
+				lda (SQ1_trackPointer),y;get the sweep
+				sta SQ1_sweep
+				iny
+				lda (SQ1_trackPointer),y;get the loop
+				iny
+				sty SQ1_trackIndex;save the pos in track
 				tay
 				lda loops_L,y
 				sta SQ1_loopPointer
@@ -103,7 +151,7 @@ APU_advance:
 				sta SQ1_loopPointer+1
 				ldy #0;reset index
 				sty SQ1_loopIndex
-				lda (SQ1_loopPointer),y;get a note
+				lda (SQ1_loopPointer),y;get the first note
 		@loopContinues:
 			tax;play a note
 			lda periodTable_L,x
@@ -113,11 +161,14 @@ APU_advance:
 			iny;set length
 			lda (SQ1_loopPointer),y
 			sta SQ1_length
+			dec SQ1_length
 			iny;set rest
 			lda (SQ1_loopPointer),y
 			sta SQ1_rest
-			lda #%10111111;todo pulse width/volume
+			lda SQ1_ctrl
 			sta SQ1_VOL
+			lda SQ1_sweep
+			sta SQ1_SWEEP
 			iny;advance loop
 			sty SQ1_loopIndex
 			jmp @updateS2
@@ -129,42 +180,132 @@ APU_advance:
 	lda #%10110000
 	sta SQ1_VOL 
 	dec SQ1_rest
-
 @updateS2:
-	;todo
+	lda SQ2_length
+	bne @SQ2stillPlaying
+		lda SQ2_rest
+		bne @SQ2stillResting
+			ldy SQ2_loopIndex
+			lda (SQ2_loopPointer),y
+			cmp #TERMINATE;end when $FF
+			bne @SQ2loopContinues
+				ldy SQ2_trackIndex;get new loop
+				lda (SQ2_trackPointer),y;get duty/vol
+				sta SQ2_ctrl
+				iny
+				lda (SQ2_trackPointer),y;get the sweep
+				sta SQ2_sweep
+				iny
+				lda (SQ2_trackPointer),y;get the loop
+				iny
+				sty SQ2_trackIndex;save pos in track
+				tay
+				lda loops_L,y
+				sta SQ2_loopPointer
+				lda loops_H,y
+				sta SQ2_loopPointer+1
+				ldy #0;reset index
+				sty SQ2_loopIndex
+				lda (SQ2_loopPointer),y;get first note
+		@SQ2loopContinues:
+			tax;play a note
+			lda periodTable_L,x
+			sta SQ2_LO
+			lda periodTable_H,x
+			sta SQ2_HI
+			iny
+			lda (SQ2_loopPointer),y;get length
+			sta SQ2_length
+			dec SQ2_length
+			iny
+			lda (SQ2_loopPointer),y;get rest
+			sta SQ2_rest
+			lda SQ2_ctrl
+			sta SQ2_VOL
+			lda SQ2_sweep
+			sta SQ2_SWEEP
+			iny;advance loop
+			sty SQ2_loopIndex
+			jmp @updateTri
+@SQ2stillPlaying:
+	dec SQ2_length
+	jmp @updateTri
+@SQ2stillResting:
+;silence channel
+	lda #$30;mutes channel
+	sta SQ2_VOL 
+	dec SQ2_rest
+@updateTri:;todo
 @return:
-	inc m
 	rts
 .rodata	
-SONG00=$00
-songs_H:
-	.byte >song00
-songs_L:
-	.byte <song00
 
-song00:
-	.byte LOOP00, LOOP00, LOOP00, LOOP00, LOOP00
+TRACK00=$00
+tracks_H:
+	.byte >track00, >track01
+tracks_L:
+	.byte <track00, <track01
+
+track00:
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP00
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP00
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP00
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP00
+track01:
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP01
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP01
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP01
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP01
+
 LOOP00=$00
-
+LOOP01=$01
 loops_H:
-	.byte >loop00
+	.byte >loop00, >loop01
 loops_L:
-	.byte <loop00
+	.byte <loop00, <loop01
 	
 loop00:
-	.byte B2, 4, 2, G3, 4, 1
-	.byte Gb3, 4, 1, E3, 5, 1
-	.byte D3, 4, 1, Db3, 4, 1
-	.byte D3, 4, 0, E3, 2, 0
-	.byte Gb3, 5, 1, A2, 4, 0
-	.byte B2, 4, 0, A2, 2, 0
-	.byte G2, 6, 1, A2, 2, 1
-	.byte B2, 4, 2, G3, 4, 1
-	.byte Gb3, 4, 1, E3, 5, 1
-	.byte D3, 4, 1, Db3, 4, 1
-	.byte D3, 4, 2, Db3, 4, 1
-	.byte A2, 4, 1, D3, 12, 1
-	.byte A2, 2, 1, TERMINATE
+	.byte B2, 12, 6, G3, 12, 3
+	.byte Gb3,12, 3, E3, 15, 3
+	.byte D3,12, 3, Db3,12, 3
+	.byte D3,12, 0, E3, 6, 0
+	.byte Gb3,15, 3, A2,12, 0
+	.byte B2,12, 0, A2, 6, 0
+	.byte G2,18, 3, A2, 6, 3
+	.byte B2,12, 6, G3,12, 3
+	.byte Gb3,12, 3, E3,15, 3
+	.byte D3,12, 3, Db3,12, 3
+	.byte D3,12, 6, Db3,12, 3
+	.byte A2,12, 3, D3, 36, 3
+	.byte A2, 6, 3, TERMINATE
+
+loop01:
+	.byte D3,12, 6, D4,12, 3
+	.byte Db4,12, 3, A3,15, 3
+	.byte Gb3,12, 3, E3,12, 3
+	.byte Gb3,12, 0, G3, 6, 0
+	.byte A3,15, 3, E3,12, 0
+	.byte Gb3,12, 0, E3, 6, 0
+	.byte D3,18, 3, Db3, 6, 3
+	.byte D3,12, 6, D4,12, 3
+	.byte Db4,12, 3, A3,15, 3
+	.byte Gb3,12, 3, E3,12, 3
+	.byte Gb3,12, 6, E3,12, 3
+	.byte D3,12, 3, Gb3, 36, 3
+	.byte Db3, 6, 3, TERMINATE
+
+
+DUTY00=%00
+DUTY01=%01
+DUTY10=%10
+DUTY11=%11
+CONSTANT_VOL=%1
+LOOP=%1
+SWEEP_DISABLE=%0
+SWEEP_ENABLE=%1
+
+SQ_INST00_CTRL= (DUTY10<<6)|(LOOP<<5)|(CONSTANT_VOL<<4)
+SQ_INST00_SWEEP=(SWEEP_DISABLE<<7)
 
 A0=$00
 Bb0=$01
