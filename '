@@ -44,16 +44,8 @@ SQ2_rest: .res 1
 
 Tri_loopPointer: .res 2
 Tri_trackPointer: .res 2
-Tri_loopIndex: .res 1
-Tri_trackIndex: .res 1
 Tri_length: .res 1
 Tri_rest: .res 1
-
-DPCM_trackPointer: .res 2
-DPCM_loopPointer: .res 2
-DPCM_loopIndex: .res 1
-DPCM_trackIndex: .res 1
-DPCM_rest: .res 1
 
 .data
 
@@ -92,13 +84,6 @@ APU_setSong:;void(x)
 	sty SQ2_trackIndex
 	sty SQ2_length
 	sty SQ2_rest
-	sty Tri_loopIndex
-	sty Tri_trackIndex
-	sty Tri_length
-	sty Tri_rest
-	sty DPCM_loopIndex
-	sty DPCM_trackIndex
-	sty DPCM_rest
 ;get sq1 track
 	lda tracks_L,x
 	sta SQ1_trackPointer
@@ -154,21 +139,6 @@ APU_setSong:;void(x)
 	sta Tri_loopPointer
 	lda loops_H,y
 	sta Tri_loopPointer+1
-;DPCM setup  
-	ldx #3;track 2
-	ldy #0;beginning of track
-	lda tracks_L,x;save track pointer
-	sta DPCM_trackPointer
-	lda tracks_H,x
-	sta DPCM_trackPointer+1
-	lda (DPCM_trackPointer),y;get loop
-	iny
-	sty DPCM_trackIndex;save index first
-	tay
-	lda loops_L,y;save loop pointer
-	sta DPCM_loopPointer
-	lda loops_H,y
-	sta DPCM_loopPointer+1
 	rts
 
 APU_advance:
@@ -317,7 +287,7 @@ APU_advance:
 			lda (Tri_loopPointer),y;set rest
 			sta Tri_rest
 			lda #$ff;plays infinitely
-			sta TRI_LINEAR
+			sta TRI_VOL
 			iny
 			sty Tri_loopIndex;advance loop
 			jmp @updateDPCM
@@ -327,43 +297,9 @@ APU_advance:
 @triStillResting:
 ;silence channel
 	lda #%10000000
-	sta TRI_LINEAR
+	sta TRI_VOL 
 	dec Tri_rest
 @updateDPCM:
-	lda DPCM_rest
-	bne @DPCMStillPlaying
-		ldy DPCM_loopIndex
-		lda (DPCM_loopPointer),y
-		cmp #TERMINATE;end when $FF
-		bne @DPCMLoopContinues
-			ldy DPCM_trackIndex;get new loop
-			lda (DPCM_trackPointer),y;get the loop
-			iny
-			sty DPCM_trackIndex;save the pos in track
-			tay
-			lda loops_L,y
-			sta DPCM_loopPointer
-			lda loops_H,y
-			sta DPCM_loopPointer+1
-			ldy #0;reset index
-			lda (DPCM_loopPointer),y;get the first sample
-		@DPCMLoopContinues:
-		tax
-		lda Samples_address,x
-		sta DMC_START 
-		lda Samples_length,x
-		sta DMC_LEN 
-		lda #$f
-		sta DMC_FREQ 
-		iny
-		lda (DPCM_loopPointer),y;get the rest
-		sta DPCM_rest
-		iny
-		sty DPCM_loopIndex;save the index
-		lda #%11111
-		sta SND_CHN
-@DPCMStillPlaying:
-	dec DPCM_rest
 	rts
 .rodata	
 
@@ -371,104 +307,62 @@ TRACK00=$00
 TRACK01=$01
 TRACK02=$02
 tracks_H:
-	.byte >track00, >track01, >track02, >track03
+	.byte >track00, >track01, >track02
 tracks_L:
-	.byte <track00, <track01, <track02 ,<track03 
-tracks_repeat:
-	.byte 00, 00, 00, 00
+	.byte <track00, <track01, <track02 
 
 track00:
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP00
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP00
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP00
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP00
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP00
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP00
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP00
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP00
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP00
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP00
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP00
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP00
 track01:
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP01
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP01
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP01
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP01
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP01
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP01
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP01
-	.byte (SQ_INST00_CTRL|05), SQ_INST00_SWEEP, LOOP01
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP01
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP01
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP01
+	.byte (SQ_INST00_CTRL|10), SQ_INST00_SWEEP, LOOP01
 track02:
 	.byte LOOP02, LOOP02, LOOP02, LOOP02
-	.byte LOOP02, LOOP02, LOOP02, LOOP02
-track03:
-	.byte LOOP03, LOOP03, LOOP03, LOOP03 
-	.byte LOOP03, LOOP03, LOOP03, LOOP03 
-	.byte LOOP03, LOOP03, LOOP03, LOOP03 
-	.byte LOOP03, LOOP03, LOOP03, LOOP03 
-	.byte LOOP03, LOOP03, LOOP03, LOOP03 
-	.byte LOOP03, LOOP03, LOOP03, LOOP03 
 
 LOOP00=$00
 LOOP01=$01
-LOOP02=$02
-LOOP03=$03
-
 loops_H:
-	.byte >loop00, >loop01, >loop02, >loop03
+	.byte >loop00, >loop01, >loop02
 loops_L:
-	.byte <loop00, <loop01, <loop02, <loop03
+	.byte <loop00, <loop01, <loop02
 	
 loop00:
 	.byte B2, 12, 6, G3, 12, 3
-	.byte Gb3,12, 3, E3, 12, 6
+	.byte Gb3,12, 3, E3, 15, 3
 	.byte D3,12, 3, Db3,12, 3
 	.byte D3,12, 0, E3, 6, 0
 	.byte Gb3,15, 3, A2,12, 0
 	.byte B2,12, 0, A2, 6, 0
-	.byte G2,18, 0, A2, 9, 3
+	.byte G2,18, 3, A2, 6, 3
 	.byte B2,12, 6, G3,12, 3
-	.byte Gb3,12, 3, E3,12, 6
+	.byte Gb3,12, 3, E3,15, 3
 	.byte D3,12, 3, Db3,12, 3
 	.byte D3,12, 6, Db3,12, 3
-	.byte A2,12, 3, D3, 36, 0
-	.byte A2, 9, 3, TERMINATE
+	.byte A2,12, 3, D3, 36, 3
+	.byte A2, 6, 3, TERMINATE
 
 loop01:
 	.byte D3,12, 6, D4,12, 3
-	.byte Db4,12, 3, A3,12, 6
+	.byte Db4,12, 3, A3,15, 3
 	.byte Gb3,12, 3, E3,12, 3
 	.byte Gb3,12, 0, G3, 6, 0
 	.byte A3,15, 3, E3,12, 0
 	.byte Gb3,12, 0, E3, 6, 0
-	.byte D3,18, 0, Db3, 9, 3
+	.byte D3,18, 3, Db3, 6, 3
 	.byte D3,12, 6, D4,12, 3
-	.byte Db4,12, 3, A3,12, 6
+	.byte Db4,12, 3, A3,15, 3
 	.byte Gb3,12, 3, E3,12, 3
 	.byte Gb3,12, 6, E3,12, 3
-	.byte D3,12, 3, Gb3, 36, 0
-	.byte Db3, 9, 3, TERMINATE
+	.byte D3,12, 3, Gb3, 36, 3
+	.byte Db3, 6, 3, TERMINATE
 loop02:
-	.byte B2, 12, 6, B2, 12, 3 
-	.byte B2,12, 3, Db3, 12, 6 
-	.byte Db3, 12, 3, Db3, 12, 3
-	.byte D3, 12, 6, D3, 15, 3
-	.byte A2, 12, 0, B2, 12, 0
-	.byte A2, 06, 0, G2, 18, 0
-	.byte A2, 9, 3, B2, 12, 6
-	.byte B2, 12, 3, B2, 12, 3
-	.byte Db3, 12, 6, Db3, 12, 3
-	.byte Db3, 12, 3, D3, 12, 6
-	.byte D3, 12, 3, A2, 12, 3
-	.byte D3, 36, 0, A2 ,9, 3 
-	.byte TERMINATE
-loop03:
-	.byte SAMPLE00, 12, SAMPLE01, 12
-	.byte SAMPLE00, 12, SAMPLE01, 12
-	.byte SAMPLE00, 12, SAMPLE01, 12
-	.byte SAMPLE00, 12, SAMPLE01, 12
-	.byte SAMPLE00, 12, SAMPLE01, 12
-	.byte SAMPLE00, 12, SAMPLE01, 12
-	.byte SAMPLE00, 12, SAMPLE01, 12
-	.byte SAMPLE00, 12, SAMPLE01, 12
-	.byte TERMINATE
+	.byte B2, 200, 2, TERMINATE
+
 DUTY00=%00
 DUTY01=%01
 DUTY10=%10
@@ -480,17 +374,7 @@ SWEEP_ENABLE=%1
 
 SQ_INST00_CTRL= (DUTY10<<6)|(LOOP<<5)|(CONSTANT_VOL<<4)
 SQ_INST00_SWEEP=(SWEEP_DISABLE<<7)
-KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
-KICK_LENGTH=%10000
-SNARE_ADDRESS= <(( DPCM_snare  - $C000) >> 6)
-SNARE_LENGTH=%1110
 
-SAMPLE00=$00;kick
-SAMPLE01=$01;snare
-Samples_address:
-	.byte KICK_ADDRESS, SNARE_ADDRESS
-Samples_length:
-	.byte KICK_LENGTH, SNARE_LENGTH
 A0=$00
 Bb0=$01
 B0=$02
@@ -603,11 +487,3 @@ periodTable_H:
   .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
   .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
   .byte $00,$00,$00,$00,$00,$00,$00,$00
-
-.segment "DRUMS"
-.align 64
-DPCM_kick:
-	.incbin "kick.dmc"
-.align 64
-DPCM_snare:
-	.incbin "snare.dmc"
