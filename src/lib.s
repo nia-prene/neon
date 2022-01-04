@@ -3,7 +3,7 @@
 TRUE = $01 
 FALSE = $00
 TERMINATE = $ff
-
+NULL = $00
 .zeropage
 mathTemp: .res 2
 sprite1LeftOrTop: .res 1

@@ -20,6 +20,7 @@
 .include "speed.h"
 .include "hud.h"
 .include "init.s"
+.include "apu.h"
 
 .zeropage
 Main_stack: .res 1
@@ -110,7 +111,7 @@ nmi:
 	jsr OAM_beginDMA
 	jsr PPU_setScroll
 	lda #TRUE
-	sta hasFrameBeenRendered	
+	sta hasFrameBeenRendered
 ;restore registers
 	pla
 	tay

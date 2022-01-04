@@ -2,6 +2,7 @@
 .globalzp TERMINATE
 .globalzp TRUE
 .globalzp FALSE
+.globalzp NULL
 
 ;labels
 .globalzp sprite1LeftOrTop

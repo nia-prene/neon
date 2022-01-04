@@ -89,7 +89,9 @@ gamestate00:
 	rts
 
 gamestate01:;void(currentPlayer, currentScene)
-;load level with current player.
+;loads level with current player.
+	jsr APU_init
+	jsr APU_setSong
 	jsr disableRendering;()
 	ldx Main_currentPlayer
 	lda @playerPalette,x
@@ -112,8 +114,6 @@ gamestate01:;void(currentPlayer, currentScene)
 	jsr Speed_setLevel
 	jsr OAM_initSprite0
 	jsr PPU_resetScroll
-	jsr APU_init
-	jsr APU_setSong
 	jsr enableRendering;()
 	lda #GAMESTATE02
 	sta Gamestate_current
@@ -234,5 +234,4 @@ gamestate06:
 gamestate07:
 	jsr PPU_updateScroll
 	jsr APU_advance 
-
 	rts
