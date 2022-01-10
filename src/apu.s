@@ -1,6 +1,10 @@
 .include "apu.h"
 .include "lib.h"
 
+CHANNEL_VOL = $4000;Duty / volume for all channels
+CHANNEL_SWEEP = $4001;Sweep control for all channels
+CHANNEL_LO = $4002;Low byte of period for all channels
+CHANNEL_HI = $4003;High byte of period for all channels
 ;apu registers
 SQ1_VOL = $4000;Duty and volume for square wave 1
 SQ1_SWEEP = $4001;Sweep control register for square wave 1
@@ -23,45 +27,24 @@ DMC_LEN = $4013;Length of DMC waveform is $10*$xx + 1 bytes (128*$xx + 8 samples
 SND_CHN = $4015;Sound channels enable and status
 
 .zeropage
-m: .res 1
-SQ1_loopPointer: .res 2
-SQ1_trackPointer: .res 2
-SQ1_loopIndex: .res 1
-SQ1_trackIndex: .res 1
-SQ1_ctrl: .res 1
-SQ1_loopVolume: .res 1
-SQ1_envelopeVolume: .res 1
-SQ1_envelopeIndex: .res 1
-SQ1_sweep: .res 1
-SQ1_length: .res 1
-SQ1_rest: .res 1
-SQ1_envelopePtr: .res 2
-SQ1_envelopeRest: .res 1
+MAX_TRACKS=4
+tracks: .res MAX_TRACKS
+trackPtr: .res 2
+trackIndex: .res MAX_TRACKS
+loops: .res MAX_TRACKS
+loopPtr: .res 2
+note:.res MAX_TRACKS
+rest:.res MAX_TRACKS
+loopIndex: .res MAX_TRACKS
+length:.res MAX_TRACKS-1
+notePeriod:.res MAX_TRACKS-1
+state: .res MAX_TRACKS-2
+instrument: .res MAX_TRACKS-2
+maxVolume: .res MAX_TRACKS-2
+currentVolume: .res MAX_TRACKS-2
+targetVolume: .res MAX_TRACKS-2
 
-SQ2_loopPointer: .res 2
-SQ2_trackPointer: .res 2
-SQ2_loopIndex: .res 1
-SQ2_trackIndex: .res 1
-SQ2_ctrl: .res 1
-SQ2_loopVolume: .res 1
-SQ2_sweep: .res 1
-SQ2_length: .res 1
-SQ2_rest: .res 1
 
-Tri_loopPointer: .res 2
-Tri_trackPointer: .res 2
-Tri_loopIndex: .res 1
-Tri_trackIndex: .res 1
-Tri_length: .res 1
-Tri_rest: .res 1
-
-DPCM_trackPointer: .res 2
-DPCM_loopPointer: .res 2
-DPCM_loopIndex: .res 1
-DPCM_trackIndex: .res 1
-DPCM_rest: .res 1
-
-.data
 
 .code
 APU_init:
@@ -86,360 +69,267 @@ APU_init:
         .byte $30,$00,$00,$00
         .byte $00,$00,$00,$00
 APU_setSong:;void(x)
-;stage to set
-	ldx #0;force arg 0
-;zero out loop counters
-	ldy #0
-	sty SQ1_loopIndex
-	sty SQ1_trackIndex
-	sty SQ1_length
-	sty SQ1_rest
-	sty SQ1_envelopeIndex
-	sty SQ1_envelopeRest
-	sty SQ2_loopIndex
-	sty SQ2_trackIndex
-	sty SQ2_length
-	sty SQ2_rest
-	sty Tri_loopIndex
-	sty Tri_trackIndex
-	sty Tri_length
-	sty Tri_rest
-	sty DPCM_loopIndex
-	sty DPCM_trackIndex
-	sty DPCM_rest
-;get sq1 track
-	ldx #00
-	ldy #00
-	lda tracks_L,x
-	sta SQ1_trackPointer
-	lda tracks_H,x
-	sta SQ1_trackPointer+1
-	lda (SQ1_trackPointer),y;get loop
-	tax
-	lda loops_L,x
-	sta SQ1_loopPointer
-	lda loops_H,x
-	sta SQ1_loopPointer+1
-	iny
-	lda (SQ1_trackPointer),y;get instrument
-	tax
-	lda instCtrl,x
-	sta SQ1_ctrl
-	lda instSweep,x
-	sta SQ1_sweep
-	lda instEnvelope_L,x
-	sta SQ1_envelopePtr
-	lda instEnvelope_H,x
-	sta SQ1_envelopePtr+1
-	iny
-	lda (SQ1_trackPointer),y;get volume
-	sta SQ1_loopVolume
-	sta SQ1_envelopeVolume
-	iny
-	sty SQ1_trackIndex
+	ldx #0
+	lda songsSQ1,x
+	sta tracks
+	lda songsSQ2,x
+	sta tracks+1
+	lda songsTri,x
+	sta tracks+2
+	lda songsDPCM,x
+	sta tracks+3
 
-	rts
-;get sq2 track
-	ldx #1;track 1
-	ldy #0;beginning of track
-	lda tracks_L,x;save track pointer
-	sta SQ2_trackPointer
-	lda tracks_H,x
-	sta SQ2_trackPointer+1
-	lda (SQ2_trackPointer),y;get inst
-	tax
-	lda instCtrl,x
-	sta SQ2_ctrl
-	lda instSweep,x
-	sta SQ2_sweep
-	iny
-	lda (SQ2_trackPointer),y;get loop
-	iny
-	sty SQ2_trackIndex;save index first
+	ldx #1;2 squares
+@setupSquare:
+	lda tracks,x
 	tay
-	lda loops_L,y;save loop pointer
-	sta SQ2_loopPointer
-	lda loops_H,y
-	sta SQ2_loopPointer+1
-;triange setup
-	ldx #2;track 2
-	ldy #0;beginning of track
-	lda tracks_L,x;save track pointer
-	sta Tri_trackPointer
-	lda tracks_H,x
-	sta Tri_trackPointer+1
-	lda (Tri_trackPointer),y;get loop
+	lda tracks_L,y
+	sta trackPtr
+	lda tracks_H,y
+	sta trackPtr+1
+	ldy #0
+	lda (trackPtr),y
+	sta loops,x
 	iny
-	sty Tri_trackIndex;save index first
-	tay
-	lda loops_L,y;save loop pointer
-	sta Tri_loopPointer
-	lda loops_H,y
-	sta Tri_loopPointer+1
-;DPCM setup  
-	ldx #3;track 2
-	ldy #0;beginning of track
-	lda tracks_L,x;save track pointer
-	sta DPCM_trackPointer
-	lda tracks_H,x
-	sta DPCM_trackPointer+1
-	lda (DPCM_trackPointer),y;get loop
+	lda (trackPtr),y;get new instrument
+	sta instrument,x
 	iny
-	sty DPCM_trackIndex;save index first
-	tay
-	lda loops_L,y;save loop pointer
-	sta DPCM_loopPointer
-	lda loops_H,y
-	sta DPCM_loopPointer+1
+	lda (trackPtr),y;get new volume
+	sta maxVolume,x
+	iny
+	sty trackIndex,x
+	dex
+	bpl @setupSquare
+
+	lda #0
+	ldy #MAX_TRACKS-1
+@clearMem1:
+	sta note,y
+	sta loopIndex,y
+	sta rest,y
+	dey
+	bpl @clearMem1
+	ldy #MAX_TRACKS-2
+@clearMem2:
+	sta length,y
+	dey
+	bpl @clearMem2
+	ldy #MAX_TRACKS-3
+@clearMem3:
+	sta currentVolume,y
+	sta targetVolume,y
 	rts
 
 APU_advance:
-@updateS1:
-	lda SQ1_length
-	beq @SQ1_checkRest;the note has stopped playing
-		lda SQ1_envelopeRest
-		bne @SQ1_envelopeIsResting;envelope doesnt need update
-			ldy SQ1_envelopeIndex
-			clc
-			lda (SQ1_envelopePtr),y;adjust envelope volume
-			adc SQ1_envelopeVolume
-			bpl @SQ1positive
-				lda #0;Clamp at lower range 0
-				jmp @withinRange
-		@SQ1positive:
-			cmp #15;clamp at higher range 15
-			bcc @withinRange
-				lda #15
-		@withinRange:
-			sta SQ1_envelopeVolume;save the persistent volume
-			ora SQ1_ctrl
-			sta SQ1_VOL;load it in
-			iny
-			lda (SQ1_envelopePtr),y;frames til envelope update
-			sta SQ1_envelopeRest
-			iny
-			sty SQ1_envelopeIndex;save envelope index
-	@SQ1_envelopeIsResting:
-		dec SQ1_envelopeRest
-		dec SQ1_length
-		jmp @updateS2
-@SQ1_checkRest:
-	lda SQ1_rest
+	ldx #1;start with sq 1
+@squareLoop:
+	lda length,x;see if note is still playing
+	beq @checkRest
+		dec length,x
+		lda	#>(@next-1)
+		pha
+		lda	#<(@next-1)
+		pha
+		ldy state,x;attack,decay,sustain,vibrato
+		lda @states_H,y
+		pha
+		lda @states_L,y
+		pha
+		rts
+@checkRest:
+	lda rest,x
 	beq @newNote
-		;silence channel
-		lda #%10110000
-		sta SQ1_VOL 
-		dec SQ1_rest
-		jmp @updateS2
+		jsr Note_release
+		jmp @next	
 @newNote:
-	ldy SQ1_loopIndex
-	lda (SQ1_loopPointer),y
-	bne @loopContinues
-		ldy SQ1_trackIndex
-		lda (SQ1_trackPointer),y;get loop
-		bne @sq1TrackContinues;null terminated
-			ldy #0	
-			lda (SQ1_trackPointer),y;start over
-	@sq1TrackContinues:
-		tax
-		lda loops_L,x
-		sta SQ1_loopPointer
-		lda loops_H,x
-		sta SQ1_loopPointer+1
-		iny
-		lda (SQ1_trackPointer),y;get instrument
-		tax
-		lda instCtrl,x
-		sta SQ1_ctrl
-		lda instSweep,x	
-		sta SQ1_sweep
-		lda instEnvelope_L,x
-		sta SQ1_envelopePtr
-		lda instEnvelope_H,x
-		sta SQ1_envelopePtr+1
-		iny
-		lda (SQ1_trackPointer),y;get the volume
-		sta SQ1_loopVolume;this is starting vol for notes
-		sta SQ1_envelopeVolume;inst envelope changing vol
-		iny
-		sty SQ1_trackIndex;save the pos in track
-		ldy #0;reset index of loop
-		lda (SQ1_loopPointer),y;get the first note
-@loopContinues:
-	tax;play a note
-	lda SQ1_loopVolume
-	sta SQ1_envelopeVolume
-	ora SQ1_ctrl
-	sta SQ1_VOL
-	lda SQ1_sweep
-	sta SQ1_SWEEP
-	lda periodTable_L,x
-	sta SQ1_LO
-	lda periodTable_H,x
-	sta SQ1_HI
-	iny;set length
-	lda (SQ1_loopPointer),y
-	sta SQ1_length
-	dec SQ1_length
-	iny;set rest
-	lda (SQ1_loopPointer),y
-	sta SQ1_rest
-	iny;advance loop
-	sty SQ1_loopIndex
-	lda #0
-	sta SQ1_envelopeIndex
-	sta SQ1_envelopeRest
-@updateS2:
+	jsr getNewNote;(x)
+@next:
+	dex
+	bpl @squareLoop
 	rts
-	lda SQ2_length
-	bne @SQ2stillPlaying
-		lda SQ2_rest
-		bne @SQ2stillResting
-			ldy SQ2_loopIndex
-			lda (SQ2_loopPointer),y
-			bne @SQ2loopContinues;terminate with null
-				ldy SQ2_trackIndex
-				lda (SQ2_trackPointer),y;get instrument
-				bne @sq2TrackContinues;null terminated
-					ldy #0	
-					lda (SQ2_trackPointer),y;start over
-			@sq2TrackContinues:
-				tax
-				lda instCtrl,x
-				sta SQ2_ctrl
-				lda instSweep,x;get the sweep
-				sta SQ2_sweep
-				iny
-				lda (SQ2_trackPointer),y;get the loop
-				iny
-				sty SQ2_trackIndex;save pos in track
-				tay
-				lda loops_L,y
-				sta SQ2_loopPointer
-				lda loops_H,y
-				sta SQ2_loopPointer+1
-				ldy #0;reset index
-				sty SQ2_loopIndex
-				lda (SQ2_loopPointer),y;get first note
-		@SQ2loopContinues:
-			tax;play a note
-			lda SQ2_ctrl
-			sta SQ2_VOL
-			lda SQ2_sweep
-			sta SQ2_SWEEP
-			lda periodTable_L,x
-			sta SQ2_LO
-			lda periodTable_H,x
-			sta SQ2_HI
-			iny
-			lda (SQ2_loopPointer),y;get length
-			sta SQ2_length
-			dec SQ2_length
-			iny
-			lda (SQ2_loopPointer),y;get rest
-			sta SQ2_rest
-			iny;advance loop
-			sty SQ2_loopIndex
-			jmp @updateTri
-@SQ2stillPlaying:
-	dec SQ2_length
-	jmp @updateTri
-@SQ2stillResting:
-;silence channel
-	lda #$30;mutes channel
-	sta SQ2_VOL 
-	dec SQ2_rest
-@updateTri:
-	lda Tri_length
-	bne @triStillPlaying
-		lda Tri_rest
-		bne @triStillResting
-			ldy Tri_loopIndex
-			lda (Tri_loopPointer),y
-			bne @triLoopContinues;null terminate
-				ldy Tri_trackIndex;get new loop
-				lda (Tri_trackPointer),y;get the loop
-				bne @triTrackContinues
-					ldy #0	
-					lda (Tri_trackPointer),y;start over
-			@triTrackContinues:
-				iny
-				sty Tri_trackIndex;save the pos in track
-				tay
-				lda loops_L,y
-				sta Tri_loopPointer
-				lda loops_H,y
-				sta Tri_loopPointer+1
-				ldy #0;reset index
-				sty Tri_loopIndex
-				lda (Tri_loopPointer),y;get the first note
-		@triLoopContinues:
-			tax;play a note
-			lda periodTable_L,x
-			sta TRI_LO
-			lda periodTable_H,x
-			sta TRI_HI
-			iny
-			lda (Tri_loopPointer),y;set length
-			sta Tri_length
-			dec Tri_length
-			iny
-			lda (Tri_loopPointer),y;set rest
-			sta Tri_rest
-			lda #$ff;plays infinitely
-			sta TRI_LINEAR
-			iny
-			sty Tri_loopIndex;advance loop
-			jmp @updateDPCM
-@triStillPlaying:
-	dec Tri_length
-	jmp @updateDPCM
-@triStillResting:
-;silence channel
-	lda #%10000000
-	sta TRI_LINEAR
-	dec Tri_rest
-@updateDPCM:
-	lda DPCM_rest
-	bne @DPCMStillPlaying
-		ldy DPCM_loopIndex
-		lda (DPCM_loopPointer),y
-		bne @DPCMLoopContinues
-			ldy DPCM_trackIndex;get new loop
-			lda (DPCM_trackPointer),y;get the loop
-			bne @DPCMTrackContinues
-				ldy #0	
-				lda (DPCM_trackPointer),y;start over
-		@DPCMTrackContinues:
-			iny
-			sty DPCM_trackIndex;save the pos in track
-			tay
-			lda loops_L,y
-			sta DPCM_loopPointer
-			lda loops_H,y
-			sta DPCM_loopPointer+1
-			ldy #0;reset index
-			lda (DPCM_loopPointer),y;get the first sample
-		@DPCMLoopContinues:
-		tax
-		lda Samples_address,x
-		sta DMC_START 
-		lda Samples_length,x
-		sta DMC_LEN 
-		lda #$f
-		sta DMC_FREQ 
+@states_H:
+	.byte >(Note_attack-1), >(Note_decay-1), >(Note_sustain-1)
+@states_L:
+	.byte <(Note_attack-1), <(Note_decay-1), <(Note_sustain-1)
+
+getNewNote:
+	ldy loops,x;get the channel loop
+	lda loops_L,y;setup pointer
+	sta loopPtr
+	lda loops_H,y
+	sta loopPtr+1
+	ldy loopIndex,x;get the index
+	lda (loopPtr),y;get note
+	bne @loopContinues;loops are null terminated
+		ldy tracks,x
+		lda tracks_L,y
+		sta trackPtr
+		lda tracks_H,y
+		sta trackPtr+1
+		ldy trackIndex,x;get place in song
+		lda (trackPtr),y;get new loop
+		bne @trackContinues;tracks are null terminated
+			ldy #0
+			lda (trackPtr),y;get first loop
+	@trackContinues:
+		sta loops,x
 		iny
-		lda (DPCM_loopPointer),y;get the rest
-		sta DPCM_rest
+		lda (trackPtr),y;get new instrument
+		sta instrument,x
 		iny
-		sty DPCM_loopIndex;save the index
-		lda #%11111
-		sta SND_CHN
-@DPCMStillPlaying:
-	dec DPCM_rest
+		lda (trackPtr),y;get new volume
+		sta maxVolume,x
+		iny
+		sty trackIndex,x;save place in song
+		ldy loops,x;get the channel loop
+		lda loops_L,y;setup pointer
+		sta loopPtr
+		lda loops_H,y
+		sta loopPtr+1
+		ldy #0;start at beginning of loop
+		lda (loopPtr),y;get note
+@loopContinues:
+	sta note,x
+	iny
+	lda (loopPtr),y;get play duration
+	sta length,x
+	dec length,x;this frame counts
+	iny
+	lda (loopPtr),y;get rest duration
+	sta rest,x
+	iny
+	sty loopIndex,x;save the index
+	lda #0
+	sta state,x;note in attack state (00)
+	ldy note,x
+	lda periodTable_H,y
+	pha
+	lda periodTable_L,y
+	pha
+	ldy instrument,x
+	lda instSweep,y
+	pha
+	lda instAttack,y
+	cmp maxVolume,x
+	bcc :+
+		lda maxVolume,x
+		inc state,x
+	:sta currentVolume,x
+	ora instDuty,y
+	pha
+	txa
+	asl
+	asl
+	tay
+	pla
+	sta CHANNEL_VOL,y
+	pla
+	sta CHANNEL_SWEEP,y 
+	pla
+	sta CHANNEL_LO,y
+	pla
+	sta CHANNEL_HI,y 
+	rts	
+
+Note_attack:
+	ldy instrument,x
+	clc
+	lda currentVolume,x
+	adc instAttack,y
+	cmp maxVolume,x
+	bcc :+
+		lda maxVolume,x
+		inc state,x
+	:sta currentVolume,x
+	ora instDuty,y
+	pha
+	txa
+	asl
+	asl
+	tay
+	pla
+	sta CHANNEL_VOL,y
+	rts
+Note_decay:
+	ldy instrument,x
+	sec
+	lda maxVolume,x
+	sbc instSustain,y
+	bcs :+
+		sec
+		lda #0
+	:sta targetVolume,x
+	lda currentVolume,x
+	sbc instDecay,y
+	cmp targetVolume,x
+	bcs :+
+		lda targetVolume,x
+		inc state,x
+	:sta currentVolume,x
+	ora instDuty,y
+	pha
+	txa
+	asl
+	asl
+	tay
+	pla
+	sta CHANNEL_VOL,y
+	rts
+Note_sustain:
+	ldy instrument,x
+	lda currentVolume,x
+	ora instDuty,y
+	pha
+	txa
+	asl
+	asl
+	tay
+	pla
+	sta CHANNEL_VOL,y
+	rts
+Note_release:
+	ldy instrument,x
+	sec
+	lda currentVolume,x
+	sbc instRelease,y;fade out the note a little every frame
+	bcs :+
+		lda #0;dont let volume go negative
+	:sta currentVolume,x
+	ora instDuty,y
+	pha
+	txa
+	asl
+	asl
+	tay
+	pla
+	sta CHANNEL_VOL,y
+	dec rest,x
+	rts
+	ldy note,x
+	lda periodTable_L,y
+	pha
+	ldy instrument,x
+	lda currentVolume,x
+	ora instDuty,y
+	pha
+	txa
+	asl
+	asl
+	tay
+	pla
+	sta CHANNEL_VOL,y
+	pla
+	sta CHANNEL_LO,y
 	rts
 .rodata	
-
+songsSQ1:
+	.byte TRACK00
+songsSQ2:
+	.byte TRACK01
+songsTri:
+	.byte TRACK02
+songsDPCM:
+	.byte TRACK03
 TRACK00=$00;s1 sq1
 TRACK01=$01;s1 sq2
 TRACK02=$02;s1 tri
@@ -450,24 +340,24 @@ tracks_L:
 	.byte <track00, <track01, <track02 ,<track03 
 
 track00:;loop, instrument, volume
-	.byte LOOP0A, INST00, 00 
-	.byte LOOP01, INST00, 00 
-	.byte LOOP0A, INST00, 00 
-	.byte LOOP02, INST00, 00
-	.byte LOOP0A, INST00, 00
-	.byte LOOP01, INST00, 00 
-	.byte LOOP0A, INST00, 00 
-	.byte LOOP02, INST00, 00 
+	.byte LOOP0A, INST00, 10 
+	.byte LOOP01, INST00, 10 
+	.byte LOOP0A, INST00, 10 
+	.byte LOOP02, INST00, 10
+	.byte LOOP0A, INST00, 10
+	.byte LOOP01, INST00, 10 
+	.byte LOOP0A, INST00, 10 
+	.byte LOOP02, INST00, 10 
 	.byte NULL
 track01:
-	.byte LOOP03, INST00,5  
-	.byte LOOP04, INST00,5  
-	.byte LOOP03, INST00,5  
-	.byte LOOP05, INST00,5  
-	.byte LOOP03, INST00,5  
-	.byte LOOP04, INST00,5  
-	.byte LOOP03, INST00,5  
-	.byte LOOP05, INST00,5  
+	.byte LOOP03, INST00, 10
+	.byte LOOP04, INST00, 10
+	.byte LOOP03, INST00, 10 
+	.byte LOOP05, INST00, 10 
+	.byte LOOP03, INST00, 10
+	.byte LOOP04, INST00, 10
+	.byte LOOP03, INST00, 10
+	.byte LOOP05, INST00, 10
 	.byte NULL
 track02:
 	.byte LOOP06, LOOP07, LOOP06, LOOP08
@@ -555,27 +445,27 @@ loop0A:
 	.byte Gb3,12, 3, E3, 12, 6
 	.byte D3,12, 3, Db3,12, 3
 	.byte NULL
-DUTY00=%00
-DUTY01=%01
-DUTY02=%10
-DUTY03=%11
-CONSTANT=%1
-LOOP=%1
+DUTY00=%00110000
+DUTY01=%01110000
+DUTY02=%10110000
+DUTY03=%11110000
 SWEEP_DISABLE=%0
 SWEEP_ENABLE=%1
-LENGTH_DISABLE=%0
+CONSTANT=%110000
 INST00=$00
-instCtrl:;ddlc vvvv
-	.byte (DUTY02<<6)|%110000
+instDuty:;ddlc vvvv
+	.byte DUTY02
 instSweep:;eppp nsss
 	.byte (SWEEP_DISABLE<<7)
-instEnvelope_L:
-	.byte <envelope00
-instEnvelope_H:
-	.byte >envelope00
+instAttack:
+	.byte 15
+instDecay:
+	.byte 5
+instSustain:;volume minus number below
+	.byte 5
+instRelease:
+	.byte 3
 
-envelope00:
-	.byte 5, 1, 5, 1, 5, 1, 5, 1,1, 1,  <-3, 1,<-3 , 1,<-3 , 10
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
 KICK_LENGTH=%10000
 SNARE_ADDRESS= <(( DPCM_snare  - $C000) >> 6)
