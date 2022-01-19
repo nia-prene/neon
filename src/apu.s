@@ -79,8 +79,10 @@ APU_setSong:;void(x)
 	sta tracks+1
 	lda songsTri,x
 	sta tracks+2
-	lda songsDPCM,x
+	lda songsNoise,x
 	sta tracks+3
+	lda songsDPCM,x
+	sta tracks+4
 
 	ldx #4;4 tracks
 @setupSquare:
@@ -117,7 +119,7 @@ APU_setSong:;void(x)
 	rts
 
 APU_advance:
-	ldx #2
+	ldx #3
 @squareLoop:
 	lda length,x;see if note is still playing
 	beq @checkRest
@@ -355,16 +357,19 @@ songsSQ2:
 	.byte TRACK01
 songsTri:
 	.byte TRACK02
+songsNoise:
+	.byte TRACK04
 songsDPCM:
 	.byte TRACK03
 TRACK00=$00;s1 sq1
 TRACK01=$01;s1 sq2
 TRACK02=$02;s1 tri
 TRACK03=$03;s1 dpcm
+TRACK04=$04;s1 noise
 tracks_H:
-	.byte >track00, >track01, >track02, >track03
+	.byte >track00, >track01, >track02, >track03, >track04
 tracks_L:
-	.byte <track00, <track01, <track02 ,<track03 
+	.byte <track00, <track01, <track02, <track03, <track04 
 
 track00:;loop, instrument, volume
 ;chorus
@@ -412,7 +417,9 @@ track02:
 track03:
 	.byte LOOP09, LOOP09, LOOP09, LOOP09
 	.byte NULL
-
+track04:
+	.byte LOOP0F, INST03, 08
+	.byte NULL
 LOOP01=$01;s1 sq1 chorus 2
 LOOP02=$02;s1 sq1 chorus 3
 LOOP03=$03;s1 sq2 chorus 1
@@ -427,11 +434,11 @@ LOOP0B=$0b;s1 sq1 chorus 1 bend up
 LOOP0C=$0c;s1 sq1 chorus 1 continued
 LOOP0D=$0d;s1 sq2 chorus 1 bend up
 LOOP0E=$0e;s1 sq2 chorus 1 continued
-
+LOOP0F=$0f;s1 high hats
 loops_H:
-	.byte NULL, >loop01, >loop02, >loop03, >loop04, >loop05, >loop06, >loop07, >loop08, >loop09, >loop0A, >loop0B, >loop0C ,>loop0D, >loop0E 
+	.byte NULL, >loop01, >loop02, >loop03, >loop04, >loop05, >loop06, >loop07, >loop08, >loop09, >loop0A, >loop0B, >loop0C ,>loop0D, >loop0E , >loop0F 
 loops_L:
-	.byte NULL, <loop01, <loop02, <loop03, <loop04, <loop05, <loop06, <loop07, <loop08, <loop09, <loop0A, <loop0B, <loop0C, <loop0D, <loop0E
+	.byte NULL, <loop01, <loop02, <loop03, <loop04, <loop05, <loop06, <loop07, <loop08, <loop09, <loop0A, <loop0B, <loop0C, <loop0D, <loop0E, <loop0F
 	
 loop01:
 	.byte D3,12, 0, E3, 6, 0
@@ -503,37 +510,38 @@ loop0E:
 	.byte Db4,12, 3, A3,12, 6
 	.byte Gb3,12, 3, E3,12, 3
 	.byte NULL
+loop0F:
+	.byte N00, 3, 9
+	.byte NULL
 DUTY00=%00110000
 DUTY01=%01110000
 DUTY02=%10110000
 DUTY03=%11110000
-SWEEP_DISABLE=%0
-SWEEP_ENABLE=%1
-CONSTANT=%110000
 INST00=$00;s1 lead guitar
 INST01=$01;s1 lead guitar bend up one half step 
 INST02=$02;bass triangle
+INST03=$03;high hat open
 instDuty:;ddlc vvvv
-	.byte DUTY02, DUTY02, %10000000
+	.byte DUTY02, DUTY02, %10000000, %00110000
 instAttack_H:
-	.byte 8, 8, 15
+	.byte 8, 8, 15, 08
 instAttack_L:
-	.byte 0, 0, 0
+	.byte 0, 0, 0, 0
 instDecay:
-	.byte 5, 5, 0
+	.byte 5, 5, 0, 3
 instSustain:;volume minus number below
-	.byte 3, 3, 0
+	.byte 3, 3, 0, 3
 instRelease_H:
-	.byte 1, 1, 15
+	.byte 1, 1, 15, 0
 instRelease_L:
-	.byte 0, 0, 0
+	.byte 0, 0, 0, 64
 instBend:
 ;vnrr raaa 
 ;v - vibrato (disregards nra)
 ;n - negative chane  (going higher)
 ;r - rate of change (hex) 
 ;a - amount of change (half-steps)
-	.byte 0, %01100001, 0
+	.byte 0, %01100001, 0, 0
 
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
 KICK_LENGTH=%10000
@@ -627,22 +635,38 @@ Db7=$4d
 D7=$4e
 Eb7=$4f
 E7=$50
-F7=$51
-Gb7=$52
-G7=$53
-Ab7=$54
-A7=$55
-Bb7=$56
-B7=$57
-C8=$58
-Db8=$59
-D8=$5a
-Eb8=$5b
-E8=$5c
-F8=$5d
-Gb8=$5e
-G8=$5f
-Ab8=$60
+N00=$51
+N01=$52
+N02=$53
+N03=$54
+N04=$55
+N05=$56
+N06=$57
+N07=$58
+N08=$59
+N09=$5a
+N0A=$5b
+N0B=$5c
+N0C=$5d
+N0D=$5e
+N0E=$5f
+N0F=$60
+N10=$61;
+N11=$62
+N12=$63
+N13=$64
+N14=$65
+N15=$66
+N16=$67
+N17=$68
+N18=$69
+N19=$6a
+N1A=$6b
+N1B=$6c
+N1C=$6d
+N1D=$6e
+N1E=$6f
+N1F=$70
 periodTable_L:
   .byte NULL,$f1,$7f,$13,$ad,$4d,$f3,$9d,$4c,$00,$b8,$74,$34
   .byte $f8,$bf,$89,$56,$26,$f9,$ce,$a6,$80,$5c,$3a,$1a
@@ -650,7 +674,10 @@ periodTable_L:
   .byte $fd,$ef,$e1,$d5,$c9,$bd,$b3,$a9,$9f,$96,$8e,$86
   .byte $7e,$77,$70,$6a,$64,$5e,$59,$54,$4f,$4b,$46,$42
   .byte $3f,$3b,$38,$34,$31,$2f,$2c,$29,$27,$25,$23,$21
-  .byte $1f,$1d,$1b,$1a,$18,$17,$15,$14
+  .byte $1f,$1d,$1b,$1a,$18,$17,$15,$14,$00,$01,$02,$03
+  .byte $04,$05,$06,$07,$08,$09,$0a,$0b,$0c,$0d,$0e,$0f
+  .byte $80,$81,$82,$83,$84,$85,$86,$87,$88,$89,$8a,$8b
+  .byte $8c,$8d,$8e,$8f
 periodTable_H:
   .byte NULL, $07,$07,$07,$06,$06,$05,$05,$05,$05,$04,$04,$04
   .byte $03,$03,$03,$03,$03,$02,$02,$02,$02,$02,$02,$02
