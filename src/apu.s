@@ -84,7 +84,7 @@ APU_setSong:;void(x)
 	lda songsDPCM,x
 	sta tracks+4
 
-	ldx #4;4 tracks
+	ldx #3;4 tracks
 @setupSquare:
 	lda tracks,x
 	tay
@@ -106,20 +106,34 @@ APU_setSong:;void(x)
 	dex
 	bpl @setupSquare
 
+	ldx #4
+@setupDMC:
+	lda tracks,x
+	tay
+	lda tracks_L,y
+	sta trackPtr
+	lda tracks_H,y
+	sta trackPtr+1
+	ldy #0
+	lda (trackPtr),y
+	sta loops,x
+	iny
+	sty trackIndex,x
+	
 	lda #0
 	ldy #MAX_TRACKS-1
 @clearMem1:
-	sta note,y
 	sta loopIndex,y
 	sta rest,y
 	sta length,y
-	sta currentVolume_L,y
-	sta currentVolume_H,y
-	sta targetVolume,y
+	dey
+	bpl @clearMem1
+	sta loopIndex+4
+	sta rest+4
 	rts
 
 APU_advance:
-	ldx #3
+	ldx #2
 @squareLoop:
 	lda length,x;see if note is still playing
 	beq @checkRest
@@ -145,7 +159,14 @@ APU_advance:
 @next:
 	dex
 	bpl @squareLoop
-	rts
+@updateSample:
+	ldx #4
+	lda rest,x
+	beq @newSample
+		dec rest,x
+		rts
+@newSample:
+	jmp getNewSample
 @states_H:
 	.byte >(Note_attack-1), >(Note_decay-1), >(Note_sustain-1)
 @states_L:
@@ -206,8 +227,9 @@ getNewNote:
 	lda periodTable_L,y
 	sta currentPeriod,x;save low byte of period for pitch
 	pha
-	lda #0;disable sweep
+	lda #0
 	sta state,x;note in attack state while we have 00
+	lda #$7f;disable sweep
 	pha
 	ldy instrument,x;get the initial volume level
 	lda instAttack_L,y
@@ -229,6 +251,54 @@ getNewNote:
 	sta CHANNEL_HI,y 
 	rts	
 
+getNewSample:
+	ldy loops,x;get the channel loop
+	lda loops_L,y;setup pointer
+	sta loopPtr
+	lda loops_H,y
+	sta loopPtr+1
+	ldy loopIndex,x;get the index
+	lda (loopPtr),y;get note
+	bne @loopContinues;loops are null terminated
+		ldy tracks,x
+		lda tracks_L,y
+		sta trackPtr
+		lda tracks_H,y
+		sta trackPtr+1
+		ldy trackIndex,x;get place in song
+		lda (trackPtr),y;get new loop
+		bne @trackContinues;tracks are null terminated
+			ldy #0
+			lda (trackPtr),y;get first loop
+	@trackContinues:
+		sta loops,x
+		iny
+		sty trackIndex,x;save place in song
+		ldy loops,x;get the channel loop
+		lda loops_L,y;setup pointer
+		sta loopPtr
+		lda loops_H,y
+		sta loopPtr+1
+		ldy #0;start at beginning of loop
+		lda (loopPtr),y;get sample
+@loopContinues:
+	sta note,x
+	iny
+	lda (loopPtr),y;get rest duration
+	sta rest,x
+	dec rest,x;this note counts
+	iny
+	sty loopIndex,x;save the index
+	ldy note,x
+	lda #$f
+	sta DMC_FREQ
+	lda Samples_length,y
+	sta DMC_LEN	
+	lda Samples_address,y
+	sta DMC_START
+	lda #%11111
+	sta SND_CHN
+	rts	
 Note_attack:
 	ldy instrument,x
 	clc
@@ -352,26 +422,34 @@ Note_bend:
 	rts
 .rodata	
 songsSQ1:
-	.byte TRACK00
-songsSQ2:
 	.byte TRACK01
-songsTri:
+songsSQ2:
 	.byte TRACK02
-songsNoise:
-	.byte TRACK04
-songsDPCM:
+songsTri:
 	.byte TRACK03
-TRACK00=$00;s1 sq1
-TRACK01=$01;s1 sq2
-TRACK02=$02;s1 tri
-TRACK03=$03;s1 dpcm
-TRACK04=$04;s1 noise
+songsNoise:
+	.byte TRACK05
+songsDPCM:
+	.byte TRACK04
+TRACK01=$01;s1 sq1
+TRACK02=$02;s1 sq2
+TRACK03=$03;s1 tri
+TRACK04=$04;s1 dpcm
+TRACK05=$05;s1 noise
 tracks_H:
-	.byte >track00, >track01, >track02, >track03, >track04
+	.byte NULL, >track01, >track02, >track03, >track04, >track05
 tracks_L:
-	.byte <track00, <track01, <track02, <track03, <track04 
+	.byte NULL, <track01, <track02, <track03, <track04, <track05 
 
-track00:;loop, instrument, volume
+track01:;loop, instrument, volume
+	.byte LOOP10, INST04, 08
+	.byte LOOP11, INST04, 08
+	.byte LOOP10, INST04, 08
+	.byte LOOP12, INST04, 08
+	.byte LOOP13, INST04, 08
+	.byte LOOP11, INST04, 08
+	.byte LOOP10, INST04, 08
+	.byte LOOP14, INST04, 08
 ;chorus
 	.byte LOOP0A, INST00, 08
 	.byte LOOP0B, INST01, 08
@@ -390,7 +468,13 @@ track00:;loop, instrument, volume
 	.byte LOOP0C, INST00, 08
 	.byte LOOP02, INST00, 08
 	.byte NULL
-track01:
+track02:
+;verse
+	.byte LOOP15, INST05, 08
+	.byte LOOP16, INST04, 08
+	.byte LOOP17, INST05, 08
+	.byte LOOP18, INST04, 08
+;chorus
 	.byte LOOP03, INST00, 08
 	.byte LOOP0D, INST01, 08
 	.byte LOOP0E, INST00, 08
@@ -408,18 +492,24 @@ track01:
 	.byte LOOP0E, INST00, 08
 	.byte LOOP05, INST00, 08
 	.byte NULL
-track02:
+track03:
+	.byte LOOP19, INST02, 15
+	.byte LOOP06, INST02, 15
+	.byte LOOP07, INST02, 15
+	.byte LOOP06, INST02, 15
+	.byte LOOP08, INST02, 15
 	.byte LOOP06, INST02, 15
 	.byte LOOP07, INST02, 15
 	.byte LOOP06, INST02, 15
 	.byte LOOP08, INST02, 15
 	.byte NULL
-track03:
+track04:
 	.byte LOOP09, LOOP09, LOOP09, LOOP09
 	.byte NULL
-track04:
-	.byte LOOP0F, INST03, 08
+track05:
+	.byte LOOP0F, INST03, 10
 	.byte NULL
+;LOOPS
 LOOP01=$01;s1 sq1 chorus 2
 LOOP02=$02;s1 sq1 chorus 3
 LOOP03=$03;s1 sq2 chorus 1
@@ -435,10 +525,28 @@ LOOP0C=$0c;s1 sq1 chorus 1 continued
 LOOP0D=$0d;s1 sq2 chorus 1 bend up
 LOOP0E=$0e;s1 sq2 chorus 1 continued
 LOOP0F=$0f;s1 high hats
+LOOP10=$10;S1 verse vibrato high
+LOOP11=$11;S1 verse lead 1
+LOOP12=$12;S1 verse lead 2
+LOOP13=$13;S1 verse vibrato lo
+LOOP14=$14;S1 verse lead 3
+LOOP15=$15;S1 verse rhythm guitar 1
+LOOP16=$16;S1 verse rhythm guitar harmony
+LOOP17=$17;S1 verse rhythm guitar 2
+LOOP18=$18;S1 verse rhythm guitar dissonance
+LOOP19=$19;S1 bass verse
+LOOP1A=$1A;
+LOOP1B=$1B;
+LOOP1C=$1C;
+LOOP1D=$1D;
+LOOP1E=$1E;
+LOOP1F=$1F;
 loops_H:
 	.byte NULL, >loop01, >loop02, >loop03, >loop04, >loop05, >loop06, >loop07, >loop08, >loop09, >loop0A, >loop0B, >loop0C ,>loop0D, >loop0E , >loop0F 
+	.byte >loop10, >loop11, >loop12, >loop13, >loop14, >loop15, >loop16, >loop17, >loop18, >loop19, >loop1A, >loop1B, >loop1C, >loop1D, >loop1E, >loop1F
 loops_L:
 	.byte NULL, <loop01, <loop02, <loop03, <loop04, <loop05, <loop06, <loop07, <loop08, <loop09, <loop0A, <loop0B, <loop0C, <loop0D, <loop0E, <loop0F
+	.byte <loop10, <loop11, <loop12, <loop13, <loop14, <loop15, <loop16, <loop17, <loop18, <loop19, <loop1A, <loop1B, <loop1C, <loop1D, <loop1E, <loop1F
 	
 loop01:
 	.byte D3,12, 0, E3, 6, 0
@@ -491,7 +599,8 @@ loop09:
 	.byte SAMPLE01, 12, SAMPLE02, 12
 	.byte SAMPLE01, 12, SAMPLE02, 12
 	.byte SAMPLE01, 12, SAMPLE02, 12
-	.byte SAMPLE01, 12, SAMPLE02, 12
+	.byte SAMPLE01, 6, SAMPLE01, 6
+	.byte SAMPLE02, 12
 	.byte NULL
 loop0A:
 	.byte B2, 12, 6 
@@ -513,35 +622,94 @@ loop0E:
 loop0F:
 	.byte N00, 3, 9
 	.byte NULL
+loop10:
+	.byte D4, 36, 24, A3, 9, 3 
+	.byte NULL
+loop11:
+	.byte D4, 3, 3
+	.byte D4, 6, 12, D4, 12,0
+	.byte A3, 6, 6, D4, 6, 0
+	.byte E4, 6, 0, Gb4, 6, 0
+	.byte E4, 12, 6, D4, 6, 6
+	.byte D4, 3, 3, D4, 6, 12
+	.byte NULL
+loop12:
+	.byte A3, 3, 3
+	.byte A3,6,12,A3,9,3,A3,6,6,G3,3,3,Gb3,6,6,E3,12,6
+	.byte D3,9,3,E3,3,3,G3,6,12
+	.byte NULL
+loop13:
+	.byte Gb3, 36,24, D3,9,3
+	.byte NULL
+loop14:
+	.byte D4,3,3,D4,6,12,D4,12,3,D4,6,3,D4,3,3
+	.byte A3,6,6,D4,12,6,Eb4,12,6,Eb4,12,6
+	.byte NULL
+loop15:
+	.byte D1,9,3,D1,3,3,D1,3,3,D1,3,3,D1,3,3,D1,3,3,D1,3,3
+	.byte E1,9,3,E1,3,3,E1,3,3,E1,3,3,E1,3,3,E1,3,3,E1,3,3
+	.byte Gb1,9,3,Gb1,3,3,Gb1,3,3,Gb1,3,3,Gb1,3,3,Gb1,3,3,Gb1,3,3
+	.byte G1,9,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3
+	.byte B1,9,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3
+	.byte G1,9,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3
+	.byte A1,9,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3
+	.byte E1,9,3,E1,3,3,E1,3,3,E1,3,3,E1,3,3,E1,3,3,E1,3,3
+	.byte D1,9,3,D1,3,3,D1,3,3,D1,3,3,D1,3,3,D1,3,3,D1,3,3
+	.byte E1,9,3,E1,3,3,E1,3,3,E1,3,3,E1,3,3,E1,3,3,E1,3,3
+	.byte NULL
+loop16:
+	.byte Gb4,12,0,D4,6,6,Gb4,6,0,A4,6,0,D5,6,0,A4,12,6
+	.byte NULL
+loop17:
+	.byte G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3
+	.byte B1,9,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3
+	.byte G1,9,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3
+	.byte NULL
+loop18:
+	.byte A3,12,3,A3,6,3,A3,3,3,D3,6,6,A3,12,6,Bb3,12,6,Bb3,12,6
+	.byte NULL
+loop19:
+	.byte D2,48,0,E2,48,0,Gb2,48,0,G2,48,0,B2,48,0,G2,48,0
+	.byte A2,48,0,E2,48,0,D2,48,0,E2,48,0,Gb2,48,0,G2,48,0
+	.byte B2,48,0,G2,48,0,A2,48,0,Bb2,48,0
+	.byte NULL
+loop1A:
+loop1B:
+loop1C:
+loop1D:
+loop1E:
+loop1F:
 DUTY00=%00110000
 DUTY01=%01110000
 DUTY02=%10110000
 DUTY03=%11110000
-INST00=$00;s1 lead guitar
-INST01=$01;s1 lead guitar bend up one half step 
+INST00=$00;s1 chorus lead guitar
+INST01=$01;s1 chorus lead guitar bend up one half step 
 INST02=$02;bass triangle
 INST03=$03;high hat open
+INST04=$04;verse lead
+INST05=$05;verse rhythm guitar
 instDuty:;ddlc vvvv
-	.byte DUTY02, DUTY02, %10000000, %00110000
+	.byte DUTY02, DUTY02, %10000000, %00110000, DUTY02, DUTY00
 instAttack_H:
-	.byte 8, 8, 15, 08
+	.byte 8, 8, 15, 15, 15, 15
 instAttack_L:
-	.byte 0, 0, 0, 0
+	.byte 0, 0, 0, 0, 00
 instDecay:
-	.byte 5, 5, 0, 3
+	.byte 5, 5, 0, 5, 2, 3
 instSustain:;volume minus number below
-	.byte 3, 3, 0, 3
+	.byte 3, 3, 0, 5, 3, 3
 instRelease_H:
-	.byte 1, 1, 15, 0
+	.byte 1, 1, 15, 0, 0, 1
 instRelease_L:
-	.byte 0, 0, 0, 64
+	.byte 0, 0, 0, 128, 128, 0
 instBend:
 ;vnrr raaa 
 ;v - vibrato (disregards nra)
 ;n - negative chane  (going higher)
 ;r - rate of change (hex) 
 ;a - amount of change (half-steps)
-	.byte 0, %01100001, 0, 0
+	.byte 0, %01101001, 0, 0, 0, 0
 
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
 KICK_LENGTH=%10000
