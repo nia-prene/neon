@@ -1128,20 +1128,6 @@ PORTRAIT_ADDRESS=$24c3
 	sta PPUDATA
 	rts
 
-PPU_renderPaletteNMI:
-;store address
-	pla
-	sta PPUADDR
-	pla
-	sta PPUADDR
-;store colors
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	rts
 .rodata
 nameTableConversionH:
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
