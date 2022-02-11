@@ -50,7 +50,7 @@ Y_START_COORD=255
 .proc Player_toStartingPos
 Y_SPEED_H=1
 Y_SPEED_L=128
-MAX_Y=144
+MAX_Y=128
 	sec
 	lda Player_yPos_L
 	sbc #Y_SPEED_L
@@ -176,12 +176,12 @@ MAX_DOWN = 204
 
 .align $80
 Player_isHit:;(void)
-PLAYER_HEIGHT=16
+PLAYER_HEIGHT=18
 MAX_BULLET_DIAMETER=16
-HITBOX_X_OFFSET=3
+HITBOX_X_OFFSET=6
 HITBOX_Y_OFFSET=12
-HITBOX_WIDTH=2
-HITBOX_HEIGHT=2
+HITBOX_WIDTH=1
+HITBOX_HEIGHT=1
 ;if player is invincible, theyre unharmed
 	lda Player_iFrames
 	bne @playerInvincible

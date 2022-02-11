@@ -87,7 +87,8 @@ OAM_build:;c (c,a)
 	rts
 
 buildHitbox:
-PLAYER_HITBOX_Y_OFFSET=5
+PLAYER_HITBOX_Y_OFFSET=10
+PLAYER_HITBOX_X_OFFSET=2
 	lda #TERMINATE;terminate
 	pha
 	lda o
@@ -103,6 +104,7 @@ PLAYER_HITBOX_Y_OFFSET=5
 	adc #PLAYER_HITBOX_Y_OFFSET
 	pha
 	lda Player_xPos_H
+	adc #PLAYER_HITBOX_X_OFFSET
 	pha
 	lda #00
 	pha

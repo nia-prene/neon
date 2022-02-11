@@ -27,15 +27,15 @@ DMC_LEN = $4013;Length of DMC waveform is $10*$xx + 1 bytes (128*$xx + 8 samples
 SND_CHN = $4015;Sound channels enable and status
 
 .zeropage
-MAX_TRACKS=5
-tracks: .res MAX_TRACKS
+MAX_TRACKS=4
+tracks: .res MAX_TRACKS+1
 trackPtr: .res 2
-trackIndex: .res MAX_TRACKS
-loops: .res MAX_TRACKS
+trackIndex: .res MAX_TRACKS+1
+loops: .res MAX_TRACKS+1
 loopPtr: .res 2
-note:.res MAX_TRACKS
-rest:.res MAX_TRACKS
-loopIndex: .res MAX_TRACKS
+loopIndex: .res MAX_TRACKS+1
+rest:.res MAX_TRACKS+1
+note:.res MAX_TRACKS+1
 length:.res MAX_TRACKS
 state: .res MAX_TRACKS
 instrument: .res MAX_TRACKS
@@ -43,11 +43,17 @@ maxVolume: .res MAX_TRACKS
 currentVolume_L: .res MAX_TRACKS
 currentVolume_H: .res MAX_TRACKS
 targetVolume: .res MAX_TRACKS
+SFXPtr: .res 2
 ;locals
 .data
 currentPeriod:.res MAX_TRACKS
 targetPeriod:.res MAX_TRACKS
-
+masterMute:.res MAX_TRACKS
+secondaryMute:.res MAX_TRACKS
+SFX_isActive:.res MAX_TRACKS
+SFX_length:.res MAX_TRACKS
+SFX_savedInstrument:.res MAX_TRACKS
+SFX_savedVolume:.res MAX_TRACKS
 
 .code
 APU_init:
@@ -126,6 +132,8 @@ APU_setSong:;void(x)
 	sta loopIndex,y
 	sta rest,y
 	sta length,y
+	sta masterMute,y
+	sta secondaryMute,y
 	dey
 	bpl @clearMem1
 	sta loopIndex+4
@@ -133,11 +141,13 @@ APU_setSong:;void(x)
 	rts
 
 APU_advance:
-	ldx #2
+	ldx #3
 @squareLoop:
 	lda length,x;see if note is still playing
 	beq @checkRest
 		dec length,x
+		lda secondaryMute,x
+		bne @next
 		lda	#>(@next-1)
 		pha
 		lda	#<(@next-1)
@@ -152,6 +162,8 @@ APU_advance:
 	lda rest,x
 	beq @newNote
 		dec rest,x
+		lda secondaryMute,x
+		bne @next
 		jsr Note_release
 		jmp @next	
 @newNote:
@@ -160,10 +172,9 @@ APU_advance:
 	dex
 	bpl @squareLoop
 @updateSample:
-	ldx #4
-	lda rest,x
+	lda rest+4
 	beq @newSample
-		dec rest,x
+		dec rest+4
 		rts
 @newSample:
 	jmp getNewSample
@@ -180,6 +191,11 @@ getNewNote:
 	sta loopPtr
 	lda loops_H,y
 	sta loopPtr+1
+	lda masterMute,x
+	sta secondaryMute,x
+	beq @noSFX
+		jmp getDummyNote
+@noSFX:
 	ldy loopIndex,x;get the index
 	lda (loopPtr),y;get note
 	bne @loopContinues;loops are null terminated
@@ -229,8 +245,6 @@ getNewNote:
 	pha
 	lda #0
 	sta state,x;note in attack state while we have 00
-	lda #$7f;disable sweep
-	pha
 	ldy instrument,x;get the initial volume level
 	lda instAttack_L,y
 	sta currentVolume_L,x
@@ -244,19 +258,13 @@ getNewNote:
 	ldy channelOffsets,x
 	sta CHANNEL_VOL,y
 	pla
-	sta CHANNEL_SWEEP,y 
-	pla
 	sta CHANNEL_LO,y
 	pla
 	sta CHANNEL_HI,y 
-	rts	
+	rts
 
-getNewSample:
-	ldy loops,x;get the channel loop
-	lda loops_L,y;setup pointer
-	sta loopPtr
-	lda loops_H,y
-	sta loopPtr+1
+getDummyNote:
+;advances tracker without playing any note or saving any data
 	ldy loopIndex,x;get the index
 	lda (loopPtr),y;get note
 	bne @loopContinues;loops are null terminated
@@ -273,8 +281,56 @@ getNewSample:
 	@trackContinues:
 		sta loops,x
 		iny
+		lda (trackPtr),y;get new instrument
+		sta SFX_savedInstrument,x
+		iny
+		lda (trackPtr),y;get new volume
+		sta SFX_savedVolume,x
+		iny
 		sty trackIndex,x;save place in song
-		ldy loops,x;get the channel loop
+		tay;get the channel loop
+		lda loops_L,y;setup pointer
+		sta loopPtr
+		lda loops_H,y
+		sta loopPtr+1
+		ldy #0;start at beginning of loop
+		lda (loopPtr),y;get note
+@loopContinues:
+	iny
+	lda (loopPtr),y;get play duration
+	sta length,x
+	dec length,x;this frame counts
+	iny
+	lda (loopPtr),y;get rest duration
+	sta rest,x
+	iny
+	sty loopIndex,x;save the index
+	rts
+	
+getNewSample:
+	ldy loops+4;get the channel loop
+	lda loops_L,y;setup pointer
+	sta loopPtr
+	lda loops_H,y
+	sta loopPtr+1
+	ldy loopIndex+4;get the index
+	lda (loopPtr),y;get note
+	bne @loopContinues;loops are null terminated
+		ldy tracks+4
+		lda tracks_L,y
+		sta trackPtr
+		lda tracks_H,y
+		sta trackPtr+1
+		ldy trackIndex+4;get place in song
+		lda (trackPtr),y;get new loop
+		bne @trackContinues;tracks are null terminated
+			ldy #0
+			lda (trackPtr),y;get first loop
+	@trackContinues:
+		sta loops+4
+		iny
+		sty trackIndex+4;save place in song
+		ldy loops+4;get the channel loop
 		lda loops_L,y;setup pointer
 		sta loopPtr
 		lda loops_H,y
@@ -282,14 +338,14 @@ getNewSample:
 		ldy #0;start at beginning of loop
 		lda (loopPtr),y;get sample
 @loopContinues:
-	sta note,x
+	sta note+4
 	iny
 	lda (loopPtr),y;get rest duration
-	sta rest,x
-	dec rest,x;this note counts
+	sta rest+4
+	dec rest+4;this note counts
 	iny
-	sty loopIndex,x;save the index
-	ldy note,x
+	sty loopIndex+4;save the index
+	ldy note+4
 	lda #$f
 	sta DMC_FREQ
 	lda Samples_length,y
@@ -299,6 +355,7 @@ getNewSample:
 	lda #%11111
 	sta SND_CHN
 	rts	
+
 Note_attack:
 	ldy instrument,x
 	clc
@@ -313,7 +370,11 @@ Note_attack:
 		inc state,x
 	:sta currentVolume_H,x
 	ora instDuty,y
+	pha 
+	jsr Note_bend
 	ldy channelOffsets,x
+	sta CHANNEL_LO,y
+	pla
 	sta CHANNEL_VOL,y
 	rts
 Note_decay:
@@ -336,7 +397,11 @@ Note_decay:
 		inc state,x
 	:sta currentVolume_H,x
 	ora instDuty,y
+	pha
+	jsr Note_bend
 	ldy channelOffsets,x
+	sta CHANNEL_LO,y
+	pla
 	sta CHANNEL_VOL,y
 	rts
 Note_sustain:
@@ -362,7 +427,11 @@ Note_release:
 		lda #0;dont let volume go negative
 	:sta currentVolume_H,x
 	ora instDuty,y
+	pha 
+	jsr Note_bend
 	ldy channelOffsets,x
+	sta CHANNEL_LO,y
+	pla
 	sta CHANNEL_VOL,y
 	rts
 
@@ -387,8 +456,9 @@ Note_bend:
 	lda instBend,y
 	lsr
 	lsr
-	lsr
-	and #%00000111
+	and #%00001110
+	clc
+	adc #%10
 	sta mathTemp
 	sec
 	lda currentPeriod,x
@@ -412,8 +482,9 @@ Note_bend:
 	lda instBend,y
 	lsr
 	lsr
-	lsr
-	and #%00000111
+	and #%00001110
+	clc
+	adc #%10
 	adc currentPeriod,x
 	cmp targetPeriod,x
 	bcc :+
@@ -447,9 +518,9 @@ track01:;loop, instrument, volume
 	.byte LOOP10, INST04, 08
 	.byte LOOP12, INST04, 08
 	.byte LOOP13, INST04, 08
-	.byte LOOP11, INST04, 08
+	.byte LOOP11, INST04, 07
 	.byte LOOP10, INST04, 08
-	.byte LOOP14, INST04, 08
+	.byte LOOP14, INST04, 07
 ;chorus
 	.byte LOOP0A, INST00, 08
 	.byte LOOP0B, INST01, 08
@@ -471,9 +542,9 @@ track01:;loop, instrument, volume
 track02:
 ;verse
 	.byte LOOP15, INST05, 08
-	.byte LOOP16, INST04, 08
+	.byte LOOP16, INST04, 07
 	.byte LOOP17, INST05, 08
-	.byte LOOP18, INST04, 08
+	.byte LOOP18, INST04, 07
 ;chorus
 	.byte LOOP03, INST00, 08
 	.byte LOOP0D, INST01, 08
@@ -507,7 +578,7 @@ track04:
 	.byte LOOP09, LOOP09, LOOP09, LOOP09
 	.byte NULL
 track05:
-	.byte LOOP0F, INST03, 10
+	.byte LOOP0F, INST03, 12
 	.byte NULL
 ;LOOPS
 LOOP01=$01;s1 sq1 chorus 2
@@ -642,7 +713,7 @@ loop13:
 	.byte Gb3, 36,24, D3,9,3
 	.byte NULL
 loop14:
-	.byte D4,3,3,D4,6,12,D4,12,3,D4,6,3,D4,3,3
+	.byte D4,3,3,D4,6,12,D4,9,3,D4,9,3,D4,3,3
 	.byte A3,6,6,D4,12,6,Eb4,12,6,Eb4,12,6
 	.byte NULL
 loop15:
@@ -666,7 +737,7 @@ loop17:
 	.byte G1,9,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3
 	.byte NULL
 loop18:
-	.byte A3,12,3,A3,6,3,A3,3,3,D3,6,6,A3,12,6,Bb3,12,6,Bb3,12,6
+	.byte A3,9,3,A3,9,3,A3,3,3,D3,6,6,A3,12,6,Bb3,12,6,Bb3,12,6
 	.byte NULL
 loop19:
 	.byte D2,48,0,E2,48,0,Gb2,48,0,G2,48,0,B2,48,0,G2,48,0
@@ -702,14 +773,14 @@ instSustain:;volume minus number below
 instRelease_H:
 	.byte 1, 1, 15, 0, 0, 1
 instRelease_L:
-	.byte 0, 0, 0, 128, 128, 0
+	.byte 0, 0, 0, 128, 64, 0
 instBend:
 ;vnrr raaa 
 ;v - vibrato (disregards nra)
 ;n - negative chane  (going higher)
-;r - rate of change (hex) 
+;r - rate of change (r+1)*2
 ;a - amount of change (half-steps)
-	.byte 0, %01101001, 0, 0, 0, 0
+	.byte 0, %01011001, 0, 0, 0, 0
 
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
 KICK_LENGTH=%10000

@@ -313,7 +313,7 @@ romEnemyBehaviorL:
 romEnemyMetasprite:
 	.byte TERMINATE, SPRITE0F, SPRITE0F, SPRITE10, SPRITE10, SPRITE14, SPRITE15, SPRITE16, SPRITE21
 romEnemyHPL: 
-	.byte TERMINATE, 02, 02, 25, 25, 192, 0, 0, 0
+	.byte TERMINATE, 02, 02, 25, 25, 128, 0, 0, 0
 romEnemyHPH:
 	.byte TERMINATE, 00, 00, 00, 00, 00,  0, 0, 1
 pointValue_L:

@@ -48,6 +48,7 @@ Gamestates_L:
 gamestate00:
 ;the main gameplay loop
 	jsr PPU_updateScroll
+	ldx Main_currentPlayer
 	jsr Gamepads_read
 ;if player is hoding A B SEL ST, reset the game
 	lda Gamepads_state
@@ -86,6 +87,7 @@ gamestate00:
 	jsr OAM_build;(c,a)
 	jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
+	jsr APU_advance
 	rts
 
 gamestate01:;void(currentPlayer, currentScene)
@@ -131,7 +133,7 @@ gamestate02:
 	adc #8
 	sta g
 	bne :+
-		lda #GAMESTATE07
+		lda #GAMESTATE03
 		sta Gamestate_current
 		rts
 :	clc
@@ -158,8 +160,10 @@ SCORE_OFFSET=7
 	jsr OAM_clearRemaining;(x)
 	jsr PPU_NMIPlan00
 	jsr PPU_waitForSprite0Hit
+	jsr APU_advance
+	clc
 	lda g
-	adc #4;this state lasts 256/4 frames
+	adc #2;this state lasts 256/4 frames
 	sta g
 	bne :+
 		lda #GAMESTATE00

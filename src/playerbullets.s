@@ -107,7 +107,7 @@ BULLET_SPEED = 18
 	
 .proc shotType00
 Y_OFFSET=24
-X_OFFSET=4
+X_OFFSET=1
 DAMAGE=3
 WIDTH=16
 	jsr getAvailableBullet
@@ -134,7 +134,8 @@ WIDTH=16
 .endproc
 
 .proc shotType01
-X_OFFSET=8
+X_OFFSET_1=5
+X_OFFSET_2=11
 Y_OFFSET=16
 DAMAGE=2
 WIDTH=8
@@ -143,7 +144,7 @@ WIDTH=8
 	bcc @return
 ;calculate x offset
 	lda Player_xPos_H
-	sbc #X_OFFSET
+	sbc #X_OFFSET_1
 	bcc @bullet1Offscreen
 	sta bulletX,x
 	lda Player_yPos_H
@@ -165,7 +166,7 @@ WIDTH=8
 	sta bulletY,x
 	clc
 	lda Player_xPos_H
-	adc #X_OFFSET
+	adc #X_OFFSET_2
 	bcs @bullet2Offscreen
 	sta bulletX,x;x offset
 	lda #PLAYER_BEAM
@@ -187,7 +188,8 @@ WIDTH=8
 .endproc
 
 .proc shotType02
-X_OFFSET=14
+X_OFFSET_1=11
+X_OFFSET_2=17
 Y_OFFSET=04
 DAMAGE=1
 WIDTH=8
@@ -195,7 +197,7 @@ WIDTH=8
 	jsr getAvailableBullet
 	bcc @return
 	lda Player_xPos_H
-	sbc #X_OFFSET
+	sbc #X_OFFSET_1
 	bcc @bullet1Offscreen
 	sta bulletX,x;x offset
 	lda Player_yPos_H
@@ -217,7 +219,7 @@ WIDTH=8
 	sta bulletY,x;y offset
 	clc
 	lda Player_xPos_H
-	adc #X_OFFSET
+	adc #X_OFFSET_2
 	bcs @bullet2Offscreen
 	sta bulletX,x;x offset
 	lda #SMALL_STAR

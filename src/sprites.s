@@ -53,7 +53,7 @@ SPRITE21=$21;piper frame 0
 sprite00:
 	.byte 0, 0, %0, 0
 	.byte 0, 2, %0, 8
-	.byte 16, 4, %0, 0
+	.byte 16, 4, %0, 2
 	.byte TERMINATE
 sprite01:
 	.byte 0, $20, %0, 0
