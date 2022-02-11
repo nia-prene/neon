@@ -6,7 +6,7 @@
 .include "sprites.h"
 
 .zeropage
-MAX_PLAYER_BULLETS = 10
+MAX_PLAYER_BULLETS = 10	
 bulletX: .res MAX_PLAYER_BULLETS 
 bulletY: .res MAX_PLAYER_BULLETS 
 PlayerBullet_width: .res MAX_PLAYER_BULLETS
@@ -107,15 +107,15 @@ BULLET_SPEED = 18
 	
 .proc shotType00
 Y_OFFSET=24
-X_OFFSET=4
+X_OFFSET=1
 DAMAGE=3
 WIDTH=16
 	jsr getAvailableBullet
 	bcc @return
-	lda playerX_H
+	lda Player_xPos_H
 	sbc #X_OFFSET
 	sta bulletX,x
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bulletOffscreen
 	sta bulletY,x
@@ -134,7 +134,8 @@ WIDTH=16
 .endproc
 
 .proc shotType01
-X_OFFSET=8
+X_OFFSET_1=5
+X_OFFSET_2=11
 Y_OFFSET=16
 DAMAGE=2
 WIDTH=8
@@ -142,11 +143,11 @@ WIDTH=8
 	jsr getAvailableBullet
 	bcc @return
 ;calculate x offset
-	lda playerX_H
-	sbc #X_OFFSET
+	lda Player_xPos_H
+	sbc #X_OFFSET_1
 	bcc @bullet1Offscreen
 	sta bulletX,x
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bullet1Offscreen
 	sta bulletY,x;y offset
@@ -159,13 +160,13 @@ WIDTH=8
 @bullet2:
 	jsr getAvailableBullet
 	bcc @return
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bullet2Offscreen
 	sta bulletY,x
 	clc
-	lda playerX_H
-	adc #X_OFFSET
+	lda Player_xPos_H
+	adc #X_OFFSET_2
 	bcs @bullet2Offscreen
 	sta bulletX,x;x offset
 	lda #PLAYER_BEAM
@@ -187,18 +188,19 @@ WIDTH=8
 .endproc
 
 .proc shotType02
-X_OFFSET=14
+X_OFFSET_1=11
+X_OFFSET_2=17
 Y_OFFSET=04
 DAMAGE=1
 WIDTH=8
 ;start with left bullet
 	jsr getAvailableBullet
 	bcc @return
-	lda playerX_H
-	sbc #X_OFFSET
+	lda Player_xPos_H
+	sbc #X_OFFSET_1
 	bcc @bullet1Offscreen
 	sta bulletX,x;x offset
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bullet1Offscreen
 	sta bulletY,x;y offset
@@ -211,13 +213,13 @@ WIDTH=8
 @bullet2:	
 	jsr getAvailableBullet
 	bcc @return
-	lda playerY_H
+	lda Player_yPos_H
 	sbc #Y_OFFSET
 	bcc @bullet2Offscreen
 	sta bulletY,x;y offset
 	clc
-	lda playerX_H
-	adc #X_OFFSET
+	lda Player_xPos_H
+	adc #X_OFFSET_2
 	bcs @bullet2Offscreen
 	sta bulletX,x;x offset
 	lda #SMALL_STAR

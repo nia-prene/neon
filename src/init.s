@@ -1,4 +1,5 @@
 .code
+
 .macro NES_init
     sei        ; ignore IRQs
     cld        ; disable decimal mode
@@ -41,4 +42,15 @@
     sta $700,x
     inx
     bne @clrmem
+;white out color palettes
+	lda #$3f
+	sta $2006
+	lda #$00
+	sta $2006
+	ldx #31
+	lda #$0f
+@paletteLoop:
+	sta $2007
+	dex
+	bpl @paletteLoop
 .endmacro

@@ -1,1 +1,2 @@
-.global HUD_tiles
+.global HUD_easeIn
+.global HUD_easeOut

@@ -7,6 +7,10 @@
 .globalzp PURPLE_BULLET
 .globalzp PALETTE06
 .globalzp PALETTE07
+.globalzp PALETTE08
+.globalzp PALETTE09
+.globalzp PALETTE0A
+
 
 ;palette collection objects
 .globalzp BEACH_PALETTE

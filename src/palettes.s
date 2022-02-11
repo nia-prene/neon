@@ -13,7 +13,7 @@ color3: .res NUMBER_OF_PALETTES
 Palettes_hasChanged: .res NUMBER_OF_PALETTES
 
 .rodata
-PALETTE00=0
+PALETTE00=0;player palette
 PALETTE01=1
 PALETTE02=2
 PALETTE03=3
@@ -21,12 +21,16 @@ TARGET_PALETTE=4
 PURPLE_BULLET=5
 PALETTE06=6;blue drone palette
 PALETTE07=7;blue drone palette
+PALETTE08=$08;orange piper palette
+PALETTE09=$09;green piper palette palette
+PALETTE0A=$0a;player 1 portrait
+
 romColor1:
-	.byte $07, $17, $2b, $01, $1d, $04, $1d, $15
+	.byte $07, $17, $3b, $01, $1d, $04, $1d, $15, $07, $07, $07
 romColor2:
-	.byte $25, $19, $23, $21, $05, $24, $21, $25
+	.byte $25, $2a, $23, $21, $05, $24, $21, $25, $26, $29, $15
 romColor3:
-	.byte $35, $29, $37, $31, $30, $34, $31, $35
+	.byte $35, $39, $37, $31, $30, $34, $31, $35, $36, $36, $35
 
 ;;;;;;;;;;;;;
 ;collections;
@@ -115,9 +119,9 @@ Palettes_swapEnemyPalettes:
 ;2 on stack, palettes to set
 	pla
 	tax
-	ldy #5
+	ldy #6
 	jsr setPalette
 	pla
 	tax
-	ldy #6
+	ldy #5
 	jmp setPalette

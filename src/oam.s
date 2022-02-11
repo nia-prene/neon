@@ -20,16 +20,18 @@ buildX: .res 1
 buildY: .res 1
 buildPalette: .res 1
 spritePointer: .res 2
-OAM_overflowTimer: .res 1
+
+Sprite0_destination: .res 1
+
 .segment "OAM"
 OAM: .res 256
 
 .code
-.proc OAM_setSprite0
-SPRITE_Y=7
-SPRITE_TILE=$0c
-SPRITE_ATTRIBUTE=%00100000
-SPRITE_X=180
+.proc OAM_initSprite0
+SPRITE_Y=238
+SPRITE_TILE=$20
+SPRITE_ATTRIBUTE=%01100000;flip and place behind
+SPRITE_X=112
 	lda #SPRITE_Y
 	sta OAM
 	lda #SPRITE_TILE
@@ -38,7 +40,16 @@ SPRITE_X=180
 	sta OAM+2
 	lda #SPRITE_X
 	sta OAM+3
+	rts
 .endproc
+
+Sprite0_setSplit:
+	sta OAM
+	rts
+
+Sprite0_setDestination:
+	sta Sprite0_destination
+	rts
 
 OAM_build:;c (c,a)
 ;builds oam 
@@ -46,7 +57,7 @@ OAM_build:;c (c,a)
 ;a - gamepad
 ;returns carry clear if oam overflow
 	inc o ;module iterator
-	ldx #32;skip sprite 0-7
+	ldx #4;skip sprite 0
 	lda Player_willRender
 	beq @buildWithoutPlayer
 ;build hitbox if button a is being pressed
@@ -56,13 +67,13 @@ OAM_build:;c (c,a)
 :
 	jsr buildEnemyBullets
 	bcs @oamFull
-	jsr buildPlayer
+	jsr OAM_buildPlayer
 	bcs @oamFull
 	jsr buildEnemies
 	bcs @oamFull
 	jsr buildPlayerBullets
 	bcs @oamFull
-	jsr clearRemaining
+	jsr OAM_clearRemaining
 	rts
 @buildWithoutPlayer:
 	jsr buildEnemyBullets
@@ -71,30 +82,14 @@ OAM_build:;c (c,a)
 	bcs @oamFull
 	jsr buildPlayerBullets
 	bcs @oamFull
-	jsr clearRemaining
+	jsr OAM_clearRemaining
 @oamFull:
 	rts
 
-OAM_setHUDCover:
-	ldy #6;put 7 sprites to cover hud
-	ldx #4;starting at oam address 4
-@loop:
-	lda #7;put at y=7
-	sta OAM,x
-	inx
-	lda $0c;use sprite 0 tile, its mostly blank
-	sta OAM,x
-	inx;doesnt need attribute
-	inx
-	lda #$FF;put offscreen
-	inx
-	dey
-	bpl @loop
-	rts
-
 buildHitbox:
-PLAYER_HITBOX_Y_OFFSET=5
-	lda #NULL;terminate
+PLAYER_HITBOX_Y_OFFSET=10
+PLAYER_HITBOX_X_OFFSET=2
+	lda #TERMINATE;terminate
 	pha
 	lda o
 	and #%00001000
@@ -105,10 +100,11 @@ PLAYER_HITBOX_Y_OFFSET=5
 	lda @hitboxAnimation,y
 	pha
 	clc
-	lda playerY_H
+	lda Player_yPos_H
 	adc #PLAYER_HITBOX_Y_OFFSET
 	pha
-	lda playerX_H
+	lda Player_xPos_H
+	adc #PLAYER_HITBOX_X_OFFSET
 	pha
 	lda #00
 	pha
@@ -118,7 +114,7 @@ PLAYER_HITBOX_Y_OFFSET=5
 
 .align $100
 buildEnemyBullets:
-	lda #NULL;terminate
+	lda #TERMINATE;terminate
 	pha
 	ldy #MAX_ENEMY_BULLETS-1
 @enemyBulletLoop:
@@ -137,25 +133,24 @@ buildEnemyBullets:
 	bpl @enemyBulletLoop
 	jmp buildSpritesShort
 
-buildPlayer:
+OAM_buildPlayer:
 ;prepares player sprite for oam
 ;first push a null to terminate 
 ;then push sprite, y, x, palette
-	lda #NULL;terminator
+	lda #TERMINATE;terminator
 	pha
-	lda playerSprite
+	lda Player_sprite
 	pha
-	lda playerY_H
+	lda Player_yPos_H
 	pha
-	lda playerX_H
+	lda Player_xPos_H
 	pha
 	lda #0;palette implied
 	pha
 	jmp buildSprites
 
-.align $100
 buildPlayerBullets:
-	lda #NULL;terminate
+	lda #TERMINATE;terminate
 	pha
 	lda o
 	ror
@@ -196,9 +191,8 @@ buildPlayerBullets:
 	bcc @loop1
 	jmp buildSpritesShort
 
-.align $100
 buildEnemies:
-	lda #NULL
+	lda #TERMINATE
 	pha
 	ldy #MAX_ENEMIES-1
 @enemyLoop:
@@ -217,7 +211,6 @@ buildEnemies:
 	bpl @enemyLoop
 	jmp buildSprites
 
-.align $100
 buildSprites:
 ;builds collections of sprites
 ;push tile, y, x, palette
@@ -225,7 +218,7 @@ buildSprites:
 ;returns
 ;x - current OAM position
 	pla
-	cmp #NULL
+	cmp #TERMINATE
 	beq @return
 @metaspriteLoop:
 	sta buildPalette
@@ -267,10 +260,10 @@ buildSprites:
 		beq @oamFull
 		iny
 		lda (spritePointer),y
-		cmp #NULL
+		cmp #TERMINATE
 		bne @tileLoop
 	pla
-	cmp #NULL
+	cmp #TERMINATE
 	bne @metaspriteLoop
 @return:
 	clc ;build successful
@@ -285,7 +278,7 @@ buildSprites:
 	jmp @returnX
 @oamFull:
 	pla ;null or palette
-	cmp #NULL
+	cmp #TERMINATE
 	beq @returnFull
 	pla ;x
 	pla ;y
@@ -305,7 +298,7 @@ buildSpritesShort:
 
 ;if first byte = null, no sprites
 	pla
-	cmp #NULL
+	cmp #TERMINATE
 	beq @return
 @metaspriteLoop:
 	pla
@@ -342,10 +335,10 @@ buildSpritesShort:
 		beq @oamFull
 		iny
 		lda (spritePointer),y
-		cmp #NULL
+		cmp #TERMINATE
 		bne @tileLoop
 	pla
-	cmp #NULL
+	cmp #TERMINATE
 	bne @metaspriteLoop
 @return:
 	clc
@@ -356,7 +349,7 @@ buildSpritesShort:
 	jmp @returnX
 @oamFull:
 	pla ;null or palette
-	cmp #NULL
+	cmp #TERMINATE
 	beq @returnFull
 	pla ;x
 	pla ;y
@@ -366,8 +359,7 @@ buildSpritesShort:
 	sec
 	rts
 
-.align $100
-clearRemaining:
+OAM_clearRemaining:
 ;arguments
 ;x-starting point to clear
 	lda #$ff

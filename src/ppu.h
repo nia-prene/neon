@@ -1,4 +1,3 @@
-.globalzp frame_L
 .globalzp PPU_stack
 .globalzp PPU_havePalettesChanged
 .globalzp PPU_willVRAMUpdate
@@ -8,11 +7,15 @@
 .global PPU_resetScroll
 .global PPU_setScroll
 .global PPU_updateScroll
-.global PPU_renderHUD
+.global PPU_renderRightScreen
 .global PPU_waitForSprite0Hit
+.global PPU_waitForSprite0Reset
 .global PPU_renderScore
 .global PPU_scoreToBuffer
-.global PPU_planNMI
+.global PPU_NMIPlan00
+.global PPU_NMIPlan01
+.global PPU_NMIPlan02
+.global PPU_NMIPlan03
 .global enableRendering
 .global disableRendering
 .global renderAllPalettes

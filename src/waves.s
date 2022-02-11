@@ -50,7 +50,7 @@ dispenseEnemies:
 	;zero marks a skip
 	beq @skip
 	;null terminated
-	cmp #NULL
+	cmp #TERMINATE
 	beq @hold
 	;save enemy
 	pha
@@ -142,7 +142,7 @@ waveStrings_H:
 waveStrings_L:
 	.byte <waveString00
 waveString00:
-	.byte WAVE00, WAVE01, WAVE02, WAVE03, WAVE04, WAVE03, WAVE06, WAVE05, WAVE02, WAVE01
+	.byte WAVE00, WAVE01, WAVE02, WAVE03, WAVE04, WAVE03, WAVE06, WAVE05, WAVE07
 ;pointers to individual enemy waves (below)
 
 WAVE00=$00;Ready? Go!
@@ -152,7 +152,8 @@ WAVE03=$03;medium drones moving left
 WAVE04=$04;left baloon with light right moving drones
 WAVE05=$05
 WAVE06=$06
-WAVE07=$07
+WAVE07=$07;piper boss fight
+
 wavePointerH:
 	.byte >wave00, >wave01, >wave02, >wave03, >wave04, >wave05, >wave06, >wave07
 wavePointerL:
@@ -161,37 +162,40 @@ wavePointerL:
 ;individual enemy waves
 ;	.byte PALETTE, PALETTE
 ;	.byte bulletType, bulletType, bulletType
-;	.byte enemy, position, (skip), enemy, position ... NULL
+;	.byte enemy, position, (skip), enemy, position ... TERMINATE
 wave00:
 	.byte 0, 0, 0
 	.byte PALETTE00, PALETTE00 
-	.byte 6, 62, SKIP, SKIP, SKIP, SKIP, SKIP, 7, 62, NULL
+	.byte 6, 62, SKIP, SKIP, SKIP, SKIP, SKIP, 7, 62, TERMINATE
 wave01:
 	.byte 0, 1, 1
 	.byte PALETTE06, PALETTE06 
-	.byte 2, 14, SKIP, 2, 16, SKIP, 2, 18, SKIP, 2, 20, SKIP, 2, 22, NULL
+	.byte 2, 14, SKIP, 2, 16, SKIP, 2, 18, SKIP, 2, 20, SKIP, 2, 22, TERMINATE
 wave02:
 	.byte 0, 1, 1
 	.byte PALETTE06, PALETTE06 
-	.byte 1, 18, SKIP, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, NULL
+	.byte 1, 18, SKIP, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, TERMINATE
 wave03:
 	.byte 0, 1, 1
 	.byte PALETTE06, PALETTE06 
-	.byte 2, 12, 2, 14, 2, 16, 2, 18, 2, 20, 2, 22, NULL
+	.byte 2, 12, 2, 14, 2, 16, 2, 18, 2, 20, 2, 22, TERMINATE
 wave04:
 	.byte 0, 1, 1
 	.byte PALETTE06, PALETTE06 
-	.byte 3, 70, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, SKIP, 1, 08, NULL
+	.byte 3, 70, 1, 16, SKIP, 1, 14, SKIP, 1, 12, SKIP, 1, 10, SKIP, 1, 08, TERMINATE
 wave05:
 	.byte 0, 1, 1
 	.byte PALETTE06, PALETTE06 
-	.byte 1, 20, 1, 18, 1, 16, 1, 14, 1, 12, 1, 10, NULL
+	.byte 1, 20, 1, 18, 1, 16, 1, 14, 1, 12, 1, 10, TERMINATE
 
 wave06:
 	.byte 0, 1, 1
 	.byte PALETTE06, PALETTE06 
-	.byte 5, 24, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, 1, 16, 1, 15, 1, 14, NULL
+	.byte 5, 24, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, SKIP, 1, 16, 1, 15, 1, 14, TERMINATE
 wave07:
+	.byte 0, 1, 1
+	.byte PALETTE08, PALETTE09 
+	.byte 8, 24, TERMINATE
 ;Coordinate Table
 ;x and y coordinate decoder table for enemy spawn locations
 waveX:

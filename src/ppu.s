@@ -7,6 +7,8 @@
 .include "hud.h"
 .include "palettes.h"
 .include "player.h"
+.include "oam.h"
+.include "textbox.h"
 
 PPUCTRL = $2000;(VPHB SINN) NMI enable (V), PPU master/slave (P), sprite height (H), background tile select (B), sprite tile select (S), increment mode (I), nametable select (NN)
 PPUMASK = $2001;(BGRs bMmG)	color emphasis (BGR), sprite enable (s), background enable (b), sprite left column enable (M), background left column enable (m), greyscale (G)
@@ -55,8 +57,14 @@ EMPHASIZE_GREEN = %01000000		; or
 EMPHASIZE_BLUE = %10000000		; or
 ENABLE_RENDERING = %00011000	; or
 DISABLE_RENDERING = %11100111	; and
+DISABLE_SPRITES= %11101111		; and
 DIM_SCREEN = %11100000			; or
-
+.macro sws oldStack, newStack
+	tsx
+	stx oldStack
+	ldx newStack
+	txs
+.endmacro
 .zeropage
 PPU_willVRAMUpdate:.res 1
 currentNameTable: .res 2
@@ -66,8 +74,6 @@ tile16a: .res 1
 tile16b: .res 1
 tile16c: .res 1
 tile16d: .res 1
-frame_H: .res 1
-frame_L: .res 1
 xScroll: .res 1
 yScroll_H: .res 1
 yScroll_L: .res 1
@@ -101,9 +107,9 @@ PPU_init:
 
 disableRendering:;(void)
 ;holds cpu in loop until next nmi, then disables rendering via PPUMASK
-	lda frame_L
+	lda Main_frame_L
 @waitForBlank:
-	cmp frame_L
+	cmp Main_frame_L
 	beq @waitForBlank
 	lda currentMaskSettings
 	and #DISABLE_RENDERING
@@ -111,11 +117,11 @@ disableRendering:;(void)
 	sta currentMaskSettings
 	rts
 
-enableRendering:;(void)
+enableRendering:;(a)
 ;holds cpu in loop until next nmi, then disables rendering via PPUMASK
-	lda frame_L
+	lda Main_frame_L
 @waitForBlank:
-	cmp frame_L
+	cmp Main_frame_L
 	beq @waitForBlank
 	lda currentMaskSettings
 	ora #ENABLE_RENDERING
@@ -123,20 +129,7 @@ enableRendering:;(void)
 	sta currentMaskSettings
 	rts
 
-PPU_resetClock:
-	lda #0
-	sta frame_L
-	sta frame_H
-
-PPU_advanceClock:
-	inc frame_L
-	beq @overflow
-	rts
-@overflow:
-	inc frame_H
-	rts
-
-PPU_renderHUD:
+PPU_renderRightScreen:
 	lda currentPPUSettings
 	and #INCREMENT_1
 	sta PPUCTRL
@@ -144,25 +137,45 @@ PPU_renderHUD:
 	sta PPUADDR
 	lda #$00
 	sta PPUADDR
-	lda #1;tile 1
-	ldx #32-1;write 32 blank tiles for ntsc covered pixels
-@loop:
+	ldx #192
+	lda #$02
+@HUDLoop:
 	sta PPUDATA
 	dex
-	bpl @loop
-	ldx #0
-@HUDLoop:
-	lda HUD_tiles,x
+	bne @HUDLoop
+	ldx #7-1
+@textbox:
+	ldy #8-1
+	lda #$2
+@left:
 	sta PPUDATA
-	inx
-	cpx #64
-	bcc @HUDLoop
+	dey
+	bpl @left
+	lda #$4
+	ldy #21-1
+@center:
+	sta PPUDATA
+	dey
+	bpl @center
+	ldy #3-1
+	lda #$2
+@right:
+	sta PPUDATA
+	dey
+	bpl @right
+	dex
+	bpl @textbox
+	ldx #31
+@bottom:
+	sta PPUDATA
+	dex
+	bpl @bottom
 ;render attribute bytes
 	lda #$27
 	sta PPUADDR
 	lda #$C0
 	sta PPUADDR
-	ldx #16-1
+	ldx #64-1
 	lda #%11111111
 @attributeLoop:
 	sta PPUDATA
@@ -170,11 +183,65 @@ PPU_renderHUD:
 	bpl @attributeLoop
 	rts
 
-PPU_planNMI:
+PPU_waitForSprite0Reset:;void()
+;waits for sprite 0 hit to turn off at beginnign of frame
+	lda #%01000000
+@waitForReset:
+	bit PPUSTATUS
+	bne @waitForReset
+	rts
+
+PPU_waitForSprite0Hit:
+	lda currentMaskSettings
+	and #DISABLE_SPRITES
+	pha
+;4th write - Low byte nametable address ((Y & $F8) << 2)|(X >> 3)
+	lda Sprite0_destination
+	and #$f8
+	asl
+	asl
+	pha
+;3rd write - X to $2005
+	lda #0
+	pha
+;2nd write - Y to $2005
+	lda Sprite0_destination
+	pha
+;1st write - Nametable number << 2 (that is: $00, $04, $08, or $0C) to $2006
+	lda #4;nametable 0 
+	pha
+;turn off sprite rendering
+	lda #%01000000
+@waitForHit:
+	bit PPUSTATUS
+	beq @waitForHit
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	pla
+	sta $2006
+	pla 
+	sta $2005
+	pla 
+	sta $2005
+	pla
+	sta $2006
+	pla
+	sta PPUMASK
+	rts
+
+PPU_NMIPlan00:
 ;byte writes INCLUDE functions pushed on stack
 MAX_BYTES=70
 SCORE_BYTES=24
-HEART_BYTES=14
+HEART_BYTES=7
 PALETTE_BYTES=5
 ;save the main stack
 	tsx
@@ -235,10 +302,247 @@ PALETTE_BYTES=5
 :	dey
 	bpl @paletteLoop
 @bufferFull:
-;swap this NMI stack for the main program stack
 	lda #TRUE
 	sta PPU_willVRAMUpdate
 	rts
+
+PPU_NMIPlan01:
+;fades in colors
+;save the main stack
+	tsx
+	stx Main_stack
+;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
+	ldx #MAX_BYTES+8
+	txs
+;after routine runs, return at the end of NMI
+	lda #>(Main_NMIReturn-1)
+	pha
+	lda #<(Main_NMIReturn-1)
+	pha
+	ldx #7
+@loop:
+	sec
+	lda color3,x
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	lda color2,x
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	lda color1,x
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	lda backgroundColor
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	dex
+	bpl @loop
+	lda #$00
+	pha
+	lda #$3f
+	pha
+	lda #>(PPU_renderAllPalettesNMI-1)
+	pha
+	lda #<(PPU_renderAllPalettesNMI-1)
+	pha
+	sws PPU_stack, Main_stack
+;do this during nmi
+	lda #TRUE
+	sta PPU_willVRAMUpdate
+	rts
+@colorMutator:
+	.byte $30, $20, $10, $00
+
+PPU_NMIPlan02:
+;byte writes INCLUDE functions pushed on stack
+PORTRAIT_BYTES=18
+;save the main stack
+	tsx
+	stx Main_stack
+;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
+	ldx #MAX_BYTES+8
+	txs
+;after routine runs, return at the end of NMI
+	lda #>(Main_NMIReturn-1)
+	pha
+	lda #<(Main_NMIReturn-1)
+	pha
+	sws PPU_stack, Main_stack
+;we just stored 2 bytes
+	lda #2
+	sta PPU_bufferBytes
+;check if portrait needs updating
+	lda Portraits_hasChanged
+	beq :+
+		clc
+		lda #PORTRAIT_BYTES
+		adc PPU_bufferBytes
+		sta PPU_bufferBytes
+		jsr PPU_portraitToBuffer
+	;update has been made
+		lda #FALSE
+		sta Portraits_hasChanged
+:	
+	ldy #3
+	lda Palettes_hasChanged,y
+	beq :+
+		jsr PPU_paletteToBuffer
+		lda #FALSE
+		sta Palettes_hasChanged,y
+:
+@bufferFull:
+	lda #TRUE
+	sta PPU_willVRAMUpdate
+	rts
+
+PPU_NMIPlan03:
+;fades out colors
+;save the main stack
+	tsx
+	stx Main_stack
+;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
+	ldx #MAX_BYTES+8
+	txs
+;after routine runs, return at the end of NMI
+	lda #>(Main_NMIReturn-1)
+	pha
+	lda #<(Main_NMIReturn-1)
+	pha
+	ldx #7
+@loop:
+	sec
+	lda color3,x
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	lda color2,x
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	lda color1,x
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	lda backgroundColor
+	sbc @colorMutator,y
+	bcs :+
+		lda #$0f
+:
+	pha
+	dex
+	bpl @loop
+	lda #$00
+	pha
+	lda #$3f
+	pha
+	lda #>(PPU_renderAllPalettesNMI-1)
+	pha
+	lda #<(PPU_renderAllPalettesNMI-1)
+	pha
+	sws PPU_stack, Main_stack
+;do this during nmi
+	lda #TRUE
+	sta PPU_willVRAMUpdate
+	rts
+@colorMutator:
+	.byte $00, $10, $20, $30
+
+
+PPU_renderAllPalettesNMI:
+	pla
+	sta PPUADDR
+	pla
+	sta PPUADDR
+;palette0
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+;palette1
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+;palette2
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+;palette3
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+;palette4
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+;palette5
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+;palette6
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+;palette7
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	rts 
 
 PPU_renderScoreNMI:
 	pla
@@ -285,30 +589,6 @@ PPU_renderScoreNMI:
 	sta PPUDATA
 	pla
 	sta PPUDATA
-	rts
-
-renderAllPalettes:
-;palettes are at 3f00 of ppu, accessed through PPUADDR
-	lda #$3f
-	sta PPUADDR
-	lda #$00
-	sta PPUADDR
-	tax
-@storePalettes:
-;store in PPUDATA
-	lda backgroundColor
-	sta PPUDATA
-	lda color1,x
-	sta PPUDATA
-	lda color2,x
-	sta PPUDATA
-	lda color3,x
-	sta PPUDATA
-	lda #FALSE
-	sta Palettes_hasChanged,x
-	inx
-	cpx #$08;8 palettes
-	bne @storePalettes
 	rts
 
 render32:;(a)
@@ -451,7 +731,7 @@ render32:;(a)
 	pla
 	tay;y is tile pos in tiles32 array
 	tax;x is position in conversion
-	lda attributeTableConversionH,x
+	lda #$23
 	;store address (big endian)
 	sta PPUADDR
 	lda attributeTableConversionL,x
@@ -481,9 +761,9 @@ renderAllTiles:
 	rts
 	
 PPU_resetScroll:
-	lda #1
+	lda #3
 	sta scrollSpeed_H
-	lda #0
+	lda #128
 	sta scrollSpeed_L
 	sta xScroll
 	sta yScroll_H
@@ -510,71 +790,17 @@ PPU_updateScroll:
 	rts
 
 PPU_setScroll:
+	lda currentMaskSettings
+	sta PPUMASK
 	lda #0
 	sta PPUSCROLL
-	lda #0
+	lda yScroll_H
 	sta PPUSCROLL
-	lda #01
-	ora currentPPUSettings
+	lda currentPPUSettings
 	sta PPUCTRL
 	rts
 
-PPU_waitForSprite0Hit:
-Y_OFFSET=24
-;4th write - Low byte of nametable address to $2006, which is ((Y & $F8) << 2) | (X >> 3)
-	lda #%01000000
-@waitForReset:
-	bit PPUSTATUS
-	bne @waitForReset
-	clc
-	lda yScroll_H
-	adc #Y_OFFSET
-	bcc :+
-		sbc #240
-:
-	cmp #240
-	bcc :+
-		sbc #240
-:
-	and #$f8
-	asl
-	asl
-	pha
-;3rd write - X to $2005
-	lda #0
-	pha
-;2nd write - Y to $2005
-	clc
-	lda yScroll_H
-	adc #Y_OFFSET
-	cmp #240
-	bcc :+
-		sbc #240
-:
-	pha
-;1st write - Nametable number << 2 (that is: $00, $04, $08, or $0C) to $2006
-	lda #0;nametable 0 
-	pha
-	lda #%01000000
-@waitForHit:
-	bit PPUSTATUS
-	beq @waitForHit
-	pla
-	sta $2006
-	pla 
-	sta $2005
-	pla 
-	sta $2005
-	pla
-	sta $2006
-	rts
 
-.macro sws oldStack, newStack
-	tsx
-	stx oldStack
-	ldx newStack
-	txs
-.endmacro
 
 .proc PPU_scoreToBuffer
 SCORE_ADDRESS_TOP=$2436
@@ -690,38 +916,35 @@ SCORE_ADDRESS_BOTTOM=$2456
 	.byte ZERO_TOP, ONE_TOP, TWO_TOP, THREE_TOP, FOUR_TOP, FIVE_TOP, SIX_TOP, SEVEN_TOP, EIGHT_TOP, NINE_TOP
 @tileBottom:
 	.byte ZERO_BOTTOM, ONE_BOTTOM, TWO_BOTTOM, THREE_BOTTOM, FOUR_BOTTOM, FIVE_BOTTOM, SIX_BOTTOM, SEVEN_BOTTOM, EIGHT_BOTTOM, NINE_BOTTOM
-ZERO_TOP=$ef
-ZERO_BOTTOM=$e5
-ONE_TOP=$e0
-ONE_BOTTOM=$e1
-TWO_TOP=$e2
-TWO_BOTTOM=$e3
-THREE_TOP=$e4
-THREE_BOTTOM=$e5
-FOUR_TOP=$e6
-FOUR_BOTTOM=$e7
-FIVE_TOP=$e8
-FIVE_BOTTOM=$e5
-SIX_TOP=$e9
-SIX_BOTTOM=$e5
-SEVEN_TOP=$ea
-SEVEN_BOTTOM=$eb
-EIGHT_TOP=$ec
-EIGHT_BOTTOM=$e5
-NINE_TOP=$ed
-NINE_BOTTOM=$ee
-COMMA_TOP = $01
-COMMA_BOTTOM = $Fb
+ZERO_TOP=$ff
+ZERO_BOTTOM=$f5
+ONE_TOP=$f0
+ONE_BOTTOM=$f1
+TWO_TOP=$f2
+TWO_BOTTOM=$f3
+THREE_TOP=$f4
+THREE_BOTTOM=$f5
+FOUR_TOP=$f6
+FOUR_BOTTOM=$f7
+FIVE_TOP=$f8
+FIVE_BOTTOM=$f5
+SIX_TOP=$f9
+SIX_BOTTOM=$f5
+SEVEN_TOP=$fa
+SEVEN_BOTTOM=$fb
+EIGHT_TOP=$fc
+EIGHT_BOTTOM=$f5
+NINE_TOP=$fd
+NINE_BOTTOM=$fe
+COMMA_TOP = $02
+COMMA_BOTTOM = $ED
 .endproc
 
 .proc PPU_heartsToBuffer
 MAX_HEARTS=5
-HEART_FULL_TILE_TOP=$f2	
-HEART_EMPTY_TILE_TOP=$f3	
-HEART_EMPTY_TILE_BOTTOM=$f5
-HEART_FULL_TILE_BOTTOM=$f4
-HEART_ADDRESS_TOP=$2422
-HEART_ADDRESS_BOTTOM=$2442
+HEART_FULL_TILE=$ee	
+HEART_EMPTY_TILE=$ef	
+HEART_ADDRESS=$2422
 	ldy #0;player zero
 ;swap stacks
 	sws Main_stack, PPU_stack
@@ -729,56 +952,29 @@ HEART_ADDRESS_BOTTOM=$2442
 	sec
 	lda #MAX_HEARTS
 	sbc Player_hearts,y
-	beq @heartsFullBottom;skip if hearts are full
+	beq @heartsFull;skip if hearts are full
 		tax
-	@emptyBottomTileLoop:
-	;fill with empty heart tiles
-		lda #HEART_EMPTY_TILE_BOTTOM
-		pha
-		dex
-		bne @emptyBottomTileLoop
-@heartsFullBottom:
-	ldx Player_hearts,y
-	beq @heartsEmptyBottom;if hearts are empty, skip
-	@bottomFullTileLoop:
-	;fill in full hearts
-		lda #HEART_FULL_TILE_BOTTOM
-		pha
-		dex
-		bne @bottomFullTileLoop
-@heartsEmptyBottom:
-;addresses
-	lda #<HEART_ADDRESS_BOTTOM
-	pha
-	lda #>HEART_ADDRESS_BOTTOM
-	pha
-;find how many empty hearts there are
-	sec
-	lda #MAX_HEARTS
-	sbc Player_hearts,y
-	beq @heartsFullTop;skip if hearts are full
-		tax
-	@emptyTopTileLoop:
+	@emptyTileLoop:
 	;fill in top with empty tiles
-		lda #HEART_EMPTY_TILE_TOP
+		lda #HEART_EMPTY_TILE
 		pha
 		dex
-		bne @emptyTopTileLoop
-@heartsFullTop:
+		bne @emptyTileLoop
+@heartsFull:
 ;find how many full hearts there are
 	ldx Player_hearts,y
-	beq @heartsEmptyTop
-	@topFullTileLoop:
+	beq @heartsEmpty
+	@fullTileLoop:
 	;fill in full hearts
-		lda #HEART_FULL_TILE_TOP
+		lda #HEART_FULL_TILE
 		pha
 		dex
-		bne @topFullTileLoop
-@heartsEmptyTop:
+		bne @fullTileLoop
+@heartsEmpty:
 ;addresses
-	lda #<HEART_ADDRESS_TOP
+	lda #<HEART_ADDRESS
 	pha
-	lda #>HEART_ADDRESS_TOP
+	lda #>HEART_ADDRESS
 	pha
 ;NMI render function pointer
 	lda #>(PPU_renderHeartsNMI-1)
@@ -791,23 +987,6 @@ HEART_ADDRESS_BOTTOM=$2442
 .endproc
 
 PPU_renderHeartsNMI:
-;top layer
-	pla
-	sta PPUADDR
-	pla
-	sta PPUADDR
-
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-	pla
-	sta PPUDATA
-;bottom layer
 	pla
 	sta PPUADDR
 	pla
@@ -868,39 +1047,113 @@ PPU_renderPaletteNMI:
 	pla
 	sta PPUDATA
 	rts
+
+PPU_portraitToBuffer:
+	sws Main_stack, PPU_stack
+;set up pointer
+	ldy Portraits_current
+	lda Portraits_L,y
+	sta Portraits_pointer
+	lda Portraits_H,y
+	sta Portraits_pointer+1
+	ldy #16-1;16 tiles
+@loop:
+	lda (Portraits_pointer),y
+	pha
+	dey
+	bpl @loop
+	lda #>(PPU_renderPortraitNMI-1)
+	pha
+	lda #<(PPU_renderPortraitNMI-1)
+	pha
+	sws PPU_stack, Main_stack
+	rts
+
+PPU_renderPortraitNMI:
+PORTRAIT_ADDRESS=$24c3
+	lda #>PORTRAIT_ADDRESS
+	sta PPUADDR
+	lda #<PORTRAIT_ADDRESS
+	sta PPUADDR
+
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+
+	lda #>(PORTRAIT_ADDRESS+$20)
+	sta PPUADDR
+	lda #<(PORTRAIT_ADDRESS+$20)
+	sta PPUADDR
+	
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+
+	lda #>(PORTRAIT_ADDRESS+$40)
+	sta PPUADDR
+	lda #<(PORTRAIT_ADDRESS+$40)
+	sta PPUADDR
+
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+
+	lda #>(PORTRAIT_ADDRESS+$60)
+	sta PPUADDR
+	lda #<(PORTRAIT_ADDRESS+$60)
+	sta PPUADDR
+
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	rts
+
+PPU_renderPaletteNMI:
+;store address
+	pla
+	sta PPUADDR
+	pla
+	sta PPUADDR
+;store colors
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	pla
+	sta PPUDATA
+	rts
 .rodata
 nameTableConversionH:
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
 	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
-	.byte $24, $24, $25, $25, $26, $26, $27, $27, $24, $24, $25, $25, $26, $26, $27, $27
-	.byte $24, $24, $25, $25, $26, $26, $27, $27, $24, $24, $25, $25, $26, $26, $27, $27
-	.byte $24, $24, $25, $25, $26, $26, $27, $27, $24, $24, $25, $25, $26, $26, $27, $27
-	.byte $24, $24, $25, $25, $26, $26, $27, $27, $24, $24, $25, $25, $26, $26, $27, $27
 nameTableConversionL:
 	.byte $00, $80, $00, $80, $00, $80, $00, $80, $04, $84, $04, $84, $04, $84, $04, $84 
 	.byte $08, $88, $08, $88, $08, $88, $08, $88, $0c, $8c, $0c, $8c, $0c, $8c, $0c, $8c 
 	.byte $10, $90, $10, $90, $10, $90, $10, $90, $14, $94, $14, $94, $14, $94, $14, $94 
 	.byte $18, $98, $18, $98, $18, $98, $18, $98, $1c, $9c, $1c, $9c, $1c, $9c, $1c, $9c
-	.byte $00, $80, $00, $80, $00, $80, $00, $80, $04, $84, $04, $84, $04, $84, $04, $84
-	.byte $08, $88, $08, $88, $08, $88, $08, $88, $0c, $8c, $0c, $8c, $0c, $8c, $0c, $8c
-	.byte $10, $90, $10, $90, $10, $90, $10, $90, $14, $94, $14, $94, $14, $94, $14, $94
-	.byte $18, $98, $18, $98, $18, $98, $18, $98, $1c, $9c, $1c, $9c, $1c, $9c, $1c, $9c
-attributeTableConversionH:
-	.byte $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23
-	.byte $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23 
-	.byte $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23 
-	.byte $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23
-	.byte $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27 
-	.byte $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27 
-	.byte $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27 
-	.byte $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27, $27
 attributeTableConversionL:
-	.byte $c0, $c8, $d0, $d8, $e0, $e8, $f0, $f8, $c1, $c9, $d1, $d9, $e1, $e9, $f1, $f9
-	.byte $c2, $ca, $d2, $da, $e2, $ea, $f2, $fa, $c3, $cb, $d3, $db, $e3, $eb, $f3, $fb
-	.byte $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc, $c5, $cd, $d5, $dd, $e5, $ed, $f5, $fd
-	.byte $c6, $ce, $d6, $de, $e6, $ee, $f6, $fe, $c7, $cf, $d7, $df, $e7, $ef, $f7, $ff
 	.byte $c0, $c8, $d0, $d8, $e0, $e8, $f0, $f8, $c1, $c9, $d1, $d9, $e1, $e9, $f1, $f9
 	.byte $c2, $ca, $d2, $da, $e2, $ea, $f2, $fa, $c3, $cb, $d3, $db, $e3, $eb, $f3, $fb
 	.byte $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc, $c5, $cd, $d5, $dd, $e5, $ed, $f5, $fd

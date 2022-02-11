@@ -25,12 +25,12 @@ enemyBulletXL: .res MAX_ENEMY_BULLETS
 enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
-Bullets_hold: .res MAX_ENEMY_BULLETS
 Bullets_diameter: .res MAX_ENEMY_BULLETS
 
 
 .code
 Enemy_Bullet:
+;push y, x, id
 	jsr Enemy_Bullets_getAvailable;c,x(void)
 	bcc @bulletsFull;returns clear if full
 	pla;retrieve bullet id
@@ -64,7 +64,6 @@ Enemy_Bullet:
 	pla
 	rts
 
-.align $100
 Enemy_Bullets:
 ;quickBulletY - y coordinate
 ;save bullet
@@ -107,7 +106,6 @@ Enemy_Bullets:
 	bne @bulletsFull
 	rts
 
-.align $100
 Enemy_Bullets_getAvailable:; c,x (void)
 ;loops through bullet collection, finds inactive bullet, sets to active, returns offset
 ;returns
@@ -134,7 +132,7 @@ updateEnemyBullets:;(void)
 @bulletLoop:
 	lda isEnemyBulletActive,x
 	beq @skipBullet;skip inactive bullets
-		lda Bullets_hold,x
+		cmp #1
 		bne @decreaseHold
 			txa
 			pha; save array index
@@ -147,7 +145,7 @@ updateEnemyBullets:;(void)
 	bpl @bulletLoop ;while x>=0
 	rts
 @decreaseHold:
-	dec Bullets_hold,x
+	dec isEnemyBulletActive,x
 	dex ;x--
 	bpl @bulletLoop ;while x>=0
 	rts
@@ -159,13 +157,13 @@ aimBullet:
 ;returns:
 ;a - degree from 0-256 to shoot bullet. use this degree to fetch correct bullet
 	sec
-	lda playerX_H
+	lda Player_xPos_H
 	sbc quickBulletX
 	bcs *+4
 	eor #$ff
 	tax
 	rol octant
-	lda playerY_H
+	lda Player_yPos_H
 	adc #10
 	sec
 	sbc quickBulletY
@@ -197,59 +195,6 @@ romEnemyBulletHitbox2:
 	.byte 4, 8
 romEnemyBulletMetasprite:
 	.byte BULLET_SPRITE_0, BULLET_SPRITE_1
-
-.macro mainFib quadrant, xPixelsH, xPixelsL, yPixelsH, yPixelsL
-	pla
-	tax
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))
-	sec
-	lda enemyBulletYL,x
-	sbc yPixelsL
-.elseif (.xmatch ({quadrant}, 3) .or .xmatch ({quadrant}, 4))
-	clc
-	lda enemyBulletYL,x
-	adc yPixelsL
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletYL,x
-	lda enemyBulletYH,x
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))
-	sbc yPixelsH
-	bcc @clearBullet
-.elseif (.xmatch ({quadrant}, 3) .or .xmatch ({quadrant}, 4))
-	adc yPixelsH
-	bcs @clearBullet
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletYH,x
-	lda enemyBulletXL,x
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 4))
-	adc xPixelsL
-.elseif (.xmatch ({quadrant}, 2) .or .xmatch ({quadrant}, 3))
-	sbc xPixelsL
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletXL,x
-	lda enemyBulletXH,x
-.if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 4))
-	adc xPixelsH
-	bcs @clearBullet
-.elseif (.xmatch ({quadrant}, 2) .or .xmatch ({quadrant}, 3))
-	sbc xPixelsH
-	bcc @clearBullet
-.else
-.error "Must Supply Valid Quadrant"
-.endif
-	sta enemyBulletXH,x
-	rts
-@clearBullet:
-;shift bit out
-	lsr isEnemyBulletActive,x
-	rts
-.endmacro 
 
 .macro bulletFib quadrant, xOffset_L, xOffset_H, yOffset_L, yOffset_H 
 	pla

@@ -3,25 +3,39 @@
 JOY1 = $4016;Joystick 1 data (R) and joystick strobe (W)
 JOY2 = $4017;Joystick 2 data (R) and frame counter control (W) 
 .zeropage
-Gamepads_state: .res 2
+Gamepads_state: .res 1
+Gamepads_last: .res 1
 
 .code
-Gamepads_read:
-;read only during VBLANK
+Gamepads_read:;a(x)
+;reads joypad of current player and checks for DMA bug
+;arguments
+;x - player to read
+;returns a - gamepad
+CHECKS=2;number of times we will read controllers for accuracy
+	lda Gamepads_state
+	sta Gamepads_last
+@redoRead:;if the reads are different, we will redo them here
+	ldy #CHECKS-1
+@readPads:
 	lda #$01
-	sta Gamepads_state+1; player 2's buttons double as a ring counter
+	pha
 	sta JOY1;write 1 then 0 to latch gamepad state
-    lsr          ; now A is 0
+    lsr ;now A is 0
     sta JOY1
-loop:
-    lda JOY1
+@loop:
+    lda JOY1,x
     and #%00000011  ; ignore bits other than controller
     cmp #$01        ; Set carry if and only if nonzero
-	rol Gamepads_state; Carry -> bit 0; bit 7 -> Carry
-    lda JOY2     ; Repeat
-    and #%00000011
-    cmp #$01
-	rol Gamepads_state+1; Carry -> bit 0; bit 7 -> Carry
-    bcc loop
+	pla
+	rol ; Carry -> bit 0; bit 7 -> Carry
+	pha
+    bcc @loop
+	dey;first read is on stack
+	bpl @readPads;do second
+	pla;pull second read
+	sta Gamepads_state
+	pla;pull first read
+	cmp Gamepads_state
+	bne @redoRead;redo if different
     rts
-
