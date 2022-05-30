@@ -29,31 +29,36 @@ SND_CHN = $4015;Sound channels enable and status
 .zeropage
 MAX_TRACKS=4
 tracks: .res MAX_TRACKS+1
-trackPtr: .res 2
 trackIndex: .res MAX_TRACKS+1
+trackPtr: .res 2
 loops: .res MAX_TRACKS+1
-loopPtr: .res 2
 loopIndex: .res MAX_TRACKS+1
-rest:.res MAX_TRACKS+1
-note:.res MAX_TRACKS+1
-length:.res MAX_TRACKS
-state: .res MAX_TRACKS
+loopPtr: .res 2
+
 instrument: .res MAX_TRACKS
+note:.res MAX_TRACKS+1
 maxVolume: .res MAX_TRACKS
+targetVolume: .res MAX_TRACKS
 currentVolume_L: .res MAX_TRACKS
 currentVolume_H: .res MAX_TRACKS
-targetVolume: .res MAX_TRACKS
-SFXPtr: .res 2
+
+SFX_effect:.res MAX_TRACKS
+SFX_loopPtr: .res 2
+SFX_loopIndex: .res MAX_TRACKS
 ;locals
 .data
+length:.res MAX_TRACKS
+rest:.res MAX_TRACKS+1
+mute:.res MAX_TRACKS
+state: .res MAX_TRACKS
+
+SFX_length:.res MAX_TRACKS
+SFX_rest:.res MAX_TRACKS
 currentPeriod:.res MAX_TRACKS
 targetPeriod:.res MAX_TRACKS
-masterMute:.res MAX_TRACKS
-secondaryMute:.res MAX_TRACKS
-SFX_isActive:.res MAX_TRACKS
-SFX_length:.res MAX_TRACKS
-SFX_savedInstrument:.res MAX_TRACKS
-SFX_savedVolume:.res MAX_TRACKS
+
+Music_savedInstrument:.res MAX_TRACKS
+Music_savedVolume:.res MAX_TRACKS
 
 .code
 APU_init:
@@ -132,8 +137,9 @@ APU_setSong:;void(x)
 	sta loopIndex,y
 	sta rest,y
 	sta length,y
-	sta masterMute,y
-	sta secondaryMute,y
+	sta SFX_length,y
+	sta SFX_rest,y
+	sta SFX_effect,y
 	dey
 	bpl @clearMem1
 	sta loopIndex+4
@@ -146,23 +152,23 @@ APU_advance:
 	lda length,x;see if note is still playing
 	beq @checkRest
 		dec length,x
-		lda secondaryMute,x
+		lda mute,x
 		bne @next
 		lda	#>(@next-1)
 		pha
 		lda	#<(@next-1)
 		pha
 		ldy state,x;attack,decay,sustain
-		lda @states_H,y
+		lda states_H,y
 		pha
-		lda @states_L,y
+		lda states_L,y
 		pha
 		rts
 @checkRest:
 	lda rest,x
 	beq @newNote
 		dec rest,x
-		lda secondaryMute,x
+		lda mute,x
 		bne @next
 		jsr Note_release
 		jmp @next	
@@ -173,29 +179,76 @@ APU_advance:
 	bpl @squareLoop
 @updateSample:
 	lda rest+4
-	beq @newSample
-		dec rest+4
-		rts
-@newSample:
-	jmp getNewSample
-@states_H:
+	bne @return
+		jmp getNewSample
+@return:
+	dec rest+4
+	rts
+
+SFX_advance:
+	ldx #3
+@loop:
+	lda SFX_effect,x;if no sound effect
+	beq @next
+		lda SFX_length,x;else, see if note is still playing
+		beq @checkRest
+			dec SFX_length,x
+			lda	#>(@next-1)
+			pha
+			lda	#<(@next-1)
+			pha
+			ldy state,x;attack,decay,sustain
+			lda states_H,y
+			pha
+			lda states_L,y
+			pha
+			rts
+	@checkRest:
+		lda SFX_rest,x
+		beq @newNote
+			dec SFX_rest,x
+			jsr Note_release
+			jmp @next	
+	@newNote:
+		jsr SFX_getNewNote;(x)
+@next:
+	dex
+	bpl @loop
+	rts
+
+states_H:
 	.byte >(Note_attack-1), >(Note_decay-1), >(Note_sustain-1)
-@states_L:
+states_L:
 	.byte <(Note_attack-1), <(Note_decay-1), <(Note_sustain-1)
 ;offsets each track is for the respective channel
-channelOffsets:
+CHANNEL_OFFSETS:
 	.byte 0, 4, 8, 12
+
+SFX_newEffect:;(a)
+	tax;x is rom sound effect
+	ldy SFX_targetTrack,x;y is track in ram
+	sta SFX_effect,y
+	sta mute,y;mute the music
+
+	lda SFX_volume,x;get sfx volume
+	sta maxVolume,y
+	lda SFX_instrument,x;get sfx instrument
+	sta instrument,y
+
+	lda #0;zero out these variables
+	sta SFX_length,y
+	sta SFX_rest,y
+	sta SFX_loopIndex,y
+	sta state,y
+
+	rts
+
 getNewNote:
 	ldy loops,x;get the channel loop
 	lda loops_L,y;setup pointer
 	sta loopPtr
 	lda loops_H,y
 	sta loopPtr+1
-	lda masterMute,x
-	sta secondaryMute,x
-	beq @noSFX
-		jmp getDummyNote
-@noSFX:
 	ldy loopIndex,x;get the index
 	lda (loopPtr),y;get note
 	bne @loopContinues;loops are null terminated
@@ -214,11 +267,14 @@ getNewNote:
 		iny
 		lda (trackPtr),y;get new instrument
 		sta instrument,x
+		sta Music_savedInstrument,x
 		iny
 		lda (trackPtr),y;get new volume
 		sta maxVolume,x
+		sta Music_savedVolume,x
 		iny
 		sty trackIndex,x;save place in song
+	@getFirstNote:
 		ldy loops,x;get the channel loop
 		lda loops_L,y;setup pointer
 		sta loopPtr
@@ -227,7 +283,7 @@ getNewNote:
 		ldy #0;start at beginning of loop
 		lda (loopPtr),y;get note
 @loopContinues:
-	sta note,x
+	pha;save note
 	iny
 	lda (loopPtr),y;get play duration
 	sta length,x
@@ -237,6 +293,14 @@ getNewNote:
 	sta rest,x
 	iny
 	sty loopIndex,x;save the index
+	lda SFX_effect,x;poke sound effect
+	sta mute,x;mute the channel for the duration of the note
+	beq @playNote;if no sound effect, play note
+		pla;discard note
+		rts;don't play note
+@playNote:
+	pla
+	sta note,x
 	ldy note,x
 	lda periodTable_H,y
 	pha
@@ -255,7 +319,7 @@ getNewNote:
 		inc state,x
 	:sta currentVolume_H,x
 	ora instDuty,y
-	ldy channelOffsets,x
+	ldy CHANNEL_OFFSETS,x
 	sta CHANNEL_VOL,y
 	pla
 	sta CHANNEL_LO,y
@@ -263,50 +327,60 @@ getNewNote:
 	sta CHANNEL_HI,y 
 	rts
 
-getDummyNote:
-;advances tracker without playing any note or saving any data
-	ldy loopIndex,x;get the index
-	lda (loopPtr),y;get note
+SFX_getNewNote:
+	ldy SFX_effect,x;get the channel loop
+	lda SFX_loops_L,y;setup pointer
+	sta SFX_loopPtr
+	lda SFX_loops_H,y
+	sta SFX_loopPtr+1
+	ldy SFX_loopIndex,x;get the index
+	lda (SFX_loopPtr),y;get note
 	bne @loopContinues;loops are null terminated
-		ldy tracks,x
-		lda tracks_L,y
-		sta trackPtr
-		lda tracks_H,y
-		sta trackPtr+1
-		ldy trackIndex,x;get place in song
-		lda (trackPtr),y;get new loop
-		bne @trackContinues;tracks are null terminated
-			ldy #0
-			lda (trackPtr),y;get first loop
-	@trackContinues:
-		sta loops,x
-		iny
-		lda (trackPtr),y;get new instrument
-		sta SFX_savedInstrument,x
-		iny
-		lda (trackPtr),y;get new volume
-		sta SFX_savedVolume,x
-		iny
-		sty trackIndex,x;save place in song
-		tay;get the channel loop
-		lda loops_L,y;setup pointer
-		sta loopPtr
-		lda loops_H,y
-		sta loopPtr+1
-		ldy #0;start at beginning of loop
-		lda (loopPtr),y;get note
+		lda Music_savedVolume,x
+		sta maxVolume,x
+		lda Music_savedInstrument,x
+		sta instrument,x
+		lda #FALSE
+		sta SFX_effect,x
+		rts
 @loopContinues:
+	sta note,x
 	iny
-	lda (loopPtr),y;get play duration
-	sta length,x
-	dec length,x;this frame counts
+	lda (SFX_loopPtr),y;get play duration
+	sta SFX_length,x
+	dec SFX_length,x;this frame counts
 	iny
-	lda (loopPtr),y;get rest duration
-	sta rest,x
+	lda (SFX_loopPtr),y;get rest duration
+	sta SFX_rest,x
 	iny
-	sty loopIndex,x;save the index
+	sty SFX_loopIndex,x;save the index
+
+	ldy note,x;get the period to play
+	lda periodTable_H,y
+	pha
+	lda periodTable_L,y
+	sta currentPeriod,x;save low byte of period for pitch
+	pha
+	lda #0
+	sta state,x;note in attack state while we have 00
+	ldy instrument,x;get the initial volume level
+	lda instAttack_L,y
+	sta currentVolume_L,x
+	lda instAttack_H,y
+	cmp maxVolume,x;attack may just be one frame
+	bcc :+
+		lda maxVolume,x;so don't overflow, clamp at channel vol
+		inc state,x
+	:sta currentVolume_H,x
+	ora instDuty,y
+	ldy CHANNEL_OFFSETS,x
+	sta CHANNEL_VOL,y
+	pla
+	sta CHANNEL_LO,y
+	pla
+	sta CHANNEL_HI,y 
 	rts
-	
+
 getNewSample:
 	ldy loops+4;get the channel loop
 	lda loops_L,y;setup pointer
@@ -372,11 +446,12 @@ Note_attack:
 	ora instDuty,y
 	pha 
 	jsr Note_bend
-	ldy channelOffsets,x
+	ldy CHANNEL_OFFSETS,x
 	sta CHANNEL_LO,y
 	pla
 	sta CHANNEL_VOL,y
 	rts
+
 Note_decay:
 	ldy instrument,x
 	sec;find the target volume
@@ -399,22 +474,24 @@ Note_decay:
 	ora instDuty,y
 	pha
 	jsr Note_bend
-	ldy channelOffsets,x
+	ldy CHANNEL_OFFSETS,x
 	sta CHANNEL_LO,y
 	pla
 	sta CHANNEL_VOL,y
 	rts
+
 Note_sustain:
 	ldy instrument,x
 	lda currentVolume_H,x
 	ora instDuty,y
 	pha 
 	jsr Note_bend
-	ldy channelOffsets,x
+	ldy CHANNEL_OFFSETS,x
 	sta CHANNEL_LO,y
 	pla
 	sta CHANNEL_VOL,y
 	rts
+
 Note_release:
 	ldy instrument,x
 	sec
@@ -429,7 +506,7 @@ Note_release:
 	ora instDuty,y
 	pha 
 	jsr Note_bend
-	ldy channelOffsets,x
+	ldy CHANNEL_OFFSETS,x
 	sta CHANNEL_LO,y
 	pla
 	sta CHANNEL_VOL,y
@@ -760,28 +837,43 @@ INST02=$02;bass triangle
 INST03=$03;high hat open
 INST04=$04;verse lead
 INST05=$05;verse rhythm guitar
+INST06=$06;low explosion
 instDuty:;ddlc vvvv
-	.byte DUTY02, DUTY02, %10000000, %00110000, DUTY02, DUTY00
+	.byte DUTY02, DUTY02, %10000000, %00110000, DUTY02, DUTY00, %00110000
 instAttack_H:
-	.byte 8, 8, 15, 15, 15, 15
+	.byte 8, 8, 15, 15, 15, 15, 15
 instAttack_L:
-	.byte 0, 0, 0, 0, 00
+	.byte 0, 0, 0, 0, 00, 00
 instDecay:
-	.byte 5, 5, 0, 5, 2, 3
+	.byte 5, 5, 0, 5, 1, 3, 2
 instSustain:;volume minus number below
-	.byte 3, 3, 0, 5, 3, 3
+	.byte 3, 3, 0, 5, 3, 3, 5
 instRelease_H:
-	.byte 1, 1, 15, 0, 0, 1
+	.byte 1, 1, 15, 0, 0, 1, 5
 instRelease_L:
-	.byte 0, 0, 0, 128, 64, 0
+	.byte 0, 0, 0, 128, 64, 0, 0
 instBend:
 ;vnrr raaa 
 ;v - vibrato (disregards nra)
 ;n - negative chane  (going higher)
-;r - rate of change (r+1)*2
+;r - rate of change 
 ;a - amount of change (half-steps)
-	.byte 0, %01011001, 0, 0, 0, 0
+	.byte 0, %01011001, 0, 0, 0, 0, %00001100
+SFX01= 01
+SFX_instrument:
+	.byte NULL, INST01
+SFX_volume:
+	.byte NULL, 10
+SFX_targetTrack:
+	.byte NULL, 00
+SFX_loops_L:
+	.byte NULL, <SFX_loop00
+SFX_loops_H:
+	.byte NULL, >SFX_loop00
 
+SFX_loop00:
+	.byte B2, 10, 20, NULL
+	
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
 KICK_LENGTH=%10000
 SNARE_ADDRESS= <(( DPCM_snare  - $C000) >> 6)

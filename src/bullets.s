@@ -14,7 +14,7 @@ bulletAngle: .res 1
 numberOfBullets: .res 1
 
 .data
-MAX_ENEMY_BULLETS=48
+MAX_ENEMY_BULLETS=56
 isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 enemyBulletHitbox1: .res MAX_ENEMY_BULLETS
 enemyBulletHitbox2: .res MAX_ENEMY_BULLETS

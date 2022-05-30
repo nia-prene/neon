@@ -29,7 +29,7 @@ Player_init:;(x)
 	sta Player_hearts,x
 	lda #TRUE
 	sta Player_haveHeartsChanged
-	lda #2
+	lda #0
 	sta Player_powerLevel
 	lda #TRUE
 	sta Player_willRender

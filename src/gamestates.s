@@ -87,6 +87,7 @@ gamestate00:
 	jsr OAM_build;(c,a)
 	jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
+	jsr SFX_advance
 	jsr APU_advance
 	rts
 
