@@ -54,7 +54,8 @@ state: .res MAX_TRACKS
 
 SFX_length:.res MAX_TRACKS
 SFX_rest:.res MAX_TRACKS
-currentPeriod:.res MAX_TRACKS
+currentPeriod_L:.res MAX_TRACKS
+currentPeriod_LL:.res MAX_TRACKS
 targetPeriod:.res MAX_TRACKS
 
 Music_savedInstrument:.res MAX_TRACKS
@@ -109,9 +110,11 @@ APU_setSong:;void(x)
 	iny
 	lda (trackPtr),y;get new instrument
 	sta instrument,x
+	sta Music_savedInstrument,x
 	iny
 	lda (trackPtr),y;get new volume
 	sta maxVolume,x
+	sta Music_savedVolume,x
 	iny
 	sty trackIndex,x
 	dex
@@ -242,6 +245,7 @@ SFX_newEffect:;(a)
 	sta SFX_rest,y
 	sta SFX_loopIndex,y
 	sta state,y
+	sta currentPeriod_LL,y
 
 	rts
 
@@ -307,7 +311,7 @@ getNewNote:
 	lda periodTable_H,y
 	pha
 	lda periodTable_L,y
-	sta currentPeriod,x;save low byte of period for pitch
+	sta currentPeriod_L,x;save low byte of period for pitch
 	pha
 	lda #0
 	sta state,x;note in attack state while we have 00
@@ -361,15 +365,16 @@ SFX_getNewNote:
 	lda periodTable_H,y
 	pha
 	lda periodTable_L,y
-	sta currentPeriod,x;save low byte of period for pitch
+	sta currentPeriod_L,x;save low byte of period for pitch
 	pha
 	lda #0
+	sta currentPeriod_LL,x;clear low low byte of pitch
 	sta state,x;note in attack state while we have 00
 	ldy instrument,x;get the initial volume level
 	lda instAttack_L,y
 	sta currentVolume_L,x
 	lda instAttack_H,y
-	cmp maxVolume,x;attack may just be one frame
+	cmp maxVolume,x;attack may be instantaneous
 	bcc :+
 		lda maxVolume,x;so don't overflow, clamp at channel vol
 		inc state,x
@@ -518,58 +523,60 @@ Note_bend:
 	ldy instrument,x
 	lda instBend,y
 	bne @hasBend
-		lda currentPeriod,x
+		lda currentPeriod_L,x
 		rts
 @hasBend:
-	asl;todo vibrato
-	asl	
-	bcc @bendDown
-	lda instBend,y
-	and #%00000111
-	clc
-	adc note,x
+	pha ;
 	tay
+	lda Bend_flags,y
+	ror;todo vibrato
+	ror	
+	bcc @bendDown
+
+	clc ;calculate the target note
+	lda note,x
+	adc Bend_target,y
+	tay ;convert to numerical period
 	lda periodTable_L,y
 	sta targetPeriod,x
-	ldy instrument,x
-	lda instBend,y
-	lsr
-	lsr
-	and #%00001110
-	clc
-	adc #%10
-	sta mathTemp
-	sec
-	lda currentPeriod,x
-	sbc mathTemp
+	
+	pla ;restore bend
+	tay
+
+	sec ;subtract the period change
+	lda currentPeriod_LL,x
+	sbc Bend_speed_L,y
+	sta currentPeriod_LL,x
+	lda currentPeriod_L,x
+	sbc Bend_speed_H,y
 	cmp targetPeriod,x
 	bcs :+
-		lda targetPeriod,x
-	:sta currentPeriod,x
+		lda targetPeriod,x ;ensure we don't overshoot
+	:sta currentPeriod_L,x
 	rts
 @bendDown:
-	lda instBend,y
-	and #%00000111
-	sta mathTemp
-	sec	
+	sec ;calculate the target note
 	lda note,x
-	sbc mathTemp
-	tay
+	sbc Bend_target,y
+	tay ;convert to numerical period
 	lda periodTable_L,y
 	sta targetPeriod,x
-	ldy instrument,x
-	lda instBend,y
-	lsr
-	lsr
-	and #%00001110
-	clc
-	adc #%10
-	adc currentPeriod,x
+
+	pla ;restore bend
+	tay
+
+	clc ;add the period change
+	lda currentPeriod_LL,x
+	adc Bend_speed_L,y
+	sta currentPeriod_LL,x
+	lda currentPeriod_L,x
+	adc Bend_speed_H,y
 	cmp targetPeriod,x
 	bcc :+
-		lda targetPeriod,x
-	:sta currentPeriod,x
+		lda targetPeriod,x ;ensure we do not overshoot
+	:sta currentPeriod_L,x
 	rts
+
 .rodata	
 songsSQ1:
 	.byte TRACK01
@@ -657,7 +664,7 @@ track04:
 	.byte LOOP09, LOOP09, LOOP09, LOOP09
 	.byte NULL
 track05:
-	.byte LOOP0F, INST03, 12
+	.byte LOOP0F, INST03, 15
 	.byte NULL
 ;LOOPS
 LOOP01=$01;s1 sq1 chorus 2
@@ -833,48 +840,58 @@ DUTY00=%00110000
 DUTY01=%01110000
 DUTY02=%10110000
 DUTY03=%11110000
+NOISE=%00110000
+TRI=%10000000
 INST00=$00;s1 chorus lead guitar
 INST01=$01;s1 chorus lead guitar bend up one half step 
 INST02=$02;bass triangle
 INST03=$03;high hat open
 INST04=$04;verse lead
 INST05=$05;verse rhythm guitar
-INST06=$06;low explosion
+INST06=$06;explosion 01
 instDuty:;ddlc vvvv
-	.byte DUTY02, DUTY02, %10000000, %00110000, DUTY02, DUTY00, %00110000
+	.byte DUTY02, DUTY02, TRI, NOISE, DUTY02, DUTY00, NOISE 
 instAttack_H:
-	.byte 8, 8, 15, 15, 15, 15, 15
+	.byte 8, 8, 15, 15, 15, 15, 8
 instAttack_L:
-	.byte 0, 0, 0, 0, 00, 00
+	.byte 0, 0, 0, 0, 00, 00, 00
 instDecay:
 	.byte 5, 5, 0, 5, 1, 3, 2
 instSustain:;volume minus number below
-	.byte 3, 3, 0, 5, 3, 3, 5
+	.byte 3, 3, 0, 5, 3, 3, 2
 instRelease_H:
-	.byte 1, 1, 15, 0, 0, 1, 5
+	.byte 1, 1, 15, 0, 0, 1, 1
 instRelease_L:
 	.byte 0, 0, 0, 128, 64, 0, 0
 instBend:
-;vnrr raaa 
-;v - vibrato (disregards nra)
-;n - negative chane  (going higher)
-;r - rate of change 
-;a - amount of change (half-steps)
-	.byte 0, %01011001, 0, 0, 0, 0, %00001100
+	.byte 00, 01, 0, 0, 0, 0, 2
 SFX01= 01
 SFX_instrument:
-	.byte NULL, INST01
+	.byte NULL, INST06
 SFX_volume:
-	.byte NULL, 10
+	.byte NULL, 08
 SFX_targetTrack:
-	.byte NULL, 01
+	.byte NULL, 03
 SFX_loops_L:
 	.byte NULL, <SFX_loop00
 SFX_loops_H:
 	.byte NULL, >SFX_loop00
 
 SFX_loop00:
-	.byte B2, 20, 0, NULL
+	.byte N0D, 6, 6, NULL
+
+Bend_flags:;|uuuu uunv|
+;n - negative chane  (going higher)
+;v - vibrato (disregards nra)
+	.byte NULL, %10, %00
+Bend_speed_H:
+	.byte NULL, 10, 00
+
+Bend_speed_L:
+	.byte NULL, 00, 64
+
+Bend_target:;(half steps)
+	.byte NULL, 01, 2
 	
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
 KICK_LENGTH=%10000
@@ -968,38 +985,38 @@ Db7=$4d
 D7=$4e
 Eb7=$4f
 E7=$50
-N00=$51
-N01=$52
-N02=$53
-N03=$54
-N04=$55
-N05=$56
-N06=$57
-N07=$58
-N08=$59
-N09=$5a
-N0A=$5b
-N0B=$5c
-N0C=$5d
-N0D=$5e
-N0E=$5f
-N0F=$60
-N10=$61;
-N11=$62
-N12=$63
-N13=$64
-N14=$65
-N15=$66
-N16=$67
-N17=$68
-N18=$69
-N19=$6a
-N1A=$6b
-N1B=$6c
-N1C=$6d
-N1D=$6e
-N1E=$6f
-N1F=$70
+N0F=$51
+N0E=$52
+N0D=$53
+N0C=$54
+N0B=$55
+N0A=$56
+N09=$57
+N08=$58
+N07=$59
+N06=$5a
+N05=$5b
+N04=$5c
+N03=$5d
+N02=$5e
+N01=$5f
+N00=$60
+N1F=$61;
+N1E=$62
+N1D=$63
+N1C=$64
+N1B=$65
+N1A=$66
+N19=$67
+N18=$68
+N17=$69
+N16=$6a
+N15=$6b
+N14=$6c
+N13=$6d
+N12=$6e
+N11=$6f
+N10=$70
 periodTable_L:
   .byte NULL,$f1,$7f,$13,$ad,$4d,$f3,$9d,$4c,$00,$b8,$74,$34
   .byte $f8,$bf,$89,$56,$26,$f9,$ce,$a6,$80,$5c,$3a,$1a
@@ -1007,10 +1024,10 @@ periodTable_L:
   .byte $fd,$ef,$e1,$d5,$c9,$bd,$b3,$a9,$9f,$96,$8e,$86
   .byte $7e,$77,$70,$6a,$64,$5e,$59,$54,$4f,$4b,$46,$42
   .byte $3f,$3b,$38,$34,$31,$2f,$2c,$29,$27,$25,$23,$21
-  .byte $1f,$1d,$1b,$1a,$18,$17,$15,$14,$00,$01,$02,$03
-  .byte $04,$05,$06,$07,$08,$09,$0a,$0b,$0c,$0d,$0e,$0f
-  .byte $80,$81,$82,$83,$84,$85,$86,$87,$88,$89,$8a,$8b
-  .byte $8c,$8d,$8e,$8f
+  .byte $1f,$1d,$1b,$1a,$18,$17,$15,$14,$0f,$0e,$0d,$0c
+  .byte $0b,$0a,$09,$08,$07,$06,$05,$04,$03,$02,$01,$00
+  .byte $8f,$8e,$8d,$8c,$8b,$8a,$89,$88,$87,$86,$85,$84
+  .byte $83,$82,$81,$80
 periodTable_H:
   .byte NULL, $07,$07,$07,$06,$06,$05,$05,$05,$05,$04,$04,$04
   .byte $03,$03,$03,$03,$03,$02,$02,$02,$02,$02,$02,$02

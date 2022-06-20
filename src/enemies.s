@@ -6,6 +6,7 @@
 .include "bullets.h"
 .include "pickups.h"
 .include "score.h"
+.include "apu.h"
 
 .zeropage
 totalDamage: .res 1
@@ -294,6 +295,8 @@ Enemies_explodeSmall:
 .else 
 	.error "explosion needs size"
 .endif
+	lda #1
+	jsr SFX_newEffect
 	rts
 .endmacro
 ENEMY01=1

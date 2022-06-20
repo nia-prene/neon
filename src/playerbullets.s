@@ -28,8 +28,6 @@ B_BUTTON=%01000000
 		;set the weapons cooldown timer
 			lda #COOLDOWN_TIME
 			sta PlayerBullet_CooldownTimer
-			lda #1
-			jsr SFX_newEffect;(a)
 		;push on as many shooting routines as powerups
 			ldy Player_powerLevel
 		@shotLoop:
