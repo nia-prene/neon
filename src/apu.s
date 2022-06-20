@@ -193,8 +193,10 @@ SFX_advance:
 @loop:
 	ldy SFX_effect,x;if sound effect
 	beq @next
-		lda SFX_instrument,y;refresh instrument in case change
+		lda SFX_instrument,y;set instrument
 		sta instrument,x
+		lda SFX_volume,y;set volume
+		sta maxVolume,x
 		lda SFX_length,x;if note is playing
 		beq @checkRest
 			dec SFX_length,x
@@ -234,11 +236,6 @@ SFX_newEffect:;(a)
 	ldy SFX_targetTrack,x;y is track in ram
 	sta SFX_effect,y
 	sta mute,y;mute the music
-
-	lda SFX_volume,x;get sfx volume
-	sta maxVolume,y
-	lda SFX_instrument,x;get sfx instrument
-	sta instrument,y
 
 	lda #0;zero out these variables
 	sta SFX_length,y
@@ -869,7 +866,7 @@ SFX01= 01
 SFX_instrument:
 	.byte NULL, INST06
 SFX_volume:
-	.byte NULL, 08
+	.byte NULL, 09
 SFX_targetTrack:
 	.byte NULL, 03
 SFX_loops_L:
