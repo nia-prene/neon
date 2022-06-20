@@ -188,9 +188,11 @@ APU_advance:
 SFX_advance:
 	ldx #3
 @loop:
-	lda SFX_effect,x;if no sound effect
+	ldy SFX_effect,x;if sound effect
 	beq @next
-		lda SFX_length,x;else, see if note is still playing
+		lda SFX_instrument,y;refresh instrument in case change
+		sta instrument,x
+		lda SFX_length,x;if note is playing
 		beq @checkRest
 			dec SFX_length,x
 			lda	#>(@next-1)
@@ -865,14 +867,14 @@ SFX_instrument:
 SFX_volume:
 	.byte NULL, 10
 SFX_targetTrack:
-	.byte NULL, 00
+	.byte NULL, 01
 SFX_loops_L:
 	.byte NULL, <SFX_loop00
 SFX_loops_H:
 	.byte NULL, >SFX_loop00
 
 SFX_loop00:
-	.byte B2, 10, 20, NULL
+	.byte B2, 20, 0, NULL
 	
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
 KICK_LENGTH=%10000
