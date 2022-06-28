@@ -6,3 +6,5 @@
 
 .globalzp SFX01
 .globalzp SFX02
+.globalzp SFX03
+.globalzp SFX04

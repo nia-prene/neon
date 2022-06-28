@@ -4,12 +4,15 @@
 .include "enemies.h"
 .include "sprites.h"
 .include "player.h"
-
+.include "apu.h"	
 .code
 
 Pickups_movePowerup:
 	pla
+	pha
 	tax
+	lda #SPRITE0E
+	sta enemyMetasprite,x
 	clc
 	lda enemyYH,x
 	adc #1
@@ -17,8 +20,7 @@ Pickups_movePowerup:
 	sta enemyYH,x
 	jsr Pickups_isCollected
 	bcs @collected
-	lda #SPRITE0E
-	sta enemyMetasprite,x
+	pla
 	rts
 @collected:
 ;increase the players power
@@ -31,7 +33,13 @@ Pickups_movePowerup:
 	lda #2
 @setPower:
 	sta Player_powerLevel
+	lda #SFX03
+	jsr SFX_newEffect
+	lda #SFX04
+	jsr SFX_newEffect
 @clear:
+	pla
+	tax
 	lda #FALSE
 	sta isEnemyActive,x
 	rts

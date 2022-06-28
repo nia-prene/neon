@@ -312,6 +312,7 @@ getNewNote:
 	pha
 	lda #0
 	sta state,x;note in attack state while we have 00
+	sta currentPeriod_LL,x;clear low low byte of pitch
 	ldy instrument,x;get the initial volume level
 	lda instAttack_L,y
 	sta currentVolume_L,x
@@ -847,40 +848,48 @@ INST04=$04;verse lead
 INST05=$05;verse rhythm guitar
 INST06=$06;explosion small craft
 INST07=$07;player hit
+INST08=$08;powerup
 instDuty:;ddlc vvvv
-	.byte DUTY02, DUTY02, TRI, NOISE, DUTY02, DUTY00, NOISE, DUTY02 
+	.byte DUTY02, DUTY02, TRI, NOISE, DUTY02, DUTY00, NOISE, DUTY02, DUTY02
 instAttack_H:
-	.byte 8, 8, 15, 15, 15, 15, 15, 6
+	.byte 8, 8, 15, 15, 15, 15, 15, 15, 15
 instAttack_L:
 	.byte 0, 0, 0, 0, 00, 00, 00
 instDecay:
-	.byte 5, 5, 0, 5, 1, 3, 3, 2
+	.byte 5, 5, 0, 5, 1, 3, 3, 2, 2
 instSustain:;volume minus number below
-	.byte 3, 3, 0, 5, 3, 3, 2, 4
+	.byte 3, 3, 0, 5, 3, 3, 2, 4, 2
 instRelease_H:
-	.byte 1, 1, 15, 0, 0, 1, 2, 5
+	.byte 1, 1, 15, 0, 0, 1, 2, 5, 0
 instRelease_L:
-	.byte 0, 0, 0, 128, 64, 0, 0
+	.byte 0, 0, 0, 128, 64, 0, 0, 0, 64
 instBend:
-	.byte 00, 01, 0, 0, 0, 0, 2, 3
+	.byte 00, 01, 0, 0, 0, 0, 2, 3, 0
 
-SFX01= 01
-SFX02= 02
+SFX01= 01;explosion small craft
+SFX02= 02; player ouch
+SFX03= 03; Powerup melody
+SFX04= 04; Powerup harmony
+
 SFX_instrument:
-	.byte NULL, INST06, INST07
+	.byte NULL, INST06, INST07, INST08, INST08
 SFX_volume:
-	.byte NULL, 12, 08
+	.byte NULL, 12, 08, 8, 8
 SFX_targetTrack:
-	.byte NULL, 03, 01
+	.byte NULL, 03, 01, 00, 01
 SFX_loops_L:
-	.byte NULL, <SFX_loop00, <SFX_loop01
+	.byte NULL, <SFX_loop00, <SFX_loop01, <SFX_loop02, <SFX_loop03
 SFX_loops_H:
-	.byte NULL, >SFX_loop00, >SFX_loop01
+	.byte NULL, >SFX_loop00, >SFX_loop01, >SFX_loop02, >SFX_loop03
 
 SFX_loop00:
 	.byte N0B, 6, 3, NULL
 SFX_loop01:
 	.byte D7, 06, 3, NULL
+SFX_loop02:
+	.byte D4, 3, 0, Gb4, 3, 3, D5, 6, 3, A4, 6, 12, NULL
+SFX_loop03:
+	.byte Gb4, 3, 0, A4, 3, 3, Gb5, 6, 3, D5, 6, 12, NULL
 
 Bend_flags:;|uuuu uunv|
 ;n - negative chane  (going higher)
