@@ -34,6 +34,7 @@ main:
 	NES_init
 	jsr PPU_init
 ;player 0 starts
+	lda #0
 	sta Main_currentPlayer
 ;there is no frame that needs renderso set to TRUE
 	lda #1

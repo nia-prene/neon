@@ -40,8 +40,8 @@ NAMETABLE_3 = %00000011;OR
 
 ;project settings for mask
 GREYSCALE = 0;0: normal color, 1: produce a greyscale display
-LEFT_BACKGROUND = 0;1: Show background in leftmost 8 pixels of screen, 0: Hide
-LEFT_SPRITES = 0;1: Show sprites in leftmost 8 pixels of screen, 0: Hide
+LEFT_BACKGROUND = 1;1: Show background in leftmost 8 pixels of screen, 0: Hide
+LEFT_SPRITES = 1;1: Show sprites in leftmost 8 pixels of screen, 0: Hide
 SHOW_BACKGROUND = 0;1: shows backgrounds, 0: disables backgrounds
 SHOW_SPRITES = 0;1: shows sprites, 0: disables sprites
 RED_EMPHASIS = 0;1 is on 0 is off
@@ -944,7 +944,7 @@ COMMA_BOTTOM = $ED
 MAX_HEARTS=5
 HEART_FULL_TILE=$ee	
 HEART_EMPTY_TILE=$ef	
-HEART_ADDRESS=$2422
+HEART_ADDRESS=$2421
 	ldy #0;player zero
 ;swap stacks
 	sws Main_stack, PPU_stack

@@ -71,6 +71,8 @@ gamestate00:
 	jsr Score_tallyFrame;(x)
 	jsr Player_isHit
 	bcc @buildSprites
+		lda #SFX02
+		jsr SFX_newEffect
 		ldx Main_currentPlayer
 		dec Player_powerLevel,x
 		bpl @decreaseHearts

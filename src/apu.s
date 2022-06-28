@@ -605,22 +605,22 @@ track01:;loop, instrument, volume
 	.byte LOOP10, INST04, 08
 	.byte LOOP14, INST04, 07
 ;chorus
-	.byte LOOP0A, INST00, 08
-	.byte LOOP0B, INST01, 08
-	.byte LOOP0C, INST00, 08
-	.byte LOOP01, INST00, 08
-	.byte LOOP0A, INST00, 08
-	.byte LOOP0B, INST01, 08
-	.byte LOOP0C, INST00, 08
-	.byte LOOP02, INST00, 08
-	.byte LOOP0A, INST00, 08
-	.byte LOOP0B, INST01, 08
-	.byte LOOP0C, INST00, 08
-	.byte LOOP01, INST00, 08
-	.byte LOOP0A, INST00, 08
-	.byte LOOP0B, INST01, 08
-	.byte LOOP0C, INST00, 08
-	.byte LOOP02, INST00, 08
+	.byte LOOP03, INST00, 08
+	.byte LOOP0D, INST01, 08
+	.byte LOOP0E, INST00, 08
+	.byte LOOP04, INST00, 08
+	.byte LOOP03, INST00, 08
+	.byte LOOP0D, INST01, 08
+	.byte LOOP0E, INST00, 08
+	.byte LOOP05, INST00, 08
+	.byte LOOP03, INST00, 08
+	.byte LOOP0D, INST01, 08
+	.byte LOOP0E, INST00, 08
+	.byte LOOP04, INST00, 08
+	.byte LOOP03, INST00, 08
+	.byte LOOP0D, INST01, 08
+	.byte LOOP0E, INST00, 08
+	.byte LOOP05, INST00, 08
 	.byte NULL
 track02:
 ;verse
@@ -629,22 +629,22 @@ track02:
 	.byte LOOP17, INST05, 08
 	.byte LOOP18, INST04, 07
 ;chorus
-	.byte LOOP03, INST00, 08
-	.byte LOOP0D, INST01, 08
-	.byte LOOP0E, INST00, 08
-	.byte LOOP04, INST00, 08
-	.byte LOOP03, INST00, 08
-	.byte LOOP0D, INST01, 08
-	.byte LOOP0E, INST00, 08
-	.byte LOOP05, INST00, 08
-	.byte LOOP03, INST00, 08
-	.byte LOOP0D, INST01, 08
-	.byte LOOP0E, INST00, 08
-	.byte LOOP04, INST00, 08
-	.byte LOOP03, INST00, 08
-	.byte LOOP0D, INST01, 08
-	.byte LOOP0E, INST00, 08
-	.byte LOOP05, INST00, 08
+	.byte LOOP0A, INST00, 08
+	.byte LOOP0B, INST01, 08
+	.byte LOOP0C, INST00, 08
+	.byte LOOP01, INST00, 08
+	.byte LOOP0A, INST00, 08
+	.byte LOOP0B, INST01, 08
+	.byte LOOP0C, INST00, 08
+	.byte LOOP02, INST00, 08
+	.byte LOOP0A, INST00, 08
+	.byte LOOP0B, INST01, 08
+	.byte LOOP0C, INST00, 08
+	.byte LOOP01, INST00, 08
+	.byte LOOP0A, INST00, 08
+	.byte LOOP0B, INST01, 08
+	.byte LOOP0C, INST00, 08
+	.byte LOOP02, INST00, 08
 	.byte NULL
 track03:
 	.byte LOOP19, INST02, 15
@@ -845,50 +845,55 @@ INST02=$02;bass triangle
 INST03=$03;high hat open
 INST04=$04;verse lead
 INST05=$05;verse rhythm guitar
-INST06=$06;explosion 01
+INST06=$06;explosion small craft
+INST07=$07;player hit
 instDuty:;ddlc vvvv
-	.byte DUTY02, DUTY02, TRI, NOISE, DUTY02, DUTY00, NOISE 
+	.byte DUTY02, DUTY02, TRI, NOISE, DUTY02, DUTY00, NOISE, DUTY02 
 instAttack_H:
-	.byte 8, 8, 15, 15, 15, 15, 8
+	.byte 8, 8, 15, 15, 15, 15, 15, 6
 instAttack_L:
 	.byte 0, 0, 0, 0, 00, 00, 00
 instDecay:
-	.byte 5, 5, 0, 5, 1, 3, 2
+	.byte 5, 5, 0, 5, 1, 3, 3, 2
 instSustain:;volume minus number below
-	.byte 3, 3, 0, 5, 3, 3, 2
+	.byte 3, 3, 0, 5, 3, 3, 2, 4
 instRelease_H:
-	.byte 1, 1, 15, 0, 0, 1, 1
+	.byte 1, 1, 15, 0, 0, 1, 2, 5
 instRelease_L:
 	.byte 0, 0, 0, 128, 64, 0, 0
 instBend:
-	.byte 00, 01, 0, 0, 0, 0, 2
+	.byte 00, 01, 0, 0, 0, 0, 2, 3
+
 SFX01= 01
+SFX02= 02
 SFX_instrument:
-	.byte NULL, INST06
+	.byte NULL, INST06, INST07
 SFX_volume:
-	.byte NULL, 09
+	.byte NULL, 12, 08
 SFX_targetTrack:
-	.byte NULL, 03
+	.byte NULL, 03, 01
 SFX_loops_L:
-	.byte NULL, <SFX_loop00
+	.byte NULL, <SFX_loop00, <SFX_loop01
 SFX_loops_H:
-	.byte NULL, >SFX_loop00
+	.byte NULL, >SFX_loop00, >SFX_loop01
 
 SFX_loop00:
-	.byte N0D, 6, 6, NULL
+	.byte N0B, 6, 3, NULL
+SFX_loop01:
+	.byte D7, 06, 3, NULL
 
 Bend_flags:;|uuuu uunv|
 ;n - negative chane  (going higher)
 ;v - vibrato (disregards nra)
-	.byte NULL, %10, %00
+	.byte NULL, %10, %00, %00
 Bend_speed_H:
-	.byte NULL, 10, 00
+	.byte NULL, 10, 00, 32
 
 Bend_speed_L:
-	.byte NULL, 00, 64
+	.byte NULL, 00, 64, 0
 
 Bend_target:;(half steps)
-	.byte NULL, 01, 2
+	.byte NULL, 01, 4, 36
 	
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
 KICK_LENGTH=%10000

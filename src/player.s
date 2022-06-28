@@ -7,6 +7,7 @@
 .include "enemies.h"
 .include "bullets.h"
 
+
 .zeropage
 Player_xPos_H: .res 1
 Player_xPos_L: .res 1
@@ -77,13 +78,13 @@ FAST_MOVEMENT_L = 0
 SLOW_MOVEMENT_H = 1
 SLOW_MOVEMENT_L = 0
 ;furthest right player can go
-MAX_RIGHT = 249
+MAX_RIGHT = 243
 ;furthest left player can go
-MAX_LEFT = 07
+MAX_LEFT = 00
 ;furthest up player can go
 MAX_UP = 0
 ;furthest down player can go
-MAX_DOWN = 204
+MAX_DOWN = 202
 	rol;test bit 7 (A)
 	pha;save controller
 	bcs @goingSlow
@@ -132,7 +133,6 @@ MAX_DOWN = 204
 	sta Player_xPos_L
 	lda Player_xPos_H
 	sbc Player_speed_H
-	cmp #MAX_LEFT
 	bcs @storeLeft
 	lda #MAX_LEFT
 @storeLeft:
@@ -177,7 +177,7 @@ MAX_DOWN = 204
 	rts
 
 .align $80
-Player_isHit:;(void)
+Player_isHit:;c()
 PLAYER_HEIGHT=18
 MAX_BULLET_DIAMETER=16
 HITBOX_X_OFFSET=6
@@ -236,8 +236,8 @@ HITBOX_HEIGHT=1
 	sta sprite2RightOrBottom
 	jsr checkCollision
 	bcc @nextBullet
-	inc Player_iFrames;turn player invincible
-	rts ;return carry set
+		inc Player_iFrames;turn player invincible	
+		rts ;return carry set
 @nextBullet:
 	dex
 	bpl @bulletLoop

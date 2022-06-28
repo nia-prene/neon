@@ -21,4 +21,3 @@
 .global renderAllPalettes
 .global renderAllTiles
 .global PPUMASK
-.globalzp currentMaskSettings
