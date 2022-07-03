@@ -44,6 +44,7 @@ currentVolume_L: .res MAX_TRACKS
 currentVolume_H: .res MAX_TRACKS
 
 SFX_effect:.res MAX_TRACKS
+SFX_priority: .res MAX_TRACKS
 SFX_loopPtr: .res 2
 SFX_loopIndex: .res MAX_TRACKS
 ;locals
@@ -163,9 +164,9 @@ Song_silence:
 		lda instDuty,y
 		ldy CHANNEL_OFFSETS,x
 		sta CHANNEL_VOL,y
-		dex
-		bpl @channelLoop
 @skipChannel:
+	dex
+	bpl @channelLoop
 	rts
 
 Song_advance:
@@ -251,20 +252,27 @@ CHANNEL_OFFSETS:
 	.byte 0, 4, 8, 12
 
 SFX_newEffect:;(a)
+	pha;save sfx
 	tax;x is rom sound effect
 	ldy SFX_targetTrack,x;y is track in ram
-	sta SFX_effect,y
-	sta mute,y;mute the music
+	lda SFX_Priority,x;get new sfx priority
+	cmp SFX_priority,y;compare it to current sfx priority
+	bcc @sfxOverrided
+		sta SFX_priority,y
+		pla
+		sta SFX_effect,y
+		sta mute,y;mute the music
 
-	lda #0;zero out these variables
-	sta SFX_length,y
-	sta SFX_rest,y
-	sta SFX_loopIndex,y
-	sta state,y
-	sta currentPeriod_LL,y
-
+		lda #0;zero out these variables
+		sta SFX_length,y
+		sta SFX_rest,y
+		sta SFX_loopIndex,y
+		sta state,y
+		sta currentPeriod_LL,y
+		rts
+@sfxOverrided:
+	pla
 	rts
-
 getNewNote:
 	ldy loops,x;get the channel loop
 	lda loops_L,y;setup pointer
@@ -371,6 +379,7 @@ SFX_getNewNote:
 		sta instrument,x
 		lda #FALSE
 		sta SFX_effect,x
+		sta SFX_priority,x
 		rts
 @loopContinues:
 	sta note,x
@@ -882,11 +891,11 @@ instAttack_H:
 instAttack_L:
 	.byte 0, 0, 0, 0, 00, 00, 00, 0
 instDecay:
-	.byte 5, 5, 0, 5, 1, 3, 4, 2, 1, 6
+	.byte 5, 5, 0, 5, 1, 3, 4, 2, 1, 8
 instSustain:;volume minus number below
-	.byte 3, 3, 0, 5, 3, 3, 4, 4, 1, 6
+	.byte 3, 3, 0, 5, 3, 3, 4, 4, 1, 8
 instRelease_H:
-	.byte 1, 1, 15, 0, 0, 1, 0, 5, 0, 2
+	.byte 1, 1, 15, 0, 0, 1, 0, 5, 0, 1
 instRelease_L:
 	.byte 0, 0, 0, 128, 64, 0, 128, 0, 64, 0
 instBend:
@@ -900,8 +909,10 @@ SFX05= 05; player shots
 
 SFX_instrument:
 	.byte NULL, INST06, INST07, INST08, INST08, INST09
+SFX_Priority:
+	.byte 128, 255, 128, 128, 01
 SFX_volume:
-	.byte NULL, 12, 08, 7, 7, 08
+	.byte NULL, 12, 08, 7, 7, 11
 SFX_targetTrack:
 	.byte NULL, 03, 01, 00, 01, 03
 SFX_loops_L:
@@ -914,9 +925,9 @@ SFX_loop00:
 SFX_loop01:
 	.byte D7, 06, 3, NULL
 SFX_loop02:
-	.byte D4, 3, 0, Gb4, 3, 6, D5, 6, 6, A4, 6, 12, NULL
+	.byte D4, 3, 0, Gb4, 3, 6, D5, 6, 9, A4, 6, 18, NULL
 SFX_loop03:
-	.byte Gb4, 3, 0, A4, 3, 6, Gb5, 6, 6, D5, 6, 12, NULL
+	.byte Gb4, 3, 0, A4, 3, 6, Gb5, 6, 9, D5, 6, 18, NULL
 SFX_loop04:
 	.byte N0D, 3, 3, NULL
 
@@ -934,9 +945,9 @@ Bend_target:;(half steps)
 	.byte NULL, 01, 4, 36
 	
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
-KICK_LENGTH=%10000
+KICK_LENGTH= ((DPCM_kickEnd - DPCM_kick) >> 4)
 SNARE_ADDRESS= <(( DPCM_snare  - $C000) >> 6)
-SNARE_LENGTH=%1110
+SNARE_LENGTH= ((DPCM_snareEnd - DPCM_snare) >> 4)
 
 SAMPLE01=$01;kick
 SAMPLE02=$02;snare
@@ -1081,6 +1092,8 @@ periodTable_H:
 .align 64
 DPCM_kick:
 	.incbin "kick.dmc"
+DPCM_kickEnd: 
 .align 64
 DPCM_snare:
 	.incbin "snare.dmc"
+DPCM_snareEnd:

@@ -161,7 +161,7 @@ SCORE_OFFSET=7
 	adc #2;this state lasts 256/4 frames
 	sta g
 	bne :+
-		lda #GAMESTATE00
+		lda #GAMESTATE07
 		sta Gamestate_current
 :
 	rts
@@ -255,8 +255,8 @@ gamestate07:
 		bne @dontPlaySFX
 			lda #SFX05
 			jsr SFX_newEffect
-			;lda #SFX04
-			;jsr SFX_newEffect
+		;	lda #SFX04
+		;	jsr SFX_newEffect
 @dontPlaySFX:
 
 	rts
