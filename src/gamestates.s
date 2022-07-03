@@ -47,30 +47,23 @@ Gamestates_L:
 
 gamestate00:
 ;the main gameplay loop
-	jsr PPU_updateScroll
+	jsr PPU_updateScroll;void()
+	jsr Score_clearFrameTally;void()
 	ldx Main_currentPlayer
-	jsr Gamepads_read
-;if player is hoding A B SEL ST, reset the game
-	lda Gamepads_state
-	and #%11110000
-	cmp #%11110000
-	;bne :+
-		;do reset
-;:
-	jsr Score_clearFrameTally
-	lda Gamepads_state
+	jsr Gamepads_read;a(x)
+
 	jsr Player_move;(a)
-	jsr PlayerBullets_move
+	jsr PlayerBullets_move;void()
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
 	jsr PPU_waitForSprite0Reset;()
+
 	jsr updateEnemyBullets
 	jsr updateEnemies
 	jsr dispenseEnemies
-	ldx Main_currentPlayer
-	jsr Score_tallyFrame;(x)
+
 	jsr Player_isHit
-	bcc @buildSprites
+	bcc @tallyScore
 		lda #SFX02
 		jsr SFX_newEffect
 		ldx Main_currentPlayer
@@ -82,15 +75,15 @@ gamestate00:
 		lda #TRUE
 		sta Player_haveHeartsChanged
 		dec Player_hearts,x
-		bpl @buildSprites
+		bpl @tallyScore
 			lda #5;gameover code here
 			sta Player_hearts,x
-@buildSprites:
+@tallyScore:
+	ldx Main_currentPlayer
+	jsr Score_tallyFrame;(x)
 	jsr OAM_build;(c,a)
 	jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
-	jsr SFX_advance
-	jsr APU_advance
 	rts
 
 gamestate01:;void(currentPlayer, currentScene)
@@ -163,7 +156,6 @@ SCORE_OFFSET=7
 	jsr OAM_clearRemaining;(x)
 	jsr PPU_NMIPlan00
 	jsr PPU_waitForSprite0Hit
-	jsr APU_advance
 	clc
 	lda g
 	adc #2;this state lasts 256/4 frames
@@ -235,10 +227,36 @@ gamestate06:
 	rol
 	rol
 	tay
-	jsr PPU_NMIPlan03;(y)
+	jsr PPU_NMIPlan03;void(y)
 	rts
 
 gamestate07:
-	jsr PPU_updateScroll
-	jsr APU_advance 
+	jsr PPU_updateScroll;void()
+	jsr PPU_waitForSprite0Reset;void()
+
+	ldx #0;player 1
+	jsr Gamepads_read;a(x)
+	and #BUTTON_START; if pressing start
+	beq @dontToggleMusic
+		lda Gamepads_last; and first frame of pressing start
+		and #BUTTON_START
+		bne @dontToggleMusic
+			jsr Song_silence; silence the music
+			lda Song_isOn; toggle the song
+			eor %1
+			sta Song_isOn
+@dontToggleMusic:
+
+	lda Gamepads_state
+	and #BUTTON_A
+	beq @dontPlaySFX
+		lda Gamepads_last
+		and #BUTTON_A
+		bne @dontPlaySFX
+			lda #SFX05
+			jsr SFX_newEffect
+			;lda #SFX04
+			;jsr SFX_newEffect
+@dontPlaySFX:
+
 	rts

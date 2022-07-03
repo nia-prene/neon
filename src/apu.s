@@ -28,6 +28,7 @@ SND_CHN = $4015;Sound channels enable and status
 
 .zeropage
 MAX_TRACKS=4
+Song_isOn:.res 1
 tracks: .res MAX_TRACKS+1
 trackIndex: .res MAX_TRACKS+1
 trackPtr: .res 2
@@ -51,12 +52,12 @@ length:.res MAX_TRACKS
 rest:.res MAX_TRACKS+1
 mute:.res MAX_TRACKS
 state: .res MAX_TRACKS
-
-SFX_length:.res MAX_TRACKS
-SFX_rest:.res MAX_TRACKS
 currentPeriod_L:.res MAX_TRACKS
 currentPeriod_LL:.res MAX_TRACKS
 targetPeriod:.res MAX_TRACKS
+
+SFX_length:.res MAX_TRACKS
+SFX_rest:.res MAX_TRACKS
 
 Music_savedInstrument:.res MAX_TRACKS
 Music_savedVolume:.res MAX_TRACKS
@@ -75,7 +76,9 @@ APU_init:
         sta $4015
         lda #$40
         sta $4017
-   
+  	
+		lda #FALSE
+		sta Song_isOn
         rts
 @regs:
         .byte $30,$08,$00,$00
@@ -84,7 +87,7 @@ APU_init:
         .byte $30,$00,$00,$00
         .byte $00,$00,$00,$00
 APU_setSong:;void(x)
-	ldx #0
+	ldx #0;force load song 0
 	lda songsSQ1,x
 	sta tracks
 	lda songsSQ2,x
@@ -147,9 +150,25 @@ APU_setSong:;void(x)
 	bpl @clearMem1
 	sta loopIndex+4
 	sta rest+4
+	lda #TRUE
+	sta Song_isOn
 	rts
 
-APU_advance:
+Song_silence:
+	ldx #3
+@channelLoop:
+	lda SFX_effect,x
+	bne @skipChannel
+		ldy instrument,x
+		lda instDuty,y
+		ldy CHANNEL_OFFSETS,x
+		sta CHANNEL_VOL,y
+		dex
+		bpl @channelLoop
+@skipChannel:
+	rts
+
+Song_advance:
 	ldx #3
 @squareLoop:
 	lda length,x;see if note is still playing
@@ -340,6 +359,12 @@ SFX_getNewNote:
 	ldy SFX_loopIndex,x;get the index
 	lda (SFX_loopPtr),y;get note
 	bne @loopContinues;loops are null terminated
+
+		ldy SFX_instrument,x
+		lda instDuty,y
+		ldy CHANNEL_OFFSETS,x
+		sta CHANNEL_VOL,y
+
 		lda Music_savedVolume,x
 		sta maxVolume,x
 		lda Music_savedInstrument,x
@@ -849,47 +874,51 @@ INST05=$05;verse rhythm guitar
 INST06=$06;explosion small craft
 INST07=$07;player hit
 INST08=$08;powerup
+INST09=$09;player shots
 instDuty:;ddlc vvvv
-	.byte DUTY02, DUTY02, TRI, NOISE, DUTY02, DUTY00, NOISE, DUTY02, DUTY02
+	.byte DUTY02, DUTY02, TRI, NOISE, DUTY02, DUTY00, NOISE, DUTY02, DUTY02, NOISE
 instAttack_H:
-	.byte 8, 8, 15, 15, 15, 15, 15, 15, 15
+	.byte 8, 8, 15, 15, 15, 15, 15, 15, 6, 15
 instAttack_L:
-	.byte 0, 0, 0, 0, 00, 00, 00
+	.byte 0, 0, 0, 0, 00, 00, 00, 0
 instDecay:
-	.byte 5, 5, 0, 5, 1, 3, 3, 2, 2
+	.byte 5, 5, 0, 5, 1, 3, 4, 2, 1, 6
 instSustain:;volume minus number below
-	.byte 3, 3, 0, 5, 3, 3, 2, 4, 2
+	.byte 3, 3, 0, 5, 3, 3, 4, 4, 1, 6
 instRelease_H:
-	.byte 1, 1, 15, 0, 0, 1, 2, 5, 0
+	.byte 1, 1, 15, 0, 0, 1, 0, 5, 0, 2
 instRelease_L:
-	.byte 0, 0, 0, 128, 64, 0, 0, 0, 64
+	.byte 0, 0, 0, 128, 64, 0, 128, 0, 64, 0
 instBend:
-	.byte 00, 01, 0, 0, 0, 0, 2, 3, 0
+	.byte 00, 01, 0, 0, 0, 0, 2, 3, 0, 0
 
 SFX01= 01;explosion small craft
 SFX02= 02; player ouch
 SFX03= 03; Powerup melody
 SFX04= 04; Powerup harmony
+SFX05= 05; player shots
 
 SFX_instrument:
-	.byte NULL, INST06, INST07, INST08, INST08
+	.byte NULL, INST06, INST07, INST08, INST08, INST09
 SFX_volume:
-	.byte NULL, 12, 08, 8, 8
+	.byte NULL, 12, 08, 7, 7, 08
 SFX_targetTrack:
-	.byte NULL, 03, 01, 00, 01
+	.byte NULL, 03, 01, 00, 01, 03
 SFX_loops_L:
-	.byte NULL, <SFX_loop00, <SFX_loop01, <SFX_loop02, <SFX_loop03
+	.byte NULL, <SFX_loop00, <SFX_loop01, <SFX_loop02, <SFX_loop03, <SFX_loop04
 SFX_loops_H:
-	.byte NULL, >SFX_loop00, >SFX_loop01, >SFX_loop02, >SFX_loop03
+	.byte NULL, >SFX_loop00, >SFX_loop01, >SFX_loop02, >SFX_loop03, >SFX_loop04
 
 SFX_loop00:
-	.byte N0B, 6, 3, NULL
+	.byte N0B, 6, 9, NULL
 SFX_loop01:
 	.byte D7, 06, 3, NULL
 SFX_loop02:
-	.byte D4, 3, 0, Gb4, 3, 3, D5, 6, 3, A4, 6, 12, NULL
+	.byte D4, 3, 0, Gb4, 3, 6, D5, 6, 6, A4, 6, 12, NULL
 SFX_loop03:
-	.byte Gb4, 3, 0, A4, 3, 3, Gb5, 6, 3, D5, 6, 12, NULL
+	.byte Gb4, 3, 0, A4, 3, 6, Gb5, 6, 6, D5, 6, 12, NULL
+SFX_loop04:
+	.byte N0D, 3, 3, NULL
 
 Bend_flags:;|uuuu uunv|
 ;n - negative chane  (going higher)

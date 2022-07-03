@@ -24,7 +24,6 @@
 
 .zeropage
 Main_stack: .res 1
-currentFrame: .res 1
 hasFrameBeenRendered: .res 1
 framesDropped: .res 1
 Main_frame_L: .res 1
@@ -113,6 +112,13 @@ nmi:
 	jsr PPU_setScroll
 	lda #TRUE
 	sta hasFrameBeenRendered
+
+	jsr SFX_advance;tick sound effects
+	lda Song_isOn;if song is on
+	beq @noMusic
+		jsr Song_advance;tick music
+@noMusic:
+
 ;restore registers
 	pla
 	tay

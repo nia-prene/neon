@@ -25,10 +25,11 @@ B_BUTTON=%01000000
 	;only allow shooting when cooldown timer has reached zero
 		lda PlayerBullet_CooldownTimer
 		bne @return
-		;set the weapons cooldown timer
 			lda #COOLDOWN_TIME
 			sta PlayerBullet_CooldownTimer
-		;push on as many shooting routines as powerups
+			lda #SFX05
+			jsr SFX_newEffect
+
 			ldy Player_powerLevel
 		@shotLoop:
 		;jump to all active shot types
