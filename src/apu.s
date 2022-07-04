@@ -64,6 +64,7 @@ SFX_rest:.res MAX_TRACKS
 
 Music_savedInstrument:.res MAX_TRACKS
 Music_savedVolume:.res MAX_TRACKS
+Music_repeatAt:.res MAX_TRACKS+1
 
 .code
 APU_init:
@@ -91,16 +92,31 @@ APU_init:
         .byte $00,$00,$00,$00
 APU_setSong:;void(x)
 	ldx #0;force load song 0
+
 	lda songsSQ1,x
 	sta tracks
+	lda Songs_SQ1RepeatAt,x
+	sta Music_repeatAt
+
 	lda songsSQ2,x
 	sta tracks+1
+	lda Songs_SQ2RepeatAt,x
+	sta Music_repeatAt+1
+
 	lda songsTri,x
 	sta tracks+2
+	lda Songs_triRepeatAt,x
+	sta Music_repeatAt+2
+
 	lda songsNoise,x
 	sta tracks+3
+	lda Songs_noiseRepeatAt,x
+	sta Music_repeatAt+3
+
 	lda songsDPCM,x
 	sta tracks+4
+	lda Songs_DPCMRepeatAt,x
+	sta Music_repeatAt+4
 
 	ldx #3;4 tracks
 @setupSquare:
@@ -327,7 +343,7 @@ getNewNote:
 		ldy trackIndex,x;get place in song
 		lda (trackPtr),y;get new loop
 		bne @trackContinues;tracks are null terminated
-			ldy #0
+			ldy Music_repeatAt,x
 			lda (trackPtr),y;get first loop
 	@trackContinues:
 		sta loops,x
@@ -474,7 +490,7 @@ getNewSample:
 		ldy trackIndex+4;get place in song
 		lda (trackPtr),y;get new loop
 		bne @trackContinues;tracks are null terminated
-			ldy #0
+			ldy Music_repeatAt+4
 			lda (trackPtr),y;get first loop
 	@trackContinues:
 		sta loops+4
@@ -649,14 +665,25 @@ Note_bend:
 .rodata	
 songsSQ1:
 	.byte TRACK01
+Songs_SQ1RepeatAt:
+	.byte 6
 songsSQ2:
 	.byte TRACK02
+Songs_SQ2RepeatAt:
+	.byte 6
 songsTri:
 	.byte TRACK03
+Songs_triRepeatAt:
+	.byte 3
 songsNoise:
 	.byte TRACK05
+Songs_noiseRepeatAt:
+	.byte 0
 songsDPCM:
 	.byte TRACK04
+Songs_DPCMRepeatAt:
+	.byte 0
+
 TRACK01=$01;s1 sq1
 TRACK02=$02;s1 sq2
 TRACK03=$03;s1 tri
@@ -668,6 +695,9 @@ tracks_L:
 	.byte NULL, <track01, <track02, <track03, <track04, <track05 
 
 track01:;loop, instrument, volume
+	.byte LOOP15, INST05, 08
+	.byte LOOP1A, INST05, 08
+;verse
 	.byte LOOP10, INST04, 08
 	.byte LOOP11, INST04, 08
 	.byte LOOP10, INST04, 08
@@ -695,6 +725,8 @@ track01:;loop, instrument, volume
 	.byte LOOP05, INST00, 08
 	.byte NULL
 track02:
+	.byte LOOP15, INST05, 08
+	.byte LOOP1A, INST05, 08
 ;verse
 	.byte LOOP15, INST05, 08
 	.byte LOOP16, INST04, 07
@@ -719,6 +751,7 @@ track02:
 	.byte LOOP02, INST00, 08
 	.byte NULL
 track03:
+	.byte LOOP19, INST02, 15
 	.byte LOOP19, INST02, 15
 	.byte LOOP06, INST02, 15
 	.byte LOOP07, INST02, 15
@@ -761,7 +794,7 @@ LOOP16=$16;S1 verse rhythm guitar harmony
 LOOP17=$17;S1 verse rhythm guitar 2
 LOOP18=$18;S1 verse rhythm guitar dissonance
 LOOP19=$19;S1 bass verse
-LOOP1A=$1A;
+LOOP1A=$1A;S1 Intro pt 2
 LOOP1B=$1B;
 LOOP1C=$1C;
 LOOP1D=$1D;
@@ -900,6 +933,13 @@ loop19:
 	.byte B2,48,0,G2,48,0,A2,48,0,Bb2,48,0
 	.byte NULL
 loop1A:
+	.byte Gb1,9,3,Gb1,3,3,Gb1,3,3,Gb1,3,3,Gb1,3,3,Gb1,3,3,Gb1,3,3
+	.byte G1,9,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3
+	.byte B1,9,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3
+	.byte G1,9,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3
+	.byte A1,9,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3
+	.byte Bb1,9,3,Bb1,3,3,Bb1,3,3,Bb1,3,3,Bb1,3,3,Bb1,3,3,Bb1,3,3
+	.byte NULL
 loop1B:
 loop1C:
 loop1D:
@@ -962,9 +1002,9 @@ SFX_loop00:
 SFX_loop01:
 	.byte D7, 06, 3, NULL
 SFX_loop02:
-	.byte D4, 3, 0, Gb4, 3, 9, D5, 6, 9, A4, 6, 18, NULL
+	.byte D4, 3, 0, Gb4, 3, 9, D5, 6, 12, A4, 6, 18, NULL
 SFX_loop03:
-	.byte Gb4, 3, 0, A4, 3, 9, Gb5, 6, 9, D5, 6, 18, NULL
+	.byte Gb4, 3, 0, A4, 3, 9, Gb5, 6, 12, D5, 6, 18, NULL
 SFX_loop04:
 	.byte N0D, 3, 3, NULL
 

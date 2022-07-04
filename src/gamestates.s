@@ -252,7 +252,18 @@ gamestate07:
 		lda Gamepads_last; and first frame of pressing start
 		and #BUTTON_START
 		bne @dontToggleMusic
-			jsr APU_pauseMusic; silence the music
+			lda g
+			and #%1
+			bne @turnOn
+				eor #%1
+				sta g
+				jsr APU_pauseMusic; silence the music
+				rts
+			@turnOn:
+				eor #%1
+				sta g
+				jsr APU_resumeMusic;
+				rts
 @dontToggleMusic:
 
 	lda Gamepads_state
@@ -261,10 +272,10 @@ gamestate07:
 		lda Gamepads_last
 		and #BUTTON_A
 		bne @dontPlaySFX
-			lda #SFX05
+			lda #SFX03
 			jsr SFX_newEffect
-		;	lda #SFX04
-		;	jsr SFX_newEffect
+			lda #SFX04
+			jsr SFX_newEffect
 @dontPlaySFX:
 	rts
 
