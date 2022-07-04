@@ -28,7 +28,6 @@ SND_CHN = $4015;Sound channels enable and status
 
 .zeropage
 MAX_TRACKS=4
-Song_isOn:.res 1
 tracks: .res MAX_TRACKS+1
 trackIndex: .res MAX_TRACKS+1
 trackPtr: .res 2
@@ -49,6 +48,9 @@ SFX_loopPtr: .res 2
 SFX_loopIndex: .res MAX_TRACKS
 ;locals
 .data
+
+Song_isOn:.res 1
+SFX_isOn: .res 1
 length:.res MAX_TRACKS
 rest:.res MAX_TRACKS+1
 mute:.res MAX_TRACKS
@@ -153,9 +155,10 @@ APU_setSong:;void(x)
 	sta rest+4
 	lda #TRUE
 	sta Song_isOn
+	sta SFX_isOn
 	rts
 
-Song_silence:
+APU_pauseMusic:
 	ldx #3
 @channelLoop:
 	lda SFX_effect,x
@@ -167,9 +170,39 @@ Song_silence:
 @skipChannel:
 	dex
 	bpl @channelLoop
+	lda #FALSE
+	sta Song_isOn
+	rts
+
+APU_resumeMusic:
+	lda #TRUE
+	sta Song_isOn
+	rts
+
+APU_pauseSFX:
+	ldx #3
+@channelLoop:
+	ldy SFX_effect,x
+	beq @skipChannel
+		ldy SFX_instrument,x
+		lda instDuty,y
+		ldy CHANNEL_OFFSETS,x
+		sta CHANNEL_VOL,y
+@skipChannel:
+	dex
+	bpl @channelLoop
+	lda #FALSE
+	sta SFX_isOn
+	rts
+
+APU_resumeSFX:
+	lda #TRUE
+	sta SFX_isOn
 	rts
 
 Song_advance:
+	lda Song_isOn
+	beq @songIsPaused
 	ldx #3
 @squareLoop:
 	lda length,x;see if note is still playing
@@ -206,9 +239,12 @@ Song_advance:
 		jmp getNewSample
 @return:
 	dec rest+4
+@songIsPaused:
 	rts
 
 SFX_advance:
+	lda SFX_isOn
+	beq @SFXPaused
 	ldx #3
 @loop:
 	ldy SFX_effect,x;if sound effect
@@ -241,6 +277,7 @@ SFX_advance:
 @next:
 	dex
 	bpl @loop
+@SFXPaused:
 	rts
 
 states_H:
@@ -925,9 +962,9 @@ SFX_loop00:
 SFX_loop01:
 	.byte D7, 06, 3, NULL
 SFX_loop02:
-	.byte D4, 3, 0, Gb4, 3, 6, D5, 6, 9, A4, 6, 18, NULL
+	.byte D4, 3, 0, Gb4, 3, 9, D5, 6, 9, A4, 6, 18, NULL
 SFX_loop03:
-	.byte Gb4, 3, 0, A4, 3, 6, Gb5, 6, 9, D5, 6, 18, NULL
+	.byte Gb4, 3, 0, A4, 3, 9, Gb5, 6, 9, D5, 6, 18, NULL
 SFX_loop04:
 	.byte N0D, 3, 3, NULL
 

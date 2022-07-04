@@ -25,8 +25,8 @@ SPRITE13=$13;submarine middle frame
 SPRITE14=$14;submarine below water
 SPRITE15=$15;Ready?
 SPRITE16=$16;Go!
-SPRITE17=$17;Piper attack animation
-SPRITE18=$18;score 1
+SPRITE17=$17;PAUSE
+SPRITE18=$18;Piper attack animation
 SPRITE19=$19;score 2
 SPRITE1A=$1a;score 3
 SPRITE1B=$1b;score 4
@@ -134,20 +134,24 @@ sprite14:
 	.byte 0, $70, %01000001, 8
 	.byte TERMINATE
 sprite15:
-	.byte 0, $e0, %01, 0
-	.byte 0, $e2, %01, 8
-	.byte 0, $e4, %01, 16
-	.byte 0, $e6, %01, 24
-	.byte 0, $e8, %01, 32
-	.byte 0, $ea, %01, 39 
+	.byte 0, $e0, %0, 0
+	.byte 0, $e2, %0, 7
+	.byte 0, $e4, %0, 14
+	.byte 0, $e6, %0, 21
+	.byte 0, $e8, %0, 28
+	.byte 0, $ea, %0, 35 
 	.byte TERMINATE
 sprite16:
-	.byte 0, $ec, %01, 0
-	.byte 0, $ee, %01, 8
-	.byte 0, $f0, %01, 16
+	.byte 0, $ec, %0, 0
+	.byte 0, $ee, %0, 7
+	.byte 0, $f0, %0, 12
 	.byte TERMINATE
 sprite17:
-	.byte 0, $d2, %0, 0
+	.byte 0, $f6, %0, 0	
+	.byte 0, $e4, %0, 07
+	.byte 0, $f8, %0, 14
+	.byte 0, $fa, %0, 21
+	.byte 0, $e2, %0, 28
 	.byte TERMINATE
 sprite18:
 	.byte 0, $a8, %01, 0

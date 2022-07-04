@@ -2,6 +2,7 @@
 .global OAM_beginDMA
 .global OAM_initSprite0
 .global OAM_buildPlayer
+.global OAM_buildPause
 .global OAM_clearRemaining
 .globalzp Sprite0_destination
 .global Sprite0_setDestination

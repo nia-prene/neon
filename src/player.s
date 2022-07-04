@@ -72,11 +72,11 @@ MAX_Y=128
 Player_move:;(controller) returns void
 ;controller bits are | a b sel st u d l r |
 ;pixel per frame when moving fast
-FAST_MOVEMENT_H = 2
-FAST_MOVEMENT_L = 0
+FAST_MOVEMENT_H = 1
+FAST_MOVEMENT_L = 128
 ;pixel per frame when moving slow
-SLOW_MOVEMENT_H = 1
-SLOW_MOVEMENT_L = 0
+SLOW_MOVEMENT_H = 0
+SLOW_MOVEMENT_L = 128
 ;furthest right player can go
 MAX_RIGHT = 243
 ;furthest left player can go

@@ -109,15 +109,14 @@ nmi:
 :
 ;oamdma transfer
 	jsr OAM_beginDMA
+	ldx Main_currentPlayer
+	jsr Gamepads_read;a(x)
 	jsr PPU_setScroll
 	lda #TRUE
 	sta hasFrameBeenRendered
 
 	jsr SFX_advance;tick sound effects
-	lda Song_isOn;if song is on
-	beq @noMusic
-		jsr Song_advance;tick music
-@noMusic:
+	jsr Song_advance;tick music
 
 ;restore registers
 	pla

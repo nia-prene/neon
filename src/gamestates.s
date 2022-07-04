@@ -39,19 +39,31 @@ GAMESTATE04=$04;ease out status bar, move player to dialogue spt
 GAMESTATE05=$05;ease in textbox, move player/boss to dialogue spt
 GAMESTATE06=$06;fade out screen while scroll
 GAMESTATE07=$07;music test state
+GAMESTATE08=$08;game pause
 
 Gamestates_H:
-	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1)
+	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1), >(gamestate08-1)
 Gamestates_L:
-	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1)
+	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1), <(gamestate08-1)
 
 gamestate00:
 ;the main gameplay loop
 	jsr PPU_updateScroll;void()
 	jsr Score_clearFrameTally;void()
-	ldx Main_currentPlayer
-	jsr Gamepads_read;a(x)
+	
+	lda Gamepads_state
+	and #BUTTON_START;if start button pressed
+	beq @noPause
+		lda Gamepads_last;and not pressed last frame
+		and #BUTTON_START
+		bne @noPause
+			lda #GAMESTATE08;pause game
+			sta Gamestate_current
+			jsr APU_pauseMusic; silence the music
+			jsr APU_pauseSFX; silence the SFX
+@noPause:
 
+	lda Gamepads_state
 	jsr Player_move;(a)
 	jsr PlayerBullets_move;void()
 	lda Gamepads_state
@@ -161,7 +173,7 @@ SCORE_OFFSET=7
 	adc #2;this state lasts 256/4 frames
 	sta g
 	bne :+
-		lda #GAMESTATE07
+		lda #GAMESTATE00
 		sta Gamestate_current
 :
 	rts
@@ -233,18 +245,14 @@ gamestate06:
 gamestate07:
 	jsr PPU_updateScroll;void()
 	jsr PPU_waitForSprite0Reset;void()
-
-	ldx #0;player 1
-	jsr Gamepads_read;a(x)
+	
+	lda Gamepads_state
 	and #BUTTON_START; if pressing start
 	beq @dontToggleMusic
 		lda Gamepads_last; and first frame of pressing start
 		and #BUTTON_START
 		bne @dontToggleMusic
-			jsr Song_silence; silence the music
-			lda Song_isOn; toggle the song
-			eor %1
-			sta Song_isOn
+			jsr APU_pauseMusic; silence the music
 @dontToggleMusic:
 
 	lda Gamepads_state
@@ -258,5 +266,33 @@ gamestate07:
 		;	lda #SFX04
 		;	jsr SFX_newEffect
 @dontPlaySFX:
+	rts
 
+gamestate08:
+	jsr PPU_dimScreen
+	jsr PPU_waitForSprite0Reset;void()
+
+	lda Gamepads_state
+	and #BUTTON_START;if start button pressed
+	beq @stayPaused
+		lda Gamepads_last;and not pressed last frame
+		and #BUTTON_START
+		bne @stayPaused
+			lda #GAMESTATE00;resume game
+			sta Gamestate_current
+			jsr APU_resumeMusic
+			jsr APU_resumeSFX
+
+			ldx #4
+			jsr OAM_buildPause;x(x)
+			jsr OAM_clearRemaining;x()
+
+			jsr PPU_waitForSprite0Hit
+			jsr PPU_lightenScreen
+			rts
+@stayPaused:
+	ldx #4
+	jsr OAM_buildPause;x(x)
+	jsr OAM_clearRemaining;x()
+	jsr PPU_waitForSprite0Hit
 	rts

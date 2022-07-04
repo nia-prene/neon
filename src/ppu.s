@@ -59,6 +59,7 @@ ENABLE_RENDERING = %00011000	; or
 DISABLE_RENDERING = %11100111	; and
 DISABLE_SPRITES= %11101111		; and
 DIM_SCREEN = %11100000			; or
+LIGHTEN_SCREEN = %00011111		; and
 .macro sws oldStack, newStack
 	tsx
 	stx oldStack
@@ -235,6 +236,20 @@ PPU_waitForSprite0Hit:
 	sta $2006
 	pla
 	sta PPUMASK
+	rts
+
+PPU_dimScreen:;void()
+	lda currentMaskSettings
+	ora #DIM_SCREEN
+	sta PPUMASK
+	sta currentMaskSettings
+	rts
+
+PPU_lightenScreen:;void()
+	lda currentMaskSettings
+	and #LIGHTEN_SCREEN
+	sta PPUMASK
+	sta currentMaskSettings
 	rts
 
 PPU_NMIPlan00:

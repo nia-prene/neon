@@ -211,6 +211,23 @@ buildEnemies:
 	bpl @enemyLoop
 	jmp buildSprites
 
+.proc OAM_buildPause
+XPOS=110
+YPOS=64
+	lda #TERMINATE
+	pha
+	lda #SPRITE17
+	pha
+	lda #YPOS
+	pha
+	lda #XPOS
+	pha
+	lda #0
+	pha
+	jmp buildSpritesShort
+
+.endproc
+
 buildSprites:
 ;builds collections of sprites
 ;push tile, y, x, palette
@@ -289,9 +306,9 @@ buildSprites:
 	rts
 
 .align $100
-buildSpritesShort:
+buildSpritesShort:;x(x)
 ;builds collections of sprites
-;push tile, y, x, palette
+;push metasprite, y, x, palette
 ;pull and use in reverse order
 ;returns
 ;x - current OAM position
