@@ -176,7 +176,6 @@ MAX_DOWN = 202
 	sta Player_sprite;set sprite
 	rts
 
-.align $80
 Player_isHit:;c()
 PLAYER_HEIGHT=18
 MAX_BULLET_DIAMETER=16

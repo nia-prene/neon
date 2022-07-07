@@ -125,7 +125,6 @@ Enemy_Bullets_getAvailable:; c,x (void)
 	sec ;mark success
 	rts
 
-.align $100
 updateEnemyBullets:;(void)
 ;pushes all bullet offsets and functions onto stack and returns
 	ldx #MAX_ENEMY_BULLETS-1

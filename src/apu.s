@@ -695,6 +695,19 @@ tracks_L:
 	.byte NULL, <track01, <track02, <track03, <track04, <track05 
 
 track01:;loop, instrument, volume
+	.byte LOOP1B, INST04, 08
+	.byte LOOP1C, INST04, 08
+	.byte LOOP1D, INST04, 08
+	.byte LOOP1E, INST01, 08
+	.byte LOOP1F, INST04, 08
+	.byte LOOP1C, INST04, 08
+	.byte LOOP1D, INST04, 08
+	.byte LOOP1E, INST01, 08
+	.byte LOOP1F, INST04, 08
+	.byte LOOP1C, INST04, 08
+	.byte LOOP20, INST04, 08
+	.byte LOOP1C, INST04, 08
+;intro
 	.byte LOOP15, INST05, 08
 	.byte LOOP1A, INST05, 08
 ;verse
@@ -725,6 +738,26 @@ track01:;loop, instrument, volume
 	.byte LOOP05, INST00, 08
 	.byte NULL
 track02:
+	.byte LOOP21, INST05, 08
+	.byte LOOP21, INST05, 08
+	.byte LOOP22, INST05, 08
+	.byte LOOP22, INST05, 08
+	.byte LOOP23, INST05, 08
+	.byte LOOP23, INST05, 08
+	.byte LOOP23, INST05, 08
+	.byte LOOP24, INST05, 08
+	.byte LOOP21, INST05, 08
+	.byte LOOP21, INST05, 08
+	.byte LOOP22, INST05, 08
+	.byte LOOP22, INST05, 08
+	.byte LOOP25, INST04, 08
+	.byte LOOP26, INST01, 08
+	.byte LOOP27, INST04, 08
+	.byte LOOP28, INST04, 08
+	.byte LOOP29, INST04, 08
+	.byte LOOP28, INST04, 08
+
+;intro
 	.byte LOOP15, INST05, 08
 	.byte LOOP1A, INST05, 08
 ;verse
@@ -751,8 +784,18 @@ track02:
 	.byte LOOP02, INST00, 08
 	.byte NULL
 track03:
+	.byte LOOP2A, INST02, 15
+	.byte LOOP2B, INST02, 15
+	.byte LOOP2A, INST02, 15
+	.byte LOOP2C, INST02, 15
+	.byte LOOP2A, INST02, 15
+	.byte LOOP2D, INST02, 15
+	.byte LOOP2A, INST02, 15
+;intro
 	.byte LOOP19, INST02, 15
+;verse
 	.byte LOOP19, INST02, 15
+;chorus
 	.byte LOOP06, INST02, 15
 	.byte LOOP07, INST02, 15
 	.byte LOOP06, INST02, 15
@@ -795,17 +838,35 @@ LOOP17=$17;S1 verse rhythm guitar 2
 LOOP18=$18;S1 verse rhythm guitar dissonance
 LOOP19=$19;S1 bass verse
 LOOP1A=$1A;S1 Intro pt 2
-LOOP1B=$1B;
-LOOP1C=$1C;
-LOOP1D=$1D;
-LOOP1E=$1E;
-LOOP1F=$1F;
+LOOP1B=$1B;S1 bridge lead lead-in
+LOOP1C=$1C;S1 bridge reusable part
+LOOP1D=$1D;S1 bridge lead into bend
+LOOP1E=$1E;S1 bridge bend
+LOOP1F=$1F;S1 bridge resolve after bend
+LOOP20=$20;S1 bridge end
+LOOP21=$21;S1 bridge rhythm guitar pt 1
+LOOP22=$22;S1 bridge rhythm guitar pt 2
+LOOP23=$23;S1 bridge rhythm guitar pt 3
+LOOP24=$24;S1 bridge rhythm guitar pt 4
+LOOP25=$25;S1 bridge harmony build to bend
+LOOP26=$26;S1 bridge harmony bend
+LOOP27=$27;S1 bridge harmony resolution after bend
+LOOP28=$28;S1 bridge harmony reusable part
+LOOP29=$29;S1 bridge harmony end
+LOOP2A=$2A;S1 bridge bass reusable part
+LOOP2B=$2B;S1 bridge bass bridge pt 2
+LOOP2C=$2C;S1 bridge bass pause
+LOOP2D=$2D;S1 bridge bass that high note
+LOOP2E=$2E;
+LOOP2F=$2F;
 loops_H:
 	.byte NULL, >loop01, >loop02, >loop03, >loop04, >loop05, >loop06, >loop07, >loop08, >loop09, >loop0A, >loop0B, >loop0C ,>loop0D, >loop0E , >loop0F 
 	.byte >loop10, >loop11, >loop12, >loop13, >loop14, >loop15, >loop16, >loop17, >loop18, >loop19, >loop1A, >loop1B, >loop1C, >loop1D, >loop1E, >loop1F
+	.byte >loop20, >loop21, >loop22, >loop23, >loop24, >loop25, >loop26, >loop27, >loop28, >loop29, >loop2A, >loop2B, >loop2C, >loop2D, >loop2E, >loop2F
 loops_L:
 	.byte NULL, <loop01, <loop02, <loop03, <loop04, <loop05, <loop06, <loop07, <loop08, <loop09, <loop0A, <loop0B, <loop0C, <loop0D, <loop0E, <loop0F
 	.byte <loop10, <loop11, <loop12, <loop13, <loop14, <loop15, <loop16, <loop17, <loop18, <loop19, <loop1A, <loop1B, <loop1C, <loop1D, <loop1E, <loop1F
+	.byte <loop20, <loop21, <loop22, <loop23, <loop24, <loop25, <loop26, <loop27, <loop28, <loop29, <loop2A, <loop2B, <loop2C, <loop2D, <loop2E, <loop2F
 	
 loop01:
 	.byte D3,12, 0, E3, 6, 0
@@ -941,10 +1002,73 @@ loop1A:
 	.byte Bb1,9,3,Bb1,3,3,Bb1,3,3,Bb1,3,3,Bb1,3,3,Bb1,3,3,Bb1,3,3
 	.byte NULL
 loop1B:
+	.byte B2,12,6,G2,12,6
+	.byte NULL
 loop1C:
+	.byte G2,6,6,G3,3,3,Gb3,12,6,E3,6,6,D3,6,6,Db3,12,6
+	.byte A2,12,6,A2,6,6,B2,12,12,Db3,12,12
+	.byte NULL
 loop1D:
+	.byte D3,24,12,Db3,3,3,D3,3,3,E3,24,12
+	.byte D3,3,3,E3,3,3,Gb3,12,6,D3,9,3,D3,9,9
+	.byte NULL
 loop1E:
+	.byte Db4,12,6
+	.byte NULL
 loop1F:
+	.byte Db4,12,6,A3,6,6,B3,30,6
+	.byte NULL
+loop20:
+	.byte D3,12,6,A2,12,6,A2,6,6,G3,3,3,Gb3,12,6
+	.byte E3,6,6,D3,6,6,A3,12,6,E3,12,6,Db3,6,6,D3,12,12
+	.byte E3,12,12,G3,12,6,G2,12,6	
+	.byte NULL
+loop21:
+	.byte G1,9,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3,G1,3,3
+	.byte NULL
+loop22:
+	.byte A1,9,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3
+	.byte NULL
+loop23:
+	.byte B1,9,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3,B1,3,3
+	.byte NULL
+loop24:
+	.byte B1,9,3,B1,3,3,B1,3,3,A1,3,3,A1,3,3,A1,3,3,A1,3,3
+	.byte NULL
+loop25:
+	.byte Gb3,24,12,E3,3,3,Gb3,3,3,G3,24,12,Gb3,3,3
+	.byte G3,3,3,A3,12,6,Gb3,9,3,Gb3,9,9
+	.byte NULL
+loop26:
+	.byte F4,12,6
+	.byte NULL
+loop27:
+	.byte E4,12,6,Db4,6,6,D4,30,6
+	.byte NULL
+loop28:
+	.byte B2,6,6,B3,3,3,A3,12,6,G3,6,6,Gb3,6,6,E3,12,6
+	.byte Db3,12,6,Db3,6,6,D3,12,12,E3,12,12
+	.byte NULL
+loop29:
+	.byte Gb3,12,6,Db3,12,6,Db3,6,6,B3,3,3,A3,12,6
+	.byte A3,6,6,G3,6,6,D4,12,6,A3,12,6,E3,6,6
+	.byte Gb3,12,12,G3,12,12,B3,12,6,B2,12,6
+	.byte NULL
+loop2A:
+	.byte G2,45,3,G2,45,3,A2,45,3,A2,45,3
+	.byte NULL
+loop2B:
+	.byte B2,45,3,B2,45,3,B2,45,3,B2,21,3,A2,21,3
+	.byte NULL
+loop2C:
+	.byte B2,12,132,B2,21,3,A2,21,3
+	.byte NULL
+loop2D:
+	.byte B2,45,3,B2,45,3,D3,45,3,D3,21,3,A2,21,3
+	.byte NULL
+loop2E:
+loop2F:
+
 DUTY00=%00110000
 DUTY01=%01110000
 DUTY02=%10110000
@@ -972,7 +1096,7 @@ instDecay:
 instSustain:;volume minus number below
 	.byte 3, 3, 0, 5, 3, 3, 4, 4, 1, 8
 instRelease_H:
-	.byte 1, 1, 15, 0, 0, 1, 0, 5, 0, 1
+	.byte 1, 1, 15, 0, 0, 15, 0, 5, 0, 1
 instRelease_L:
 	.byte 0, 0, 0, 128, 64, 0, 128, 0, 64, 0
 instBend:

@@ -112,7 +112,6 @@ PLAYER_HITBOX_X_OFFSET=2
 @hitboxAnimation:
 	.byte SPRITE06, SPRITE07
 
-.align $100
 buildEnemyBullets:
 	lda #TERMINATE;terminate
 	pha
@@ -305,7 +304,6 @@ buildSprites:
 	sec ;set full
 	rts
 
-.align $100
 buildSpritesShort:;x(x)
 ;builds collections of sprites
 ;push metasprite, y, x, palette
