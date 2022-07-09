@@ -376,23 +376,28 @@ getNewNote:
 	sta rest,x
 	iny
 	sty loopIndex,x;save the index
+
 	lda SFX_effect,x;poke sound effect
 	sta mute,x;mute the channel for the duration of the note
-	beq @playNote;if no sound effect, play note
+	beq @noSFX;if no sound effect, play note
 		pla;discard note
 		rts;don't play note
-@playNote:
+@noSFX:
 	pla
 	sta note,x
+
+	lda #0
+	sta state,x;note in attack state while we have 00
+	sta currentPeriod_LL,x;clear low low byte of pitch
+
 	ldy note,x
 	lda periodTable_H,y
 	pha
 	lda periodTable_L,y
 	sta currentPeriod_L,x;save low byte of period for pitch
+	jsr Note_bend
 	pha
-	lda #0
-	sta state,x;note in attack state while we have 00
-	sta currentPeriod_LL,x;clear low low byte of pitch
+
 	ldy instrument,x;get the initial volume level
 	lda instAttack_L,y
 	sta currentVolume_L,x
@@ -403,20 +408,27 @@ getNewNote:
 		inc state,x
 	:sta currentVolume_H,x
 	ora instDuty,y
+
 	ldy CHANNEL_OFFSETS,x
 	sta CHANNEL_VOL,y
 	pla
 	sta CHANNEL_LO,y
 	pla
 	sta CHANNEL_HI,y 
+
 	rts
 
 SFX_getNewNote:
+	lda #0
+	sta currentPeriod_LL,x;clear low low byte of pitch
+	sta state,x;note in attack state while we have 00
+	
 	ldy SFX_effect,x;get the channel loop
 	lda SFX_loops_L,y;setup pointer
 	sta SFX_loopPtr
 	lda SFX_loops_H,y
 	sta SFX_loopPtr+1
+
 	ldy SFX_loopIndex,x;get the index
 	lda (SFX_loopPtr),y;get note
 	bne @loopContinues;loops are null terminated
@@ -434,15 +446,19 @@ SFX_getNewNote:
 		sta SFX_effect,x
 		sta SFX_priority,x
 		rts
+
 @loopContinues:
 	sta note,x
+
 	iny
 	lda (SFX_loopPtr),y;get play duration
 	sta SFX_length,x
 	dec SFX_length,x;this frame counts
+
 	iny
 	lda (SFX_loopPtr),y;get rest duration
 	sta SFX_rest,x
+
 	iny
 	sty SFX_loopIndex,x;save the index
 
@@ -451,10 +467,9 @@ SFX_getNewNote:
 	pha
 	lda periodTable_L,y
 	sta currentPeriod_L,x;save low byte of period for pitch
+	jsr Note_bend
 	pha
-	lda #0
-	sta currentPeriod_LL,x;clear low low byte of pitch
-	sta state,x;note in attack state while we have 00
+
 	ldy instrument,x;get the initial volume level
 	lda instAttack_L,y
 	sta currentVolume_L,x
@@ -465,12 +480,14 @@ SFX_getNewNote:
 		inc state,x
 	:sta currentVolume_H,x
 	ora instDuty,y
-	ldy CHANNEL_OFFSETS,x
-	sta CHANNEL_VOL,y
+
+	ldy CHANNEL_OFFSETS,x;translate track to register
+	sta CHANNEL_VOL,y;store volume
 	pla
-	sta CHANNEL_LO,y
+	sta CHANNEL_LO,y;store fine period	
 	pla
-	sta CHANNEL_HI,y 
+	sta CHANNEL_HI,y;store coarse period	
+
 	rts
 
 getNewSample:
@@ -682,7 +699,7 @@ Songs_noiseRepeatAt:
 songsDPCM:
 	.byte TRACK04
 Songs_DPCMRepeatAt:
-	.byte 0
+	.byte 8
 
 TRACK01=$01;s1 sq1
 TRACK02=$02;s1 sq2
@@ -695,18 +712,6 @@ tracks_L:
 	.byte NULL, <track01, <track02, <track03, <track04, <track05 
 
 track01:;loop, instrument, volume
-	.byte LOOP1B, INST04, 08
-	.byte LOOP1C, INST04, 08
-	.byte LOOP1D, INST04, 08
-	.byte LOOP1E, INST01, 08
-	.byte LOOP1F, INST04, 08
-	.byte LOOP1C, INST04, 08
-	.byte LOOP1D, INST04, 08
-	.byte LOOP1E, INST01, 08
-	.byte LOOP1F, INST04, 08
-	.byte LOOP1C, INST04, 08
-	.byte LOOP20, INST04, 08
-	.byte LOOP1C, INST04, 08
 ;intro
 	.byte LOOP15, INST05, 08
 	.byte LOOP1A, INST05, 08
@@ -721,23 +726,62 @@ track01:;loop, instrument, volume
 	.byte LOOP14, INST04, 07
 ;chorus
 	.byte LOOP03, INST00, 08
-	.byte LOOP0D, INST01, 08
+	.byte LOOP0D, INST01, 07
 	.byte LOOP0E, INST00, 08
 	.byte LOOP04, INST00, 08
 	.byte LOOP03, INST00, 08
-	.byte LOOP0D, INST01, 08
+	.byte LOOP0D, INST01, 07
 	.byte LOOP0E, INST00, 08
 	.byte LOOP05, INST00, 08
 	.byte LOOP03, INST00, 08
-	.byte LOOP0D, INST01, 08
+	.byte LOOP0D, INST01, 07
 	.byte LOOP0E, INST00, 08
 	.byte LOOP04, INST00, 08
 	.byte LOOP03, INST00, 08
-	.byte LOOP0D, INST01, 08
+	.byte LOOP0D, INST01, 07
 	.byte LOOP0E, INST00, 08
 	.byte LOOP05, INST00, 08
+;bridge
+	.byte LOOP1B, INST04, 08
+	.byte LOOP1C, INST04, 08
+	.byte LOOP1D, INST04, 08
+	.byte LOOP1E, INST01, 07
+	.byte LOOP1F, INST04, 08
+	.byte LOOP1C, INST04, 08
+	.byte LOOP1D, INST04, 08
+	.byte LOOP1E, INST01, 07
+	.byte LOOP1F, INST04, 08
+	.byte LOOP1C, INST04, 08
+	.byte LOOP20, INST04, 08
+	.byte LOOP1C, INST04, 08
 	.byte NULL
 track02:
+;intro
+	.byte LOOP15, INST05, 08
+	.byte LOOP1A, INST05, 08
+;verse
+	.byte LOOP15, INST05, 08
+	.byte LOOP16, INST04, 07
+	.byte LOOP17, INST05, 08
+	.byte LOOP18, INST04, 07
+;chorus
+	.byte LOOP0A, INST00, 08
+	.byte LOOP0B, INST01, 07
+	.byte LOOP0C, INST00, 08
+	.byte LOOP01, INST00, 08
+	.byte LOOP0A, INST00, 08
+	.byte LOOP0B, INST01, 07
+	.byte LOOP0C, INST00, 08
+	.byte LOOP02, INST00, 08
+	.byte LOOP0A, INST00, 08
+	.byte LOOP0B, INST01, 07
+	.byte LOOP0C, INST00, 08
+	.byte LOOP01, INST00, 08
+	.byte LOOP0A, INST00, 08
+	.byte LOOP0B, INST01, 07
+	.byte LOOP0C, INST00, 08
+	.byte LOOP02, INST00, 08
+;bridge
 	.byte LOOP21, INST05, 08
 	.byte LOOP21, INST05, 08
 	.byte LOOP22, INST05, 08
@@ -751,39 +795,28 @@ track02:
 	.byte LOOP22, INST05, 08
 	.byte LOOP22, INST05, 08
 	.byte LOOP25, INST04, 08
-	.byte LOOP26, INST01, 08
+	.byte LOOP26, INST01, 07
 	.byte LOOP27, INST04, 08
 	.byte LOOP28, INST04, 08
 	.byte LOOP29, INST04, 08
 	.byte LOOP28, INST04, 08
 
-;intro
-	.byte LOOP15, INST05, 08
-	.byte LOOP1A, INST05, 08
-;verse
-	.byte LOOP15, INST05, 08
-	.byte LOOP16, INST04, 07
-	.byte LOOP17, INST05, 08
-	.byte LOOP18, INST04, 07
-;chorus
-	.byte LOOP0A, INST00, 08
-	.byte LOOP0B, INST01, 08
-	.byte LOOP0C, INST00, 08
-	.byte LOOP01, INST00, 08
-	.byte LOOP0A, INST00, 08
-	.byte LOOP0B, INST01, 08
-	.byte LOOP0C, INST00, 08
-	.byte LOOP02, INST00, 08
-	.byte LOOP0A, INST00, 08
-	.byte LOOP0B, INST01, 08
-	.byte LOOP0C, INST00, 08
-	.byte LOOP01, INST00, 08
-	.byte LOOP0A, INST00, 08
-	.byte LOOP0B, INST01, 08
-	.byte LOOP0C, INST00, 08
-	.byte LOOP02, INST00, 08
 	.byte NULL
 track03:
+;intro
+	.byte LOOP19, INST02, 15
+;verse
+	.byte LOOP19, INST02, 15
+;chorus
+	.byte LOOP06, INST02, 15
+	.byte LOOP07, INST02, 15
+	.byte LOOP06, INST02, 15
+	.byte LOOP08, INST02, 15
+	.byte LOOP06, INST02, 15
+	.byte LOOP07, INST02, 15
+	.byte LOOP06, INST02, 15
+	.byte LOOP08, INST02, 15
+;bridge
 	.byte LOOP2A, INST02, 15
 	.byte LOOP2B, INST02, 15
 	.byte LOOP2A, INST02, 15
@@ -791,22 +824,22 @@ track03:
 	.byte LOOP2A, INST02, 15
 	.byte LOOP2D, INST02, 15
 	.byte LOOP2A, INST02, 15
-;intro
-	.byte LOOP19, INST02, 15
-;verse
-	.byte LOOP19, INST02, 15
-;chorus
-	.byte LOOP06, INST02, 15
-	.byte LOOP07, INST02, 15
-	.byte LOOP06, INST02, 15
-	.byte LOOP08, INST02, 15
-	.byte LOOP06, INST02, 15
-	.byte LOOP07, INST02, 15
-	.byte LOOP06, INST02, 15
-	.byte LOOP08, INST02, 15
 	.byte NULL
 track04:
-	.byte LOOP09, LOOP09, LOOP09, LOOP09
+;intro
+	.byte LOOP09, LOOP2E, LOOP09, LOOP2E
+	.byte LOOP09, LOOP2E, LOOP09, LOOP2E
+;verse
+	.byte LOOP09, LOOP2E, LOOP09, LOOP2E
+	.byte LOOP09, LOOP2E, LOOP09, LOOP2E
+;chorus
+	.byte LOOP09, LOOP2E, LOOP09, LOOP2E
+	.byte LOOP09, LOOP2E, LOOP09, LOOP2E
+;bridge
+	.byte LOOP09, LOOP2E, LOOP09, LOOP2E
+	.byte LOOP09, LOOP2E, LOOP2F
+	.byte LOOP09, LOOP2E, LOOP09, LOOP2E
+	.byte LOOP09, LOOP2E
 	.byte NULL
 track05:
 	.byte LOOP0F, INST03, 15
@@ -857,8 +890,8 @@ LOOP2A=$2A;S1 bridge bass reusable part
 LOOP2B=$2B;S1 bridge bass bridge pt 2
 LOOP2C=$2C;S1 bridge bass pause
 LOOP2D=$2D;S1 bridge bass that high note
-LOOP2E=$2E;
-LOOP2F=$2F;
+LOOP2E=$2E;simple fill kick snare
+LOOP2F=$2F;fill for bridge build up
 loops_H:
 	.byte NULL, >loop01, >loop02, >loop03, >loop04, >loop05, >loop06, >loop07, >loop08, >loop09, >loop0A, >loop0B, >loop0C ,>loop0D, >loop0E , >loop0F 
 	.byte >loop10, >loop11, >loop12, >loop13, >loop14, >loop15, >loop16, >loop17, >loop18, >loop19, >loop1A, >loop1B, >loop1C, >loop1D, >loop1E, >loop1F
@@ -918,9 +951,6 @@ loop09:
 	.byte SAMPLE01, 12, SAMPLE02, 12
 	.byte SAMPLE01, 12, SAMPLE02, 12
 	.byte SAMPLE01, 12, SAMPLE02, 12
-	.byte SAMPLE01, 12, SAMPLE02, 12
-	.byte SAMPLE01, 6, SAMPLE01, 6
-	.byte SAMPLE02, 12
 	.byte NULL
 loop0A:
 	.byte B2, 12, 6 
@@ -1067,7 +1097,16 @@ loop2D:
 	.byte B2,45,3,B2,45,3,D3,45,3,D3,21,3,A2,21,3
 	.byte NULL
 loop2E:
+	.byte SAMPLE01, 12, SAMPLE02, 12
+	.byte SAMPLE01, 6, SAMPLE01, 6
+	.byte SAMPLE02, 12
+	.byte NULL
 loop2F:
+	.byte SAMPLE02,24,SAMPLE01,12,SAMPLE01,6,SAMPLE01,6
+	.byte SAMPLE02,24,SAMPLE01,12,SAMPLE01,6,SAMPLE01,6
+	.byte SAMPLE02,24,SAMPLE01,24,SAMPLE01,12,SAMPLE02,12
+	.byte SAMPLE01,6,SAMPLE01,6,SAMPLE02,12
+	.byte NULL
 
 DUTY00=%00110000
 DUTY01=%01110000
@@ -1092,9 +1131,9 @@ instAttack_H:
 instAttack_L:
 	.byte 0, 0, 0, 0, 00, 00, 00, 0
 instDecay:
-	.byte 5, 5, 0, 5, 1, 3, 4, 2, 1, 8
+	.byte 5, 4, 0, 5, 1, 3, 4, 2, 1, 8
 instSustain:;volume minus number below
-	.byte 3, 3, 0, 5, 3, 3, 4, 4, 1, 8
+	.byte 3, 2, 0, 5, 3, 3, 4, 4, 1, 8
 instRelease_H:
 	.byte 1, 1, 15, 0, 0, 15, 0, 5, 0, 1
 instRelease_L:
@@ -1137,10 +1176,10 @@ Bend_flags:;|uuuu uunv|
 ;v - vibrato (disregards nra)
 	.byte NULL, %10, %00, %00
 Bend_speed_H:
-	.byte NULL, 10, 00, 32
+	.byte NULL, 06, 00, 32
 
 Bend_speed_L:
-	.byte NULL, 00, 64, 0
+	.byte NULL, 128, 64, 0
 
 Bend_target:;(half steps)
 	.byte NULL, 01, 4, 36
