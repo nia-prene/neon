@@ -842,6 +842,24 @@ track04:
 	.byte LOOP09, LOOP2E
 	.byte NULL
 track05:
+;intro
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15
+;verse
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15;fill
+;chorus
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15
+;bridge
+	.byte LOOP0F, INST03, 15
+	.byte LOOP0F, INST03, 15
 	.byte LOOP0F, INST03, 15
 	.byte NULL
 ;LOOPS
@@ -970,7 +988,8 @@ loop0E:
 	.byte Gb3,12, 3, E3,12, 3
 	.byte NULL
 loop0F:
-	.byte N00, 3, 9
+	.byte N00, 3, 9,N00, 3, 9,N00, 3, 9,N00, 3, 9
+	.byte N00, 3, 9,N00, 3, 9,N00, 3, 9,N00, 3, 9
 	.byte NULL
 loop10:
 	.byte D4, 36, 24, A3, 9, 3 

@@ -27,14 +27,14 @@ SPRITE15=$15;Ready?
 SPRITE16=$16;Go!
 SPRITE17=$17;PAUSE
 SPRITE18=$18;Piper attack animation
-SPRITE19=$19;score 2
-SPRITE1A=$1a;score 3
-SPRITE1B=$1b;score 4
-SPRITE1C=$1c;score 5
-SPRITE1D=$1d;score 6
-SPRITE1E=$1e;score 7
-SPRITE1F=$1f;score 8
-SPRITE20=$20;score 9
+SPRITE19=$19;hitbox smallest
+SPRITE1A=$1a;hitbox medium
+SPRITE1B=$1b;hitbox middle animation
+SPRITE1C=$1c;
+SPRITE1D=$1d;
+SPRITE1E=$1e;
+SPRITE1F=$1f;
+SPRITE20=$20;
 SPRITE21=$21;piper frame 0
 
 ;format
@@ -160,28 +160,23 @@ sprite18:
 	.byte 16, $ae, %10, 8
 	.byte TERMINATE
 sprite19:
-	.byte 0, $c2, %0, 0
+	.byte 0,$0e,%0,0
 	.byte TERMINATE
 sprite1A:
-	.byte 0, $c4, %0, 0
+	.byte 0,$0c,%0,0
 	.byte TERMINATE
 sprite1B:
-	.byte 0, $c6, %0, 0
+	.byte 0,$0A,%0,0
 	.byte TERMINATE
 sprite1C:
-	.byte 0, $c8, %0, 0
 	.byte TERMINATE
 sprite1D:
-	.byte 0, $ca, %0, 0
 	.byte TERMINATE
 sprite1E:
-	.byte 0, $cc, %0, 0
 	.byte TERMINATE
 sprite1F:
-	.byte 0, $ce, %0, 0
 	.byte TERMINATE
 sprite20:
-	.byte 0, $d0, %0, 0
 	.byte TERMINATE
 sprite21:
 	.byte 0, $a0, %01, 0

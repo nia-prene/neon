@@ -7,7 +7,8 @@
 .globalzp Player_haveHeartsChanged
 .globalzp Player_hearts
 .globalzp Player_willRender
-.globalzp Player_hitboxWillRender
+.globalzp Player_willHitboxRender
+.globalzp Player_hitboxSprite
 
 .global Player_init
 .global Player_move
@@ -16,4 +17,5 @@
 .global Player_prepare
 .global Player_toStartingPos
 .global Player_toConvo
+.global Player_setHitboxAnimation
 

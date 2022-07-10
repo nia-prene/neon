@@ -21,7 +21,10 @@ Player_hearts: .res 2
 Player_haveHeartsChanged: .res 1
 Player_iFrames: .res 1
 Player_willRender: .res 1
-Player_hitboxWillRender: .res 1
+Player_hitboxSprite: .res 1
+Player_slowFrames: .res 1
+Player_fastFrames: .res 1
+Player_willHitboxRender: .res 1
 
 .code
 Player_init:;(x)
@@ -85,27 +88,49 @@ MAX_LEFT = 00
 MAX_UP = 0
 ;furthest down player can go
 MAX_DOWN = 202
-	rol;test bit 7 (A)
 	pha;save controller
-	bcs @goingSlow
-@goingFast:
-	lda #FAST_MOVEMENT_L
-	sta Player_speed_L
-	lda #FAST_MOVEMENT_H
-	sta Player_speed_H
-	lda #FALSE
-	sta Player_hitboxWillRender
-	jmp @testRight
-@goingSlow:
-	lda #SLOW_MOVEMENT_L
-	sta Player_speed_L
-	lda #SLOW_MOVEMENT_H
-	sta Player_speed_H
-	lda #TRUE
-	sta Player_hitboxWillRender
+
+	and #BUTTON_B
+	bne @goingSlow
+
+	@goingFast:
+		lda #FAST_MOVEMENT_L
+		sta Player_speed_L
+		lda #FAST_MOVEMENT_H
+		sta Player_speed_H
+
+		lda #0
+		sta Player_slowFrames
+
+		lda Player_fastFrames
+		clc
+		adc #1
+		bcc :+
+			lda #255
+		:
+		sta Player_fastFrames
+		jmp @endIf
+
+	@goingSlow:
+		lda #SLOW_MOVEMENT_L
+		sta Player_speed_L
+		lda #SLOW_MOVEMENT_H
+		sta Player_speed_H
+	
+		lda #0
+		sta Player_fastFrames
+	
+		lda Player_slowFrames
+		clc
+		adc #1
+		bcc :+
+			lda #255
+		:
+		sta Player_slowFrames
+@endIf:
+
 @testRight:
 	pla;retrieve controller input
-	ror
 	ror
 	bcc @testLeft
 ;if bit 0 set then move right
@@ -175,6 +200,36 @@ MAX_DOWN = 202
 	lda #PLAYER_SPRITE
 	sta Player_sprite;set sprite
 	rts
+
+Player_setHitboxAnimation:
+
+	lda Player_slowFrames
+	bpl @underThreshold
+		lda #TRUE
+		sta Player_willHitboxRender
+		lda #SPRITE06
+		sta Player_hitboxSprite
+		rts
+@underThreshold:
+	lda Player_willHitboxRender
+	beq @hitboxHidden
+		lda Player_fastFrames
+		and #%00100000
+		bne @hitboxHidden
+		rts
+@hitboxHidden:
+	lda #FALSE
+	sta Player_willHitboxRender
+	rts
+
+@showHitbox:
+	lda #TRUE
+	sta Player_willHitboxRender
+	lda #SPRITE06
+	sta Player_hitboxSprite
+	rts	
+@animationFrames:
+	.byte SPRITE19,SPRITE1A,SPRITE06,SPRITE07
 
 Player_isHit:;c()
 PLAYER_HEIGHT=18

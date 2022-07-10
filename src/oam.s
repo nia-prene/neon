@@ -58,47 +58,39 @@ OAM_build:;c (c,a)
 ;returns carry clear if oam overflow
 	inc o ;module iterator
 	ldx #4;skip sprite 0
+
+	jsr buildEnemyBullets
+
 	lda Player_willRender
 	beq @buildWithoutPlayer
-;build hitbox if button a is being pressed
-	lda Player_hitboxWillRender
-	beq :+
-		jsr buildHitbox
-:
-	jsr buildEnemyBullets
-	bcs @oamFull
+
+		lda Player_willHitboxRender;see if hitbox renders first
+		beq @buildWithoutHitbox
+			jsr buildHitbox
+	@buildWithoutHitbox:
+
 	jsr OAM_buildPlayer
-	bcs @oamFull
+
+@buildWithoutPlayer:
 	jsr buildEnemies
 	bcs @oamFull
 	jsr buildPlayerBullets
 	bcs @oamFull
 	jsr OAM_clearRemaining
 	rts
-@buildWithoutPlayer:
-	jsr buildEnemyBullets
-	bcs @oamFull
-	jsr buildEnemies
-	bcs @oamFull
-	jsr buildPlayerBullets
-	bcs @oamFull
-	jsr OAM_clearRemaining
 @oamFull:
 	rts
 
-buildHitbox:
+buildHitbox:;x(x,a)
 PLAYER_HITBOX_Y_OFFSET=10
 PLAYER_HITBOX_X_OFFSET=2
+
 	lda #TERMINATE;terminate
 	pha
-	lda o
-	and #%00001000
-	lsr
-	lsr
-	lsr
-	tay
-	lda @hitboxAnimation,y
+
+	lda Player_hitboxSprite
 	pha
+
 	clc
 	lda Player_yPos_H
 	adc #PLAYER_HITBOX_Y_OFFSET
@@ -109,8 +101,6 @@ PLAYER_HITBOX_X_OFFSET=2
 	lda #00
 	pha
 	jmp buildSpritesShort
-@hitboxAnimation:
-	.byte SPRITE06, SPRITE07
 
 buildEnemyBullets:
 	lda #TERMINATE;terminate

@@ -65,6 +65,8 @@ gamestate00:
 
 	lda Gamepads_state
 	jsr Player_move;(a)
+	lda Gamepads_state
+	jsr Player_setHitboxAnimation
 	jsr PlayerBullets_move;void()
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
@@ -72,7 +74,7 @@ gamestate00:
 
 	jsr updateEnemyBullets
 	jsr updateEnemies
-	jsr dispenseEnemies
+	;jsr dispenseEnemies
 
 	jsr Player_isHit
 	bcc @tallyScore
