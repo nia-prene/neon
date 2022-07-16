@@ -74,7 +74,7 @@ gamestate00:
 
 	jsr updateEnemyBullets
 	jsr updateEnemies
-	;jsr dispenseEnemies
+	jsr dispenseEnemies
 
 	jsr Player_isHit
 	bcc @tallyScore

@@ -119,9 +119,9 @@ MAX_DOWN = 202
 		lda Player_speedIndex
 		clc
 		adc #1
-		cmp #32
+		cmp #08
 		bcc :+
-			lda #32
+			lda #08
 		:sta Player_speedIndex
 
 		lda #0
@@ -135,6 +135,7 @@ MAX_DOWN = 202
 		:
 		sta Player_slowFrames
 @endIf:
+
 	ldx Player_speedIndex
 	lda @playerSpeeds_L,x
 	sta Player_speed_L
@@ -212,10 +213,11 @@ MAX_DOWN = 202
 	lda #PLAYER_SPRITE
 	sta Player_sprite;set sprite
 	rts
+
 @playerSpeeds_H:
-	.byte  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0 
+	.byte  1,  1,  1,  1,  1,  1,  1,  1,  0
 @playerSpeeds_L:
-	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 128, 128, 128, 128, 0, 0, 0, 0, 128 
+	.byte 128, 128, 128, 128, 128, 128, 128, 0, 128
 
 Player_setHitboxAnimation:
 

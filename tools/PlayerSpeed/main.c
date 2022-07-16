@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <math.h>
-#define FRAMES 32 
+#define FRAMES 8 
 #define STEPS 1.0/FRAMES
 #define SLOWSPEED .5f
-#define FASTSPEED 2.0f
+#define FASTSPEED 1.5f
 #define SPEEDDIFF (float)FASTSPEED-SLOWSPEED
 
 float easeIn(float x);
