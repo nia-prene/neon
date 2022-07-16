@@ -15,6 +15,7 @@ Player_yPos_H: .res 1
 Player_yPos_L: .res 1
 Player_speed_H: .res 1
 Player_speed_L: .res 1
+Player_speedIndex:.res 1
 Player_sprite: .res 1
 Player_powerLevel: .res 2
 Player_hearts: .res 2
@@ -35,6 +36,7 @@ Player_init:;(x)
 	sta Player_haveHeartsChanged
 	lda #0
 	sta Player_powerLevel
+	sta Player_speedIndex
 	lda #TRUE
 	sta Player_willRender
 	rts
@@ -75,8 +77,8 @@ MAX_Y=128
 Player_move:;(controller) returns void
 ;controller bits are | a b sel st u d l r |
 ;pixel per frame when moving fast
-FAST_MOVEMENT_H = 1
-FAST_MOVEMENT_L = 128
+FAST_MOVEMENT_H = 2	
+FAST_MOVEMENT_L = 0
 ;pixel per frame when moving slow
 SLOW_MOVEMENT_H = 0
 SLOW_MOVEMENT_L = 128
@@ -94,10 +96,12 @@ MAX_DOWN = 202
 	bne @goingSlow
 
 	@goingFast:
-		lda #FAST_MOVEMENT_L
-		sta Player_speed_L
-		lda #FAST_MOVEMENT_H
-		sta Player_speed_H
+		sec 
+		lda Player_speedIndex
+		sbc #1
+		bcs :+
+			lda #0
+		:sta Player_speedIndex
 
 		lda #0
 		sta Player_slowFrames
@@ -112,11 +116,14 @@ MAX_DOWN = 202
 		jmp @endIf
 
 	@goingSlow:
-		lda #SLOW_MOVEMENT_L
-		sta Player_speed_L
-		lda #SLOW_MOVEMENT_H
-		sta Player_speed_H
-	
+		lda Player_speedIndex
+		clc
+		adc #1
+		cmp #32
+		bcc :+
+			lda #32
+		:sta Player_speedIndex
+
 		lda #0
 		sta Player_fastFrames
 	
@@ -128,6 +135,11 @@ MAX_DOWN = 202
 		:
 		sta Player_slowFrames
 @endIf:
+	ldx Player_speedIndex
+	lda @playerSpeeds_L,x
+	sta Player_speed_L
+	lda @playerSpeeds_H,x
+	sta Player_speed_H
 
 @testRight:
 	pla;retrieve controller input
@@ -200,6 +212,10 @@ MAX_DOWN = 202
 	lda #PLAYER_SPRITE
 	sta Player_sprite;set sprite
 	rts
+@playerSpeeds_H:
+	.byte  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0 
+@playerSpeeds_L:
+	.byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 128, 128, 128, 128, 0, 0, 0, 0, 128 
 
 Player_setHitboxAnimation:
 
