@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <math.h>
-#define FRAMES 8 
+#define FRAMES 8
 #define STEPS 1.0/FRAMES
 #define SLOWSPEED .5f
 #define FASTSPEED 1.5f

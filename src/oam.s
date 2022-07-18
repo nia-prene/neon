@@ -64,7 +64,7 @@ OAM_build:;c (c,a)
 	lda Player_willRender
 	beq @buildWithoutPlayer
 
-		lda Player_willHitboxRender;see if hitbox renders first
+		lda Hitbox_sprite;see if hitbox renders first
 		beq @buildWithoutHitbox
 			jsr buildHitbox
 	@buildWithoutHitbox:
@@ -88,7 +88,7 @@ PLAYER_HITBOX_X_OFFSET=2
 	lda #TERMINATE;terminate
 	pha
 
-	lda Player_hitboxSprite
+	lda Hitbox_sprite
 	pha
 
 	clc

@@ -7,8 +7,7 @@
 .globalzp Player_haveHeartsChanged
 .globalzp Player_hearts
 .globalzp Player_willRender
-.globalzp Player_willHitboxRender
-.globalzp Player_hitboxSprite
+.globalzp Hitbox_sprite
 
 .global Player_init
 .global Player_move

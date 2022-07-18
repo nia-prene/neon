@@ -1,4 +1,0 @@
-@playerSpeeds_H:
-	.byte  1,  1,  1,  1,  1,  1,  1,  1,  0, 
-@playerSpeeds_L:
-	.byte 128, 128, 128, 128, 128, 128, 128, 0, 128, 

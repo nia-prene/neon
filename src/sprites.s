@@ -27,11 +27,11 @@ SPRITE15=$15;Ready?
 SPRITE16=$16;Go!
 SPRITE17=$17;PAUSE
 SPRITE18=$18;Piper attack animation
-SPRITE19=$19;hitbox smallest
-SPRITE1A=$1a;hitbox medium
-SPRITE1B=$1b;hitbox middle animation
-SPRITE1C=$1c;
-SPRITE1D=$1d;
+SPRITE19=$19;hitbox main frame 1
+SPRITE1A=$1a;hitbox main frame 2
+SPRITE1B=$1b;hitbox main frame 3
+SPRITE1C=$1c;hitbox main frame 4
+SPRITE1D=$1d;hitbox deploying
 SPRITE1E=$1e;
 SPRITE1F=$1f;
 SPRITE20=$20;
@@ -160,17 +160,19 @@ sprite18:
 	.byte 16, $ae, %10, 8
 	.byte TERMINATE
 sprite19:
-	.byte 0,$0e,%0,0
+	.byte 0,$06,%0,0
 	.byte TERMINATE
 sprite1A:
-	.byte 0,$0c,%0,0
+	.byte 0,$08,%0,0
 	.byte TERMINATE
 sprite1B:
 	.byte 0,$0A,%0,0
 	.byte TERMINATE
 sprite1C:
+	.byte 0,$08,%01000000,1
 	.byte TERMINATE
 sprite1D:
+	.byte 0,$0c,%0,0
 	.byte TERMINATE
 sprite1E:
 	.byte TERMINATE

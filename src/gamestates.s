@@ -66,7 +66,6 @@ gamestate00:
 	lda Gamepads_state
 	jsr Player_move;(a)
 	lda Gamepads_state
-	jsr Player_setHitboxAnimation
 	jsr PlayerBullets_move;void()
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
@@ -105,6 +104,8 @@ gamestate01:;void(currentPlayer, currentScene)
 	jsr APU_init
 	jsr APU_setSong
 	jsr disableRendering;()
+	ldx #0
+	jsr OAM_clearRemaining;(x)
 	ldx Main_currentPlayer
 	lda @playerPalette,x
 	tax

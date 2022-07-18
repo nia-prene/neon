@@ -15,19 +15,20 @@ bulletSprite: .res MAX_PLAYER_BULLETS
 PlayerBullet_damage: .res MAX_PLAYER_BULLETS
 isActive: .res MAX_PLAYER_BULLETS
 PlayerBullet_CooldownTimer: .res 1
-PlayerBullet_shootingTimer: .res 1
+PlayerBullet_shotsLeft: .res 1
 .code
 PlayerBullets_shoot:;void(a)
 ;a - current controller state
 COOLDOWN_TIME=6;shoots every 6 frames max
+SHOTS=4;amount of shoots after release
 
 	and #BUTTON_B
 	beq @notPressingB
-		lda #08;b shoots for 8 frames after released
-		sta PlayerBullet_shootingTimer
+		lda #SHOTS;b shoots for 8 frames after released
+		sta PlayerBullet_shotsLeft
 @notPressingB:
 
-	lda PlayerBullet_shootingTimer;if timer > 0
+	lda PlayerBullet_shotsLeft;if timer > 0
 	beq @notFiring
 
 		lda PlayerBullet_CooldownTimer
@@ -35,9 +36,15 @@ COOLDOWN_TIME=6;shoots every 6 frames max
 
 			lda #COOLDOWN_TIME;set cooldown
 			sta PlayerBullet_CooldownTimer
+
 			lda #SFX05;play sound effect
 			jsr SFX_newEffect
 
+			dec PlayerBullet_shotsLeft;
+			bpl :+
+				lda #0;don't let go negative 
+				sta PlayerBullet_shotsLeft
+			:
 			ldy Player_powerLevel;for each level-up
 		@shotLoop:
 			lda @shotType_H,y;push all shooting functions
@@ -46,16 +53,13 @@ COOLDOWN_TIME=6;shoots every 6 frames max
 			pha
 			dey
 			bpl @shotLoop;return to them after this function
+
 @notFiring:
 
 	dec PlayerBullet_CooldownTimer; tick down cooldown
 	bpl :+
 		lda #0;don't let go negative 
 		sta PlayerBullet_CooldownTimer
-	:dec PlayerBullet_shootingTimer;tick down shooting frames
-	bpl :+
-		lda #0;don't let go negative 
-		sta PlayerBullet_shootingTimer
 	:rts
 
 @shotType_L:;shooting functions by power level

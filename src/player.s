@@ -22,10 +22,9 @@ Player_hearts: .res 2
 Player_haveHeartsChanged: .res 1
 Player_iFrames: .res 1
 Player_willRender: .res 1
-Player_hitboxSprite: .res 1
-Player_slowFrames: .res 1
-Player_fastFrames: .res 1
-Player_willHitboxRender: .res 1
+Hitbox_state:.res 1
+Hitbox_sprite: .res 1
+h:.res 1;hitbox variable
 
 .code
 Player_init:;(x)
@@ -80,16 +79,13 @@ Player_move:;(controller) returns void
 FAST_MOVEMENT_H = 2	
 FAST_MOVEMENT_L = 0
 ;pixel per frame when moving slow
-SLOW_MOVEMENT_H = 0
-SLOW_MOVEMENT_L = 128
-;furthest right player can go
 MAX_RIGHT = 243
-;furthest left player can go
 MAX_LEFT = 00
-;furthest up player can go
 MAX_UP = 0
-;furthest down player can go
 MAX_DOWN = 202
+SLOWDOWN_TIME=16
+DEPLOY_TIME=2
+RETRACT_TIME=8
 	pha;save controller
 
 	and #BUTTON_B
@@ -100,43 +96,39 @@ MAX_DOWN = 202
 		lda Player_speedIndex
 		sbc #1
 		bcs :+
+			lda Hitbox_state
+			beq @hitboxHidden
+				cmp #HITBOXSTATE03
+				beq @hitboxHidden
+					lda #RETRACT_TIME;lasts 8 frames 
+					sta h
+					lda #HITBOXSTATE03
+					sta Hitbox_state
+		@hitboxHidden:
 			lda #0
 		:sta Player_speedIndex
-
-		lda #0
-		sta Player_slowFrames
-
-		lda Player_fastFrames
-		clc
-		adc #1
-		bcc :+
-			lda #255
-		:
-		sta Player_fastFrames
 		jmp @endIf
 
 	@goingSlow:
 		lda Player_speedIndex
 		clc
 		adc #1
-		cmp #08
+		cmp #SLOWDOWN_TIME
 		bcc :+
-			lda #08
+			lda Hitbox_state
+			bne @hitboxDeployed
+				lda #HITBOXSTATE01
+				sta Hitbox_state
+				lda #DEPLOY_TIME;lasts 4 frames 
+				sta h
+		@hitboxDeployed:
+			lda #SLOWDOWN_TIME
 		:sta Player_speedIndex
-
-		lda #0
-		sta Player_fastFrames
-	
-		lda Player_slowFrames
-		clc
-		adc #1
-		bcc :+
-			lda #255
-		:
-		sta Player_slowFrames
 @endIf:
 
-	ldx Player_speedIndex
+	lda Player_speedIndex
+	lsr
+	tax
 	lda @playerSpeeds_L,x
 	sta Player_speed_L
 	lda @playerSpeeds_H,x
@@ -145,109 +137,137 @@ MAX_DOWN = 202
 @testRight:
 	pla;retrieve controller input
 	ror
-	bcc @testLeft
-;if bit 0 set then move right
-	pha
-	clc
-	lda Player_xPos_L
-	adc Player_speed_L
-	sta Player_xPos_L
-	lda Player_xPos_H
-	adc Player_speed_H
-	cmp #MAX_RIGHT
-	bcc @storeRight
-	lda #MAX_RIGHT
-@storeRight:
-	sta Player_xPos_H
-	pla
+	bcc @testLeft;if bit 0 set then move right
+		pha
+		clc
+		lda Player_xPos_L
+		adc Player_speed_L
+		sta Player_xPos_L
+		lda Player_xPos_H
+		adc Player_speed_H
+		cmp #MAX_RIGHT
+		bcc :+
+			lda #MAX_RIGHT
+		:sta Player_xPos_H
+		pla
 @testLeft:
-	ror
-;if bit 1 set then move left 
+	ror;if bit 1 set then move left 
 	bcc @testDown
-	pha
-	sec
-	lda Player_xPos_L
-	sbc Player_speed_L
-	sta Player_xPos_L
-	lda Player_xPos_H
-	sbc Player_speed_H
-	bcs @storeLeft
-	lda #MAX_LEFT
-@storeLeft:
-	sta Player_xPos_H
-	pla
-@testDown:
-;if bit 2 set then move down
-	ror
+		pha
+		sec
+		lda Player_xPos_L
+		sbc Player_speed_L
+		sta Player_xPos_L
+		lda Player_xPos_H
+		sbc Player_speed_H
+		bcs :+
+			lda #MAX_LEFT
+		:sta Player_xPos_H
+		pla
+	@testDown:
+	ror;if bit 2 set then move down
 	bcc @testUp
-	pha
-	clc
-	lda Player_yPos_L
-	adc Player_speed_L
-	sta Player_yPos_L
-	lda Player_yPos_H
-	adc Player_speed_H
-	cmp #MAX_DOWN
-	bcc @storeDown
-	lda #MAX_DOWN
-@storeDown:
-	sta Player_yPos_H
-	pla
+		pha
+		clc
+		lda Player_yPos_L
+		adc Player_speed_L
+		sta Player_yPos_L
+		lda Player_yPos_H
+		adc Player_speed_H
+		cmp #MAX_DOWN
+		bcc :+
+			lda #MAX_DOWN
+		:sta Player_yPos_H
+		pla
 @testUp:
-;if bit 3 set then move down
-	ror
-	bcc @return
-	pha
-	sec
-	lda Player_yPos_L
-	sbc Player_speed_L
-	sta Player_yPos_L
-	lda Player_yPos_H
-	sbc Player_speed_H
-	bcs @storeUp
-	lda #MAX_UP
-@storeUp:
-	sta Player_yPos_H
-	pla
-@return:
-	lda #PLAYER_SPRITE
-	sta Player_sprite;set sprite
+	ror;if bit 3 set then move down
+	bcc @doHitbox
+		pha
+		sec
+		lda Player_yPos_L
+		sbc Player_speed_L
+		sta Player_yPos_L
+		lda Player_yPos_H
+		sbc Player_speed_H
+		bcs :+
+			lda #MAX_UP
+		:sta Player_yPos_H
+		pla
+@doHitbox:
+
+	ldx Hitbox_state
+	beq @noHitbox
+		lda Hitbox_states_H,x
+		pha
+		lda Hitbox_states_L,x
+		pha
+		rts
+
+@noHitbox:
+	lda #NULL
+	sta Hitbox_sprite
 	rts
 
 @playerSpeeds_H:
-	.byte  1,  1,  1,  1,  1,  1,  1,  1,  0
+	.byte  1,  1,  1,  1,  1,  1,  1,  1,  0 
 @playerSpeeds_L:
 	.byte 128, 128, 128, 128, 128, 128, 128, 0, 128
-
-Player_setHitboxAnimation:
-
-	lda Player_slowFrames
-	bpl @underThreshold
-		lda #TRUE
-		sta Player_willHitboxRender
-		lda #SPRITE06
-		sta Player_hitboxSprite
+HITBOXSTATE01=1
+HITBOXSTATE02=2
+HITBOXSTATE03=3
+Hitbox_states_L:
+	.byte NULL 
+	.byte <(Hitbox_state01-1)
+	.byte <(Hitbox_state02-1)
+	.byte <(Hitbox_state03-1)
+Hitbox_states_H:
+	.byte NULL 
+	.byte >(Hitbox_state01-1)
+	.byte >(Hitbox_state02-1)
+	.byte >(Hitbox_state03-1)
+Hitbox_state01:
+	dec h
+	bpl @statePersists
+		lda #HITBOXSTATE02
+		sta Hitbox_state
+		lda #0
+		sta h
 		rts
-@underThreshold:
-	lda Player_willHitboxRender
-	beq @hitboxHidden
-		lda Player_fastFrames
-		and #%00100000
-		bne @hitboxHidden
-		rts
-@hitboxHidden:
-	lda #FALSE
-	sta Player_willHitboxRender
+@statePersists:
+	lda #SPRITE1D
+	sta Hitbox_sprite
 	rts
 
-@showHitbox:
-	lda #TRUE
-	sta Player_willHitboxRender
-	lda #SPRITE06
-	sta Player_hitboxSprite
-	rts	
-@animationFrames:
-	.byte SPRITE19,SPRITE1A,SPRITE06,SPRITE07
+Hitbox_state02:
+	inc h
+	lda h
+	lsr
+	lsr
+	lsr
+	and #%11
+	tax
+	lda @hitboxAnimation,x
+	sta Hitbox_sprite
+	rts
+@hitboxAnimation:
+	.byte SPRITE19,SPRITE1A,SPRITE1B,SPRITE1C
+
+Hitbox_state03:
+	dec h
+	bpl @statePersists
+		lda #NULL
+		sta Hitbox_state
+		sta Hitbox_sprite
+		rts
+@statePersists:
+
+	lda #SPRITE1D
+	sta Hitbox_sprite
+
+	rts
+
+@hitboxRecallAnimation:
+	.byte SPRITE1A,SPRITE1B
 
 Player_isHit:;c()
 PLAYER_HEIGHT=18
