@@ -4,17 +4,19 @@
 .include "sprites.h"
 .include "speed.h"
 
-.zeropage
+BULLETS_VARIETIES=8
+MAX_ENEMY_BULLETS=56
 
+.zeropage
 quickBulletX: .res 1
 quickBulletY: .res 1
 bulletType: .res 4
 octant: .res 1
 bulletAngle: .res 1
 numberOfBullets: .res 1
+Bullets_spriteBank: .res BULLETS_VARIETIES
 
 .data
-MAX_ENEMY_BULLETS=56
 isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 enemyBulletHitbox1: .res MAX_ENEMY_BULLETS
 enemyBulletHitbox2: .res MAX_ENEMY_BULLETS
@@ -26,7 +28,7 @@ enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
 Bullets_diameter: .res MAX_ENEMY_BULLETS
-
+Bullets_sprite: .res MAX_ENEMY_BULLETS
 
 .code
 Enemy_Bullet:
@@ -185,6 +187,15 @@ aimBullet:
 	sta bulletAngle
 	rts
 
+Bullets_toCoins:
+
+	pla ;get the argument
+	tax
+
+	lda #FALSE
+	sta isEnemyBulletActive,x ;turn off bullet
+	
+	rts
 .rodata
 
 ;the following attributes are the bullets type. The bullet type is stored with the enemy wave, so that each bullet can change sprite, width, etc throughout gameplay at the beginning of each enemy wave, where it will remain constant until the next enemy wave is loaded.

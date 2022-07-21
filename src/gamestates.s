@@ -21,6 +21,7 @@
 .include "hud.h"
 .include "textbox.h"
 .include "apu.h"
+.include "bombs.h"
 
 
 .zeropage
@@ -70,6 +71,17 @@ gamestate00:
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
 	jsr PPU_waitForSprite0Reset;()
+
+	lda Gamepads_state
+	and #BUTTON_A ;if a is pressed
+	beq @noBomb ;else no bomb
+
+		lda Gamepads_last
+		and #BUTTON_A ;and first frame of pressing
+		bne @noBomb
+
+			jsr	Bombs_toss ;throw a bomb
+@noBomb:
 
 	jsr updateEnemyBullets
 	jsr updateEnemies

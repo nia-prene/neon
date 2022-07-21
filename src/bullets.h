@@ -20,10 +20,12 @@
 .global enemyBulletYH
 .global enemyBulletYL
 .global enemyBulletMetasprite
+.global enemyBulletBehaviorH
+.global enemyBulletBehaviorL
 
 ;functions
 .global Enemy_Bullet
 .global Enemy_Bullets
 .global aimBullet
 .global updateEnemyBullets
-
+.global Bullets_toCoins
