@@ -41,13 +41,13 @@ int main(){
 			fprintf(outputFile, "bullet%02X:\n",i);	
 		/*get the quadrant, my circles start in quadrant 3, not 1*/
 		if(i < 256*.25){
-			fprintf(outputFile, "\tmainFib %d, ",3);	
+			fprintf(outputFile, "\tbulletFib %d, ",3);	
 		}else if(i < 256*.5){
-			fprintf(outputFile, "\tmainFib %d, ",4);	
+			fprintf(outputFile, "\tbulletFib %d, ",4);	
 		}else if(i < 256*.75){
-			fprintf(outputFile, "\tmainFib %d, ",1);	
+			fprintf(outputFile, "\tbulletFib %d, ",1);	
 		}else{
-			fprintf(outputFile, "\tmainFib %d, ",2);	
+			fprintf(outputFile, "\tbulletFib %d, ",2);	
 		}
 		fprintf(outputFile, "#%1.0f, #%1.0f, #%1.0f, #%1.0f \n",xH, xL, yH, yL );
 	}

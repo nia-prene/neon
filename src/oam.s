@@ -109,14 +109,14 @@ buildEnemyBullets:
 @enemyBulletLoop:
 	lda isEnemyBulletActive,y
 	beq @skipBullet
-	lda enemyBulletMetasprite,y
-	pha
-	lda enemyBulletYH,y
-	pha
-	lda enemyBulletXH,y
-	pha
-	lda #0; palette implied
-	pha
+		lda enemyBulletMetasprite,y
+		pha
+		lda enemyBulletYH,y
+		pha
+		lda enemyBulletXH,y
+		pha
+		lda #0; palette implied
+		pha
 @skipBullet:
 	dey
 	bpl @enemyBulletLoop

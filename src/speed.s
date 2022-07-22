@@ -3,9 +3,6 @@
 .zeropage
 Speed_pointer:
 	.res 2
-.data
-Speed_string:
-	.res 256
 
 .code
 Speed_setLevel:
@@ -22,7 +19,7 @@ Speed_setLevel:
 	ldy #0
 @speedLoop:
 	lda (Speed_pointer),y
-	sta Speed_string,y
+;	sta Speed_string,y
 	iny
 	bne @speedLoop
 	rts

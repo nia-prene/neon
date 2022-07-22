@@ -1,8 +1,8 @@
 ;objects
 .globalzp PLAYER_SPRITE
 .globalzp LARGE_STAR
-.globalzp BULLET_SPRITE_0
-.globalzp BULLET_SPRITE_1
+.globalzp SPRITE02
+.globalzp SPRITE03
 .globalzp TARGET_SPRITE
 .globalzp HEART_SPRITE
 .globalzp SPRITE06
