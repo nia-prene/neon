@@ -17,12 +17,10 @@
 .include "enemies.h"
 .include "pickups.h"
 .include "score.h"
-.include "speed.h"
-.include "hud.h"
 .include "textbox.h"
 .include "apu.h"
 .include "bombs.h"
-
+.include "hud.h"
 
 .zeropage
 Gamestate_current: .res 1
@@ -136,7 +134,6 @@ gamestate01:;void(currentPlayer, currentScene)
 	ldx nextScene
 	jsr Waves_reset;(x)
 	ldx nextScene
-	jsr Speed_setLevel
 	jsr OAM_initSprite0
 	jsr PPU_resetScroll
 	jsr enableRendering;()

@@ -7,7 +7,7 @@ int main(){
 	
 	FILE *outputFile;
 	/*different radii to select from, cycles through list*/
-	double radii[4]={2, 2.5, 2, 3};
+	double radii[4]={4, 4, 4, 4};
 	double segments = 256;
 	double x;
 	double xH;

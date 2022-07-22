@@ -4,7 +4,6 @@
 .include "palettes.h"
 .include "waves.h"
 .include "bullets.h"
-.include "speed.h"
 
 .rodata
 Scenes_screen:
@@ -15,5 +14,3 @@ Scenes_backgroundColor:
 	.byte $2c
 Scenes_waveString:
 	.byte WAVESTRING00
-Scenes_speed:
-	.byte SPEED00

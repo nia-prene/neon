@@ -2,7 +2,6 @@
 .include "lib.h"
 .include "player.h"
 .include "sprites.h"
-.include "speed.h"
 
 BULLETS_VARIETIES=8
 MAX_ENEMY_BULLETS=56
@@ -199,9 +198,9 @@ Bullets_toCoins:
 
 ;the following attributes are the bullets type. The bullet type is stored with the enemy wave, so that each bullet can change sprite, width, etc throughout gameplay at the beginning of each enemy wave, where it will remain constant until the next enemy wave is loaded.
 romEnemyBulletHitbox1:
-	.byte 2, 4
+	.byte 2, 3
 romEnemyBulletHitbox2:
-	.byte 4, 8
+	.byte 4, 12
 romEnemyBulletMetasprite:
 	.byte SPRITE02,SPRITE03
 

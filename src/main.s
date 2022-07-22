@@ -17,7 +17,6 @@
 .include "enemies.h"
 .include "pickups.h"
 .include "score.h"
-.include "speed.h"
 .include "hud.h"
 .include "init.s"
 .include "apu.h"
