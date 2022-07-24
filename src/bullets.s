@@ -27,32 +27,47 @@ enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
 Bullets_diameter: .res MAX_ENEMY_BULLETS
+Bullets_isCoin: .res MAX_ENEMY_BULLETS
+Bullets_isBullet: .res MAX_ENEMY_BULLETS
+Bullets_i: .res MAX_ENEMY_BULLETS
 
 .code
 Enemy_Bullet:
 ;push y, x, id
 	jsr Enemy_Bullets_getAvailable;c,x(void)
 	bcc @bulletsFull;returns clear if full
+
 	pla;retrieve bullet id
 	tay ;y is bullet ID
+
 	lda romEnemyBulletBehaviorH,y
 	sta enemyBulletBehaviorH,x
 	lda romEnemyBulletBehaviorL,y
 	sta enemyBulletBehaviorL,x
+
+	lda #TRUE
+	sta Bullets_isBullet,x
+	lda #FALSE
+	sta Bullets_isCoin,x
+
 	tya ;restore bullet
 ;now use the lowes 2 bits to get the bullet type loaded during enemy wave
 	and #%00000011 
 	tay 
 	lda bulletType,y
 	tay 
-;copy metasprite
-	lda romEnemyBulletMetasprite,y
+
+	lda romEnemyBulletMetasprite,y;copy metasprite
 	sta enemyBulletMetasprite,x
-;copy hitboxes
-	lda romEnemyBulletHitbox1,y
+	
+	lda romEnemyBulletHitbox1,y;copy hitbox
 	sta enemyBulletHitbox1,x
 	lda romEnemyBulletHitbox2,y
 	sta enemyBulletHitbox2,x
+
+	lda Bullets_diameterROM,y;copy diameter
+	sta Bullets_diameter,x
+
 	pla
 	sta enemyBulletXH,x
 	pla	
@@ -77,31 +92,40 @@ Enemy_Bullets:
 
 	pla;retrieve bullet id
 	tay ;y is bullet ID
+
 	lda romEnemyBulletBehaviorH,y
 	sta enemyBulletBehaviorH,x
 	lda romEnemyBulletBehaviorL,y
 	sta enemyBulletBehaviorL,x
+
+	lda #TRUE
+	sta Bullets_isBullet,x
+	lda #FALSE
+	sta Bullets_isCoin,x
+
 	tya ;restore ID
 	and #%00000011 ;get index
 	tay 
 	lda bulletType,y;[4]
 	tay ;y is type
-	;copy metasprite
-	lda romEnemyBulletMetasprite,y
+	
+	lda romEnemyBulletMetasprite,y;copy metasprite
 	sta enemyBulletMetasprite,x
-	;copy hitboxes
-	lda romEnemyBulletHitbox1,y
+	
+	lda romEnemyBulletHitbox1,y;copy hitboxes
 	sta enemyBulletHitbox1,x
 	lda romEnemyBulletHitbox2,y
 	sta enemyBulletHitbox2,x
-	sta $102
+	
+	lda Bullets_diameterROM,y;copy diameter
+	sta Bullets_diameter,x
+	
 	dec numberOfBullets
 	bne @bulletLoop
 	rts
 @bulletsFull:
 ;pull id
 	pla
-	sta $102
 	dec numberOfBullets
 	bne @bulletsFull
 	rts
@@ -185,14 +209,102 @@ aimBullet:
 	sta bulletAngle
 	rts
 
-Bullets_toCoins:
+Bullets_toCoins:;void(s)
+
+	pla
+	tax
+	
+	lda Bullets_diameter,x
+	and #%11111000
+	clc
+	adc Bullets_i,x
+	tay
+
+	lda #SPRITE1E
+	sta enemyBulletMetasprite,x
+	
+	lda enemyBulletYH,x
+	clc
+	adc #1
+	bcc :+
+		lda #255
+	:sta enemyBulletYH,x
+
+	inc Bullets_i,x
+	lda Bullets_i,x
+	cmp #16
+	bcc @statePersists
+		lda #<(Coins_move-1)
+		sta enemyBulletBehaviorL,x
+		lda #>(Coins_move-1)
+		sta enemyBulletBehaviorH,x
+@statePersists:
+	rts
+
+@toCoinAnimation:
+
+Coins_move:
 
 	pla ;get the argument
 	tax
-
-	lda #FALSE
-	sta isEnemyBulletActive,x ;turn off bullet
 	
+	lda Player_xPos_H
+	adc #4
+	sec
+	sbc enemyBulletXH,x
+	bcs @playerXGreater
+
+		eor #%11111111
+		tay
+	
+		lda enemyBulletXL,x
+		sbc Coin_speed_L,y
+		sta enemyBulletXL,x
+		
+		lda enemyBulletXH,x
+		sbc Coin_speed_H,y
+		sta enemyBulletXH,x
+	
+		jmp @doY
+
+@playerXGreater:
+	tay
+
+	lda enemyBulletXL,x
+	adc Coin_speed_L,y
+	sta enemyBulletXL,x
+	
+	lda enemyBulletXH,x
+	adc Coin_speed_H,y
+	sta enemyBulletXH,x
+
+@doY:
+	sec
+	lda Player_yPos_H
+	sbc enemyBulletYH,x
+	bcc @playerYGreater
+		tay
+
+		lda enemyBulletYL,x
+		adc Coin_speed_L,y
+		sta enemyBulletYL,x
+		
+		lda enemyBulletYH,x
+		adc Coin_speed_H,y
+		sta enemyBulletYH,x
+		rts
+@playerYGreater:
+	eor #%11111111
+	tay
+
+	lda enemyBulletYL,x
+	sbc Coin_speed_L,y
+	sta enemyBulletYL,x
+	
+	lda enemyBulletYH,x
+	sbc Coin_speed_H,y
+	sta enemyBulletYH,x
+@return:
 	rts
 .rodata
 
@@ -201,6 +313,8 @@ romEnemyBulletHitbox1:
 	.byte 2, 3
 romEnemyBulletHitbox2:
 	.byte 4, 12
+Bullets_diameterROM:
+	.byte 8, 16	
 romEnemyBulletMetasprite:
 	.byte SPRITE02,SPRITE03
 
@@ -1363,3 +1477,39 @@ log2_tab:
 	.byte $fb,$fb,$fb,$fc,$fc,$fc,$fc,$fc
 	.byte $fd,$fd,$fd,$fd,$fd,$fd,$fe,$fe
 	.byte $fe,$fe,$fe,$ff,$ff,$ff,$ff,$ff
+
+Coin_speed_L:
+	.byte   0,  47,  94, 141, 187, 233,  22,  66, 110, 153, 196, 238,  24,  66, 106, 147
+	.byte 186, 226,   9,  47,  85, 122, 159, 195, 231,  11,  46,  81, 115, 148, 182, 214
+	.byte 247,  23,  54,  85, 116, 146, 176, 206, 235,   7,  35,  63,  91, 118, 144, 171
+	.byte 197, 222, 247,  16,  41,  65,  89, 112, 135, 158, 180, 202, 224, 245,  10,  31
+	.byte  52,  72,  91, 111, 130, 149, 167, 186, 204, 221, 239,   0,  17,  33,  49,  65
+	.byte  81,  97, 112, 127, 141, 156, 170, 184, 198, 211, 224, 237, 250,   7,  19,  31
+	.byte  43,  54,  66,  77,  88,  99, 109, 120, 130, 140, 149, 159, 168, 178, 187, 195
+	.byte 204, 212, 221, 229, 237, 244, 252,   4,  11,  18,  25,  32,  38,  45,  51,  57
+	.byte  64,  69,  75,  81,  86,  92,  97, 102, 107, 112, 117, 121, 126, 130, 135, 139
+	.byte 143, 147, 151, 155, 158, 162, 165, 169, 172, 175, 178, 181, 184, 187, 190, 192
+	.byte 195, 197, 200, 202, 204, 206, 209, 211, 213, 215, 216, 218, 220, 222, 223, 225
+	.byte 226, 228, 229, 230, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243
+	.byte 244, 244, 245, 246, 246, 247, 247, 248, 248, 249, 249, 250, 250, 251, 251, 251
+	.byte 252, 252, 252, 253, 253, 253, 253, 253, 254, 254, 254, 254, 254, 254, 255, 255
+	.byte 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
+	.byte 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,   0,   0,   0
+Coin_speed_H:
+	.byte   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2
+	.byte   2,   2,   3,   3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   4,   4,   4
+	.byte   4,   5,   5,   5,   5,   5,   5,   5,   5,   6,   6,   6,   6,   6,   6,   6
+	.byte   6,   6,   6,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   8,   8
+	.byte   8,   8,   8,   8,   8,   8,   8,   8,   8,   8,   8,   9,   9,   9,   9,   9
+	.byte   9,   9,   9,   9,   9,   9,   9,   9,   9,   9,   9,   9,   9,  10,  10,  10
+	.byte  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10
+	.byte  10,  10,  10,  10,  10,  10,  10,  11,  11,  11,  11,  11,  11,  11,  11,  11
+	.byte  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11
+	.byte  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11
+	.byte  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11
+	.byte  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11
+	.byte  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11
+	.byte  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11
+	.byte  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11
+	.byte  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  11,  12,  12,  12
+

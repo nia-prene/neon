@@ -17,4 +17,4 @@
 .global Player_toStartingPos
 .global Player_toConvo
 .global Player_setHitboxAnimation
-
+.global Player_collectCoins

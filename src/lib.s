@@ -1,7 +1,7 @@
 .include "lib.h"
 
-TRUE = $01 
-FALSE = $00
+TRUE = 01 
+FALSE = 00
 TERMINATE = $ff
 NULL = $00
 BUTTON_A = %10000000

@@ -195,24 +195,33 @@ PPU_waitForSprite0Reset:;void()
 PPU_waitForSprite0Hit:
 	lda currentMaskSettings
 	and #DISABLE_SPRITES
-	pha
-;4th write - Low byte nametable address ((Y & $F8) << 2)|(X >> 3)
+	pha ;Mask to disable sprites
+
 	lda Sprite0_destination
 	and #$f8
 	asl
 	asl
-	pha
-;3rd write - X to $2005
+	pha;Low byte nametable address ((Y & $F8) << 2)|(X >> 3)
+
 	lda #0
-	pha
-;2nd write - Y to $2005
+	pha;X to $2005
+
 	lda Sprite0_destination
-	pha
-;1st write - Nametable number << 2 (that is: $00, $04, $08, or $0C) to $2006
-	lda #4;nametable 0 
-	pha
-;turn off sprite rendering
+	pha;- Y to $2005
+
+	lda #4
+	pha ;Nametable << 2 (that is: $00, $04, $08, or $0C) to $2006
+	
 	lda #%01000000
+	bit PPUSTATUS
+	beq @waitForHit
+		pla ;nametable hi
+		pla ;Y
+		pla ;X
+		pla ;nametabel lo 
+		pla ;Mask
+		rts
+
 @waitForHit:
 	bit PPUSTATUS
 	beq @waitForHit

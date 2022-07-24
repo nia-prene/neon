@@ -282,13 +282,13 @@ HITBOX_HEIGHT=1
 ;else, check bullets
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
-	lda isEnemyBulletActive,x ;if active
+	lda Bullets_isBullet,x ;if active
 	beq @nextBullet ;else
-	sec ;find x distance
-	lda enemyBulletXH,x
-	sbc Player_xPos_H
-	bcs @bulletGreaterX
-		eor #%11111111 ;if negative
+		sec ;find x distance
+		lda enemyBulletXH,x
+		sbc Player_xPos_H
+		bcs @bulletGreaterX
+			eor #%11111111 ;if negative
 @bulletGreaterX:
 	cmp #MAX_BULLET_DIAMETER; if x distance < width
 	bcs @nextBullet ;else
@@ -349,6 +349,65 @@ HITBOX_HEIGHT=1
 :
 	clc ;mark false, playr is unharmed
 	rts
+
+Player_collectCoins:
+
+	ldx #MAX_ENEMY_BULLETS-1
+@bulletLoop:
+
+	lda Bullets_isCoin,x ;if active
+	beq @nextBullet ;else
+
+		sec ;find x distance
+		lda enemyBulletXH,x
+		sbc Player_xPos_H
+		bcs @bulletGreaterX
+			eor #%11111111 ;if negative
+	@bulletGreaterX:
+		cmp #MAX_BULLET_DIAMETER; if x distance < width
+		bcs @nextBullet ;else
+		sec ;find y distance
+		lda enemyBulletYH,x
+		sbc Player_yPos_H
+		bcs @bulletGreaterY
+			eor #%11111111 ;if negative
+	@bulletGreaterY:
+		cmp #PLAYER_HEIGHT ;if y distance < height
+		bcs @nextBullet
+		;copy player x bounded box
+		lda Player_xPos_H
+		sta sprite1LeftOrTop
+		adc #16
+		sta sprite1RightOrBottom
+		;copy bullet x bounded box
+		lda enemyBulletXH,x
+		sta sprite2LeftOrTop
+		adc Bullets_diameter,x
+		sta sprite2RightOrBottom
+		jsr checkCollision
+		bcc @nextBullet;if outside box
+		;copy player y bounded box
+		lda Player_yPos_H
+		sta sprite1LeftOrTop
+		adc #16
+		sta sprite1RightOrBottom
+		;copy bullet y bounded box
+		lda enemyBulletYH,x
+		sta sprite2LeftOrTop
+		adc Bullets_diameter,x
+		sta sprite2RightOrBottom
+		jsr checkCollision
+		bcc @nextBullet
+			lda #FALSE
+			sta isEnemyBulletActive,x
+			sta Bullets_isCoin,x
+
+@nextBullet:
+	dex
+	bpl @bulletLoop
+	rts
+
+
 
 Player_toConvo:;void()
 ;moves the player to the appropriate spot to have a conversation

@@ -85,6 +85,7 @@ gamestate00:
 	jsr updateEnemies
 	jsr dispenseEnemies
 
+	jsr Player_collectCoins
 	jsr Player_isHit
 	bcc @tallyScore
 		lda #SFX02

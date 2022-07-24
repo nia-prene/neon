@@ -32,7 +32,7 @@ SPRITE1A=$1a;hitbox main frame 2
 SPRITE1B=$1b;hitbox main frame 3
 SPRITE1C=$1c;hitbox main frame 4
 SPRITE1D=$1d;hitbox deploying
-SPRITE1E=$1e;
+SPRITE1E=$1e;small coin flat 
 SPRITE1F=$1f;
 SPRITE20=$20;
 SPRITE21=$21;piper frame 0
@@ -175,6 +175,7 @@ sprite1D:
 	.byte 0,$0c,%0,0
 	.byte TERMINATE
 sprite1E:
+	.byte 0,$38,%0,0
 	.byte TERMINATE
 sprite1F:
 	.byte TERMINATE

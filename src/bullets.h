@@ -22,6 +22,10 @@
 .global enemyBulletMetasprite
 .global enemyBulletBehaviorH
 .global enemyBulletBehaviorL
+.global Bullets_isBullet
+.global Bullets_isCoin
+.global Bullets_diameter
+.global Bullets_i
 
 ;functions
 .global Enemy_Bullet
