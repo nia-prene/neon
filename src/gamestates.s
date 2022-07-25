@@ -64,22 +64,17 @@ gamestate00:
 
 	lda Gamepads_state
 	jsr Player_move;(a)
-	lda Gamepads_state
+
 	jsr PlayerBullets_move;void()
+
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
+	
 	jsr PPU_waitForSprite0Reset;()
 
 	lda Gamepads_state
-	and #BUTTON_A ;if a is pressed
-	beq @noBomb ;else no bomb
-
-		lda Gamepads_last
-		and #BUTTON_A ;and first frame of pressing
-		bne @noBomb
-
-			jsr	Bombs_toss ;throw a bomb
-@noBomb:
+	ldx Gamepads_last
+	jsr	Bombs_toss ;void(a,x)
 
 	jsr updateEnemyBullets
 	jsr updateEnemies
