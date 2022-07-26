@@ -32,10 +32,11 @@ SPRITE1A=$1a;hitbox main frame 2
 SPRITE1B=$1b;hitbox main frame 3
 SPRITE1C=$1c;hitbox main frame 4
 SPRITE1D=$1d;hitbox deploying
-SPRITE1E=$1e;small coin flat 
-SPRITE1F=$1f;
-SPRITE20=$20;
+SPRITE1E=$1e;small star charm spin front
+SPRITE1F=$1f;small star charm spin left slant
+SPRITE20=$20;small star charm spin side
 SPRITE21=$21;piper frame 0
+SPRITE22=$22;small star charm spin right slant
 
 ;format
 ;name:
@@ -175,11 +176,13 @@ sprite1D:
 	.byte 0,$0c,%0,0
 	.byte TERMINATE
 sprite1E:
-	.byte 0,$38,%0,0
+	.byte 0,$3a,%0,0
 	.byte TERMINATE
 sprite1F:
+	.byte 0,$3c,%0,0
 	.byte TERMINATE
 sprite20:
+	.byte 0,$3e,%0,0
 	.byte TERMINATE
 sprite21:
 	.byte 0, $a0, %01, 0
@@ -188,13 +191,41 @@ sprite21:
 	.byte 16, $a6, %10, 8
 	.byte TERMINATE
 sprite22:
+	.byte 0,$3c,%01000000, 0
+	.byte TERMINATE
+sprite23:
+	.byte TERMINATE
+sprite24:
+	.byte TERMINATE
+sprite25:
+	.byte TERMINATE
+sprite26:
+	.byte TERMINATE
+sprite27:
+	.byte TERMINATE
+sprite28:
+	.byte TERMINATE
+sprite29:
+	.byte TERMINATE
+sprite2A:
+	.byte TERMINATE
+sprite2B:
+	.byte TERMINATE
+sprite2C:
+	.byte TERMINATE
+sprite2D:
+	.byte TERMINATE
+sprite2E:
+	.byte TERMINATE
+sprite2F:
+	.byte TERMINATE
 	
 ;pointer table
 spritesH:
 	.byte >sprite00, >sprite01, >sprite02, >sprite03, >sprite04, >sprite05, >sprite06, >sprite07, >sprite08, >sprite09, >sprite0A, >sprite0B, >sprite0C, >sprite0D, >sprite0E, >sprite0F
 	.byte >sprite10, >sprite11, >sprite12, >sprite13, >sprite14, >sprite15, >sprite16, >sprite17, >sprite18, >sprite19, >sprite1A, >sprite1B, >sprite1C, >sprite1D, >sprite1E, >sprite1F
-	.byte >sprite20, >sprite21
+	.byte >sprite20, >sprite21, >sprite22, >sprite23, >sprite24, >sprite25, >sprite26, >sprite27, >sprite28, >sprite29, >sprite2A, >sprite2B, >sprite2C, >sprite2D, >sprite2E, >sprite2F
 spritesL:
 	.byte <sprite00, <sprite01, <sprite02, <sprite03, <sprite04, <sprite05, <sprite06, <sprite07, <sprite08, <sprite09, <sprite0A, <sprite0B, <sprite0C, <sprite0D, <sprite0E, <sprite0F
 	.byte <sprite10, <sprite11, <sprite12, <sprite13, <sprite14, <sprite15, <sprite16, <sprite17, <sprite18, <sprite19, <sprite1A, <sprite1B, <sprite1C, <sprite1D, <sprite1E, <sprite1F
-	.byte <sprite20, <sprite21
+	.byte <sprite20, <sprite21, <sprite22, <sprite23, <sprite24, <sprite25, <sprite26, <sprite27, <sprite28, <sprite29, <sprite2A, <sprite2B, <sprite2C, <sprite2D, <sprite2E, <sprite2F

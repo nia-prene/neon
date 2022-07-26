@@ -1,7 +1,9 @@
 .include "bullets.h"
 .include "lib.h"
+
 .include "player.h"
 .include "sprites.h"
+.include "bombs.h"
 
 BULLETS_VARIETIES=8
 MAX_ENEMY_BULLETS=56
@@ -27,7 +29,7 @@ enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
 Bullets_diameter: .res MAX_ENEMY_BULLETS
-Bullets_isCoin: .res MAX_ENEMY_BULLETS
+Bullets_isCharm: .res MAX_ENEMY_BULLETS
 Bullets_isBullet: .res MAX_ENEMY_BULLETS
 Bullets_i: .res MAX_ENEMY_BULLETS
 
@@ -48,7 +50,7 @@ Enemy_Bullet:
 	lda #TRUE
 	sta Bullets_isBullet,x
 	lda #FALSE
-	sta Bullets_isCoin,x
+	sta Bullets_isCharm,x
 
 	tya ;restore bullet
 ;now use the lowes 2 bits to get the bullet type loaded during enemy wave
@@ -101,7 +103,7 @@ Enemy_Bullets:
 	lda #TRUE
 	sta Bullets_isBullet,x
 	lda #FALSE
-	sta Bullets_isCoin,x
+	sta Bullets_isCharm,x
 
 	tya ;restore ID
 	and #%00000011 ;get index
@@ -209,18 +211,30 @@ aimBullet:
 	sta bulletAngle
 	rts
 
-Bullets_toCoins:;void(s)
+Bullets_toCharms:;void(s)
 
 	pla
 	tax
 	
-	lda Bullets_diameter,x
-	and #%11111000
+	lda Bombs_timeElapsed
+	cmp #16
+	bcc @statePersists
+
+		lda #<(Charms_move-1)
+		sta enemyBulletBehaviorL,x
+		lda #>(Charms_move-1)
+		sta enemyBulletBehaviorH,x
+		rts
+@statePersists:
+
+	lda Bullets_diameter,x	
+	and #%00010000
+	
 	clc
-	adc Bullets_i,x
+	adc Bombs_timeElapsed
 	tay
 
-	lda #SPRITE1E
+	lda @charmAnimation,y
 	sta enemyBulletMetasprite,x
 	
 	lda enemyBulletYH,x
@@ -230,26 +244,21 @@ Bullets_toCoins:;void(s)
 		lda #255
 	:sta enemyBulletYH,x
 
-	inc Bullets_i,x
-	lda Bullets_i,x
-	cmp #16
-	bcc @statePersists
-		lda #<(Coins_move-1)
-		sta enemyBulletBehaviorL,x
-		lda #>(Coins_move-1)
-		sta enemyBulletBehaviorH,x
-@statePersists:
 	rts
+@charmAnimation:
+	.byte SPRITE1E,SPRITE20,SPRITE1E,SPRITE20
+	.byte SPRITE1E,SPRITE1E,SPRITE1F,SPRITE1F
+	.byte SPRITE20,SPRITE20,SPRITE20,SPRITE20
+	.byte SPRITE22,SPRITE22,SPRITE22,SPRITE1E
 
-@toCoinAnimation:
-
-Coins_move:
+Charms_move:
 
 	pla ;get the argument
 	tax
 	
-	lda Player_xPos_H
+	lda Player_xPos_H;aim for middle of player
 	adc #4
+
 	sec
 	sbc enemyBulletXH,x
 	bcs @playerXGreater
@@ -258,11 +267,11 @@ Coins_move:
 		tay
 	
 		lda enemyBulletXL,x
-		sbc Coin_speed_L,y
+		sbc Charm_speed_L,y
 		sta enemyBulletXL,x
 		
 		lda enemyBulletXH,x
-		sbc Coin_speed_H,y
+		sbc Charm_speed_H,y
 		sta enemyBulletXH,x
 	
 		jmp @doY
@@ -271,26 +280,28 @@ Coins_move:
 	tay
 
 	lda enemyBulletXL,x
-	adc Coin_speed_L,y
+	adc Charm_speed_L,y
 	sta enemyBulletXL,x
 	
 	lda enemyBulletXH,x
-	adc Coin_speed_H,y
+	adc Charm_speed_H,y
 	sta enemyBulletXH,x
 
 @doY:
+	lda Player_yPos_H;aim for middle of player
+	adc #4
+
 	sec
-	lda Player_yPos_H
 	sbc enemyBulletYH,x
 	bcc @playerYGreater
 		tay
 
 		lda enemyBulletYL,x
-		adc Coin_speed_L,y
+		adc Charm_speed_L,y
 		sta enemyBulletYL,x
 		
 		lda enemyBulletYH,x
-		adc Coin_speed_H,y
+		adc Charm_speed_H,y
 		sta enemyBulletYH,x
 		rts
 @playerYGreater:
@@ -298,11 +309,11 @@ Coins_move:
 	tay
 
 	lda enemyBulletYL,x
-	sbc Coin_speed_L,y
+	sbc Charm_speed_L,y
 	sta enemyBulletYL,x
 	
 	lda enemyBulletYH,x
-	sbc Coin_speed_H,y
+	sbc Charm_speed_H,y
 	sta enemyBulletYH,x
 @return:
 	rts
@@ -1478,7 +1489,7 @@ log2_tab:
 	.byte $fd,$fd,$fd,$fd,$fd,$fd,$fe,$fe
 	.byte $fe,$fe,$fe,$ff,$ff,$ff,$ff,$ff
 
-Coin_speed_L:
+Charm_speed_L:
 	.byte   0,  47,  94, 141, 187, 233,  22,  66, 110, 153, 196, 238,  24,  66, 106, 147
 	.byte 186, 226,   9,  47,  85, 122, 159, 195, 231,  11,  46,  81, 115, 148, 182, 214
 	.byte 247,  23,  54,  85, 116, 146, 176, 206, 235,   7,  35,  63,  91, 118, 144, 171
@@ -1495,7 +1506,7 @@ Coin_speed_L:
 	.byte 252, 252, 252, 253, 253, 253, 253, 253, 254, 254, 254, 254, 254, 254, 255, 255
 	.byte 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
 	.byte 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,   0,   0,   0
-Coin_speed_H:
+Charm_speed_H:
 	.byte   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2
 	.byte   2,   2,   3,   3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   4,   4,   4
 	.byte   4,   5,   5,   5,   5,   5,   5,   5,   5,   6,   6,   6,   6,   6,   6,   6

@@ -40,7 +40,6 @@ COOLDOWN_TIME=16
 				
 				lda #0
 				sta Bombs_timeElapsed ;zero time since bomb
-				
 				ldx #MAX_ENEMY_BULLETS
 			@bulletLoop:
 				lda Bullets_isBullet,x ;if bullet is active

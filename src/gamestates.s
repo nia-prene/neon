@@ -72,15 +72,15 @@ gamestate00:
 	
 	jsr PPU_waitForSprite0Reset;()
 
-	lda Gamepads_state
+	ldy Gamepads_state
 	ldx Gamepads_last
-	jsr	Bombs_toss ;void(a,x)
+	jsr	Bombs_toss ;void(y,x)
 
 	jsr updateEnemyBullets
 	jsr updateEnemies
 	jsr dispenseEnemies
 
-	jsr Player_collectCoins
+	jsr Player_collectCharms
 	jsr Player_isHit
 	bcc @tallyScore
 		lda #SFX02

@@ -33,6 +33,20 @@
 .globalzp SPRITE1F
 .globalzp SPRITE20
 .globalzp SPRITE21
+.globalzp SPRITE22
+.globalzp SPRITE23
+.globalzp SPRITE24
+.globalzp SPRITE25
+.globalzp SPRITE26
+.globalzp SPRITE27
+.globalzp SPRITE28
+.globalzp SPRITE29
+.globalzp SPRITE2a
+.globalzp SPRITE2b
+.globalzp SPRITE2c
+.globalzp SPRITE2d
+.globalzp SPRITE2e
+.globalzp SPRITE2f
 
 ;address table
 .global spritesH

@@ -350,12 +350,12 @@ HITBOX_HEIGHT=1
 	clc ;mark false, playr is unharmed
 	rts
 
-Player_collectCoins:
+Player_collectCharms:
 
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
 
-	lda Bullets_isCoin,x ;if active
+	lda Bullets_isCharm,x ;if active
 	beq @nextBullet ;else
 
 		sec ;find x distance
@@ -400,7 +400,7 @@ Player_collectCoins:
 		bcc @nextBullet
 			lda #FALSE
 			sta isEnemyBulletActive,x
-			sta Bullets_isCoin,x
+			sta Bullets_isCharm,x
 
 @nextBullet:
 	dex

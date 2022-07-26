@@ -23,7 +23,7 @@
 .global enemyBulletBehaviorH
 .global enemyBulletBehaviorL
 .global Bullets_isBullet
-.global Bullets_isCoin
+.global Bullets_isCharm
 .global Bullets_diameter
 .global Bullets_i
 
@@ -32,4 +32,4 @@
 .global Enemy_Bullets
 .global aimBullet
 .global updateEnemyBullets
-.global Bullets_toCoins
+.global Bullets_toCharms
