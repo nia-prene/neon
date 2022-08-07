@@ -4,7 +4,7 @@
 
 #define FILE_PATH "output.txt"
 #define SPEED_LO 0
-#define SPEED_HI 12
+#define SPEED_HI 8
 
 float ease(float x);
 

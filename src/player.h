@@ -1,13 +1,16 @@
-.globalzp playerIFrames
 .globalzp Player_xPos_H
 .globalzp Player_yPos_H
-.globalzp Player_sprite
-.globalzp Player_powerLevel
-.globalzp Player_killCount
-.globalzp Player_haveHeartsChanged
-.globalzp Player_hearts
-.globalzp Player_willRender
-.globalzp Hitbox_sprite
+
+.global playerIFrames
+.global Player_sprite
+.global Player_powerLevel
+.global Player_killCount
+.global Player_haveHeartsChanged
+.global Player_haveBombsChanged
+.global Player_hearts
+.global Player_bombs
+.global Player_willRender
+.global Hitbox_sprite
 
 .global Player_init
 .global Player_move

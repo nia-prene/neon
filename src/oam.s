@@ -8,6 +8,7 @@
 .include "playerbullets.h"
 .include "enemies.h"
 .include "bullets.h"
+.include "bombs.h"
 
 OAM_LOCATION = 02 ;located at $0200, expects hibyte
 OAMADDR = $2003;(aaaa aaaa) OAM read/write address
@@ -58,20 +59,38 @@ OAM_build:;c (c,a)
 ;returns carry clear if oam overflow
 	inc o ;module iterator
 	ldx #4;skip sprite 0
+	
+	lda #%01000000
+	bit Bombs_timeElapsed ;if time > 128
+	php
+	bvc @buildBulletsUnderPlayer
+	
+		jsr buildEnemyBullets
+		bcs @oamFull
 
-	jsr buildEnemyBullets
-
+@buildBulletsUnderPlayer:
+	
 	lda Player_willRender
 	beq @buildWithoutPlayer
 
 		lda Hitbox_sprite;see if hitbox renders first
 		beq @buildWithoutHitbox
 			jsr buildHitbox
+			bcs @oamFull
 	@buildWithoutHitbox:
 
 	jsr OAM_buildPlayer
+	bcs @oamFull
 
 @buildWithoutPlayer:
+
+	plp ;if time < 128
+	bvs @bulletsUnderPlayer
+	
+		jsr buildEnemyBullets
+		bcs @oamFull
+
+@bulletsUnderPlayer:
 	jsr buildEnemies
 	bcs @oamFull
 	jsr buildPlayerBullets
@@ -105,8 +124,14 @@ PLAYER_HITBOX_X_OFFSET=2
 buildEnemyBullets:
 	lda #TERMINATE;terminate
 	pha
+
+	lda o ;alternate building forward and backward 
+	ror
+	bcc @buildForward
+
+@buildBackward:
 	ldy #MAX_ENEMY_BULLETS-1
-@enemyBulletLoop:
+@loopBackward:
 	lda isEnemyBulletActive,y
 	beq @skipBullet
 		lda enemyBulletMetasprite,y
@@ -119,8 +144,28 @@ buildEnemyBullets:
 		pha
 @skipBullet:
 	dey
-	bpl @enemyBulletLoop
+	bpl @loopBackward
 	jmp buildSpritesShort
+
+@buildForward:
+	ldy #0
+@loopForward:
+	lda isEnemyBulletActive,y
+	beq @next
+		lda enemyBulletMetasprite,y
+		pha
+		lda enemyBulletYH,y
+		pha
+		lda enemyBulletXH,y
+		pha
+		lda #0; palette implied
+		pha
+@next:
+	iny
+	cpy #MAX_ENEMY_BULLETS
+	bcc @loopForward
+	jmp buildSpritesShort
+
 
 OAM_buildPlayer:
 ;prepares player sprite for oam

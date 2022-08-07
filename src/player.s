@@ -7,37 +7,54 @@
 .include "enemies.h"
 .include "bullets.h"
 
-
+PLAYERS_MAX=2
 .zeropage
 Player_xPos_H: .res 1
-Player_xPos_L: .res 1
 Player_yPos_H: .res 1
+.data
+Player_xPos_L: .res 1
 Player_yPos_L: .res 1
+
 Player_speed_H: .res 1
 Player_speed_L: .res 1
 Player_speedIndex:.res 1
-Player_sprite: .res 1
-Player_powerLevel: .res 2
-Player_hearts: .res 2
+
+Player_powerLevel: .res 1
+Player_hearts: .res 1
+Player_bombs: .res 1
 Player_haveHeartsChanged: .res 1
+Player_haveBombsChanged: .res 1
+
+Players_powerLevel: .res PLAYERS_MAX
+Players_hearts: .res PLAYERS_MAX
+Players_bombs: .res PLAYERS_MAX
+
+Player_sprite: .res 1
 Player_iFrames: .res 1
 Player_willRender: .res 1
+
 Hitbox_state:.res 1
 Hitbox_sprite: .res 1
 h:.res 1;hitbox variable
 
 .code
-Player_init:;(x)
-;initializes player to blank slate values
+Player_init:
+; initializes players to blank slate values to set up game
 	lda #5
-	sta Player_hearts,x
-	lda #TRUE
-	sta Player_haveHeartsChanged
+	sta Player_hearts
+
+	lda #3
+	sta Player_bombs
+
 	lda #0
 	sta Player_powerLevel
 	sta Player_speedIndex
+
 	lda #TRUE
+	sta Player_haveHeartsChanged
+	sta Player_haveBombsChanged
 	sta Player_willRender
+	
 	rts
 
 Player_prepare:;(x)

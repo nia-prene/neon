@@ -1,65 +1,96 @@
 .include "bombs.h"
+
 .include "lib.h"
 .include "bullets.h"
-
+.include "player.h"
+.include "apu.h"
 .zeropage
-cooldownTimer: .res 1
-Bombs_count:.res 1
 Bombs_timeElapsed:.res 1
 .code
+Bombs_init: ;void()
+	
+	lda #255; allow for immediate use of bomb
+	sta Bombs_timeElapsed
+	rts
+
+
 Bombs_toss:;(y,x)
-COOLDOWN_TIME=16
-	
-	sec
-	lda cooldownTimer;countdown til next possible bomb toss
-	sbc #1
-	bcs :+
-			lda #0;without underflowing
-	:sta cooldownTimer
-	
-	clc
-	lda Bombs_timeElapsed;count frames since last bomb
+; x - last gamepad state
+; y - current gamepad state
+; update counter at beginning of frame
+; so that events following bomb toss
+; can start on 0
+WOOSH_TIMER=32
+	clc ;count frames since last bomb
+	lda Bombs_timeElapsed
 	adc #1
-	bcc :+
+	bcc :+; setting this carry will allow a bomb to be dropped
 		lda #255;without overflowing
 	:sta Bombs_timeElapsed
 	
-	tya
-	and #BUTTON_A;if holding b
+	tya; retrieve current gamepad state
+	and #BUTTON_A; if holding b
 	beq @noBomb
 
-		txa
-		and #BUTTON_A;and not holding last frame
+		txa; retrieve last gamepad state
+		and #BUTTON_A; and not holding last frame
 		bne @noBomb
 
-			lda cooldownTimer;if cooled down
-			bne @noBomb
-		
-				lda #COOLDOWN_TIME;set the timer
-				sta cooldownTimer
+			lda Bombs_timeElapsed; if time > 256
+			bcc @noBomb; carry is set when time > 256
 				
-				lda #0
-				sta Bombs_timeElapsed ;zero time since bomb
-				
-				ldx #MAX_ENEMY_BULLETS
-			@bulletLoop:
-				lda Bullets_isBullet,x ;if bullet is active
-				beq @nextBullet ;else next bullet
+				lda Player_bombs; and the player has a bomb
+				beq @noBomb
 					
-					lda #<(Bullets_toCharms-1);change function ptr
-					sta enemyBulletBehaviorL,x
-					lda #>(Bullets_toCharms-1)
-					sta enemyBulletBehaviorH,x
-			
+					sec; decrease bombs
+					sbc #1
+					bpl :+
+						lda #0; no underflow
+					:sta Player_bombs
+					
 					lda #TRUE
-					sta Bullets_isCharm,x ;its a charm now
-					lda #FALSE
-					sta Bullets_isBullet,x;its not a bullet
+					sta Player_haveBombsChanged
 
-			@nextBullet:
-				dex ;x--
-				bpl @bulletLoop;while x < 0
+					lda #0
+					sta Bombs_timeElapsed ;zero time since bomb
+
+					lda #SFX06; play bass
+					jsr SFX_newEffect; void(a)
+					lda #SFX07; play boom
+					jsr SFX_newEffect; void(a)
+					lda #SFX08; play twinkle
+					jsr SFX_newEffect; void(a)
+					
+					ldx #MAX_ENEMY_BULLETS
+				@bulletLoop:
+					lda Bullets_isBullet,x ;if bullet is active
+					beq @nextBullet ;else next bullet
+						
+						lda #<(Bullets_toCharms-1);change function ptr
+						sta enemyBulletBehaviorL,x
+						lda #>(Bullets_toCharms-1)
+						sta enemyBulletBehaviorH,x
+				
+						lda #TRUE
+						sta Bullets_isCharm,x ;its a charm now
+						lda #FALSE
+						sta Bullets_isBullet,x;its not a bullet
+
+				@nextBullet:
+					dex ;x--
+					bpl @bulletLoop;while x < 0
 @noBomb:
+	
+	lda Bombs_timeElapsed
+	cmp #WOOSH_TIMER
+	bne @noWoosh
+		pha
+		
+		lda #SFX09
+		jsr SFX_newEffect
+
+		pla
+@noWoosh:
 
 	rts
 

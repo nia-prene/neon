@@ -263,15 +263,13 @@ PPU_lightenScreen:;void()
 
 PPU_NMIPlan00:
 ;byte writes INCLUDE functions pushed on stack
-MAX_BYTES=70
-SCORE_BYTES=24
-HEART_BYTES=7
+MAX_BYTES=128
 PALETTE_BYTES=5
 ;save the main stack
 	tsx
 	stx Main_stack
 ;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
-	ldx #MAX_BYTES+8
+	ldx #(MAX_BYTES + 8)
 	txs
 ;after routine runs, return at the end of NMI
 	lda #>(Main_NMIReturn-1)
@@ -285,29 +283,46 @@ PALETTE_BYTES=5
 ;we just stored 2 bytes
 	lda #2
 	sta PPU_bufferBytes
+
 ;check if score needs updating
 	lda Score_hasChanged
-	beq :+
+	beq @noScore
 		clc
-		lda #SCORE_BYTES
+		lda #BYTES_SCORE
 		adc PPU_bufferBytes
 		sta PPU_bufferBytes
 		jsr PPU_scoreToBuffer
 	;update has been made
 		lda #FALSE
 		sta Score_hasChanged
-:	
-	lda Player_haveHeartsChanged
-	beq :+
+@noScore:	
+
+	lda Player_haveHeartsChanged;check if hearts need update
+	beq @noHearts
 		clc
-		lda #HEART_BYTES
+		lda #BYTES_HEARTS
 		adc PPU_bufferBytes
 		sta PPU_bufferBytes
 		jsr PPU_heartsToBuffer
 	;update has been made
 		lda #FALSE
 		sta Player_haveHeartsChanged
-:
+@noHearts:
+
+	lda Player_haveBombsChanged
+	beq @skipBombs
+		clc
+		lda #BYTES_BOMBS
+		adc PPU_bufferBytes
+		cmp #MAX_BYTES
+		bcs @bufferFull
+		sta PPU_bufferBytes
+		jsr PPU_bombsToBuffer
+	;update has been made
+		lda #FALSE
+		sta Player_haveBombsChanged
+@skipBombs:
+	
 	ldy #NUMBER_OF_PALETTES-1
 @paletteLoop:
 	lda Palettes_hasChanged,y
@@ -568,12 +583,14 @@ PPU_renderAllPalettesNMI:
 	sta PPUDATA
 	rts 
 
+BYTES_SCORE=24;2 function, 4 addresses, 18 bytes
 PPU_renderScoreNMI:
-	pla
+	pla; set address
 	sta PPUADDR
 	pla
 	sta PPUADDR
-	pla
+
+	pla; load 9 bytes
 	sta PPUDATA
 	pla
 	sta PPUDATA
@@ -591,11 +608,13 @@ PPU_renderScoreNMI:
 	sta PPUDATA
 	pla
 	sta PPUDATA
-	pla
+
+	pla; set address
 	sta PPUADDR
 	pla
 	sta PPUADDR
-	pla
+
+	pla; load 9 bytes
 	sta PPUDATA
 	pla
 	sta PPUDATA
@@ -969,13 +988,12 @@ MAX_HEARTS=5
 HEART_FULL_TILE=$ee	
 HEART_EMPTY_TILE=$ef	
 HEART_ADDRESS=$2421
-	ldy #0;player zero
 ;swap stacks
 	sws Main_stack, PPU_stack
 ;find how many hearts are empty
 	sec
 	lda #MAX_HEARTS
-	sbc Player_hearts,y
+	sbc Player_hearts
 	beq @heartsFull;skip if hearts are full
 		tax
 	@emptyTileLoop:
@@ -986,7 +1004,7 @@ HEART_ADDRESS=$2421
 		bne @emptyTileLoop
 @heartsFull:
 ;find how many full hearts there are
-	ldx Player_hearts,y
+	ldx Player_hearts
 	beq @heartsEmpty
 	@fullTileLoop:
 	;fill in full hearts
@@ -1010,17 +1028,78 @@ HEART_ADDRESS=$2421
 	rts
 .endproc
 
+BYTES_HEARTS=9; 2 function, 2 address, 5 tiles
 PPU_renderHeartsNMI:
-	pla
+	pla; set the address
 	sta PPUADDR
 	pla
 	sta PPUADDR
 
+	pla; load 5 tiles
+	sta PPUDATA
+	pla
+	sta PPUDATA
 	pla
 	sta PPUDATA
 	pla
 	sta PPUDATA
 	pla
+	sta PPUDATA
+	rts
+
+.proc PPU_bombsToBuffer
+BOMBS_MAX=3; max number of bombs
+BOMBS_FULL_TILE=$eb; Graphic for full bomb	
+BOMBS_EMPTY_TILE=$ec; Graphic for empty bomb		
+BOMBS_ADDRESS=$2427; where it is rendered
+;swap stacks
+	sws Main_stack, PPU_stack
+;find how many hearts are empty
+	sec
+	lda #BOMBS_MAX
+	sbc Player_bombs
+	beq @bombsFull;skip if bombs are full
+		tax; else render the empty ones
+	@emptyTileLoop:
+	;fill in top with empty tiles
+		lda #BOMBS_EMPTY_TILE
+		pha
+		dex
+		bne @emptyTileLoop
+@bombsFull:
+;find how many full hearts there are
+	ldx Player_bombs; if there are full bombs
+	beq @bombsEmpty; else all bombs empty
+	@fullTileLoop:
+	;fill in full hearts
+		lda #BOMBS_FULL_TILE
+		pha
+		dex
+		bne @fullTileLoop
+@bombsEmpty:
+;addresses
+	lda #<BOMBS_ADDRESS
+	pha
+	lda #>BOMBS_ADDRESS
+	pha
+;NMI render function pointer
+	lda #>(PPU_renderBombsNMI-1)
+	pha
+	lda #<(PPU_renderBombsNMI-1)
+	pha
+;swap out the stacks
+	sws PPU_stack, Main_stack
+	rts
+.endproc
+
+BYTES_BOMBS=7; 2 function + 2 address + 3 tiles
+PPU_renderBombsNMI:
+	pla; set address
+	sta PPUADDR
+	pla
+	sta PPUADDR
+
+	pla; load 3 tiles
 	sta PPUDATA
 	pla
 	sta PPUDATA

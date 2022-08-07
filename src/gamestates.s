@@ -74,7 +74,7 @@ gamestate00:
 
 	ldy Gamepads_state
 	ldx Gamepads_last
-	jsr	Bombs_toss ;void(y,x)
+	jsr	Bombs_toss ;void(a,x)
 
 	jsr updateEnemyBullets
 	jsr updateEnemies
@@ -108,6 +108,7 @@ gamestate00:
 gamestate01:;void(currentPlayer, currentScene)
 ;loads level with current player.
 	jsr APU_init
+
 	jsr APU_setSong
 	jsr disableRendering;()
 	ldx #0
@@ -120,11 +121,16 @@ gamestate01:;void(currentPlayer, currentScene)
 	ldx #PURPLE_BULLET
 	ldy #7
 	jsr setPalette;(x,y)
+
 	jsr Player_prepare
+	jsr Bombs_init
+
 	ldx nextScene
 	jsr setPaletteCollection;(x)
+
 	ldx nextScene
-	jsr Tiles_getScreenPointer
+	jsr Tiles_getScreenPointer;(x)
+
 	jsr renderAllTiles;()
 	jsr PPU_renderRightScreen
 	ldx nextScene
@@ -181,7 +187,7 @@ SCORE_OFFSET=7
 	adc #2;this state lasts 256/4 frames
 	sta g
 	bne :+
-		lda #GAMESTATE00
+		lda #GAMESTATE00 
 		sta Gamestate_current
 :
 	rts
@@ -280,9 +286,11 @@ gamestate07:
 		lda Gamepads_last
 		and #BUTTON_A
 		bne @dontPlaySFX
-			lda #SFX03
+			lda #SFX06
 			jsr SFX_newEffect
-			lda #SFX04
+			lda #SFX07
+			jsr SFX_newEffect
+			lda #SFX08
 			jsr SFX_newEffect
 @dontPlaySFX:
 	rts

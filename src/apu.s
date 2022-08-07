@@ -27,6 +27,10 @@ DMC_LEN = $4013;Length of DMC waveform is $10*$xx + 1 bytes (128*$xx + 8 samples
 SND_CHN = $4015;Sound channels enable and status
 
 .zeropage
+;locals
+hasHiPeriodChanged:.res 1
+
+
 MAX_TRACKS=4
 tracks: .res MAX_TRACKS+1
 trackIndex: .res MAX_TRACKS+1
@@ -55,9 +59,11 @@ length:.res MAX_TRACKS
 rest:.res MAX_TRACKS+1
 mute:.res MAX_TRACKS
 state: .res MAX_TRACKS
+currentPeriod_H:.res MAX_TRACKS
 currentPeriod_L:.res MAX_TRACKS
 currentPeriod_LL:.res MAX_TRACKS
-targetPeriod:.res MAX_TRACKS
+targetPeriod_H:.res MAX_TRACKS
+targetPeriod_L:.res MAX_TRACKS
 
 SFX_length:.res MAX_TRACKS
 SFX_rest:.res MAX_TRACKS
@@ -326,6 +332,7 @@ SFX_newEffect:;(a)
 @sfxOverrided:
 	pla
 	rts
+
 getNewNote:
 	ldy loops,x;get the channel loop
 	lda loops_L,y;setup pointer
@@ -392,11 +399,11 @@ getNewNote:
 
 	ldy note,x
 	lda periodTable_H,y
-	pha
+	sta currentPeriod_H,x;save hi byte of period for pitch
 	lda periodTable_L,y
 	sta currentPeriod_L,x;save low byte of period for pitch
-	jsr Note_bend
-	pha
+	
+	jsr Note_bend;bend the note
 
 	ldy instrument,x;get the initial volume level
 	lda instAttack_L,y
@@ -411,9 +418,10 @@ getNewNote:
 
 	ldy CHANNEL_OFFSETS,x
 	sta CHANNEL_VOL,y
-	pla
+	
+	lda currentPeriod_L,x;push for upload	
 	sta CHANNEL_LO,y
-	pla
+	lda currentPeriod_H,x;push for upload	
 	sta CHANNEL_HI,y 
 
 	rts
@@ -421,6 +429,7 @@ getNewNote:
 SFX_getNewNote:
 	lda #0
 	sta currentPeriod_LL,x;clear low low byte of pitch
+	sta currentVolume_L,x;clear low low byte of volume
 	sta state,x;note in attack state while we have 00
 	
 	ldy SFX_effect,x;get the channel loop
@@ -433,7 +442,7 @@ SFX_getNewNote:
 	lda (SFX_loopPtr),y;get note
 	bne @loopContinues;loops are null terminated
 
-		ldy SFX_instrument,x
+		ldy SFX_instrument,x;silence channel
 		lda instDuty,y
 		ldy CHANNEL_OFFSETS,x
 		sta CHANNEL_VOL,y
@@ -464,13 +473,14 @@ SFX_getNewNote:
 
 	ldy note,x;get the period to play
 	lda periodTable_H,y
-	pha
+	sta currentPeriod_H,x;save high byte of period for pitch
 	lda periodTable_L,y
 	sta currentPeriod_L,x;save low byte of period for pitch
+	
 	jsr Note_bend
-	pha
 
 	ldy instrument,x;get the initial volume level
+	
 	lda instAttack_L,y
 	sta currentVolume_L,x
 	lda instAttack_H,y
@@ -483,10 +493,11 @@ SFX_getNewNote:
 
 	ldy CHANNEL_OFFSETS,x;translate track to register
 	sta CHANNEL_VOL,y;store volume
-	pla
-	sta CHANNEL_LO,y;store fine period	
-	pla
-	sta CHANNEL_HI,y;store coarse period	
+
+	lda currentPeriod_H,x
+	sta CHANNEL_HI,y;store fine period	
+	lda currentPeriod_L,x
+	sta CHANNEL_LO,y;store coarse period	
 
 	rts
 
@@ -540,29 +551,41 @@ getNewSample:
 	rts	
 
 Note_attack:
+	jsr Note_bend
+
 	ldy instrument,x
+
 	clc
 	lda currentVolume_L,x
 	adc instAttack_L,y
 	sta currentVolume_L,x
+
 	lda currentVolume_H,x
 	adc instAttack_H,y
 	cmp maxVolume,x
 	bcc :+
-		lda maxVolume,x
 		inc state,x
+		lda maxVolume,x
 	:sta currentVolume_H,x
 	ora instDuty,y
-	pha 
-	jsr Note_bend
+
 	ldy CHANNEL_OFFSETS,x
-	sta CHANNEL_LO,y
-	pla
 	sta CHANNEL_VOL,y
+
+	lda currentPeriod_L,x
+	sta CHANNEL_LO,y
+	lda hasHiPeriodChanged
+	beq @skipHiByte
+		lda currentPeriod_H,x
+		sta CHANNEL_HI,y
+@skipHiByte:
 	rts
 
 Note_decay:
+	jsr Note_bend
+
 	ldy instrument,x
+
 	sec;find the target volume
 	lda maxVolume,x
 	sbc instSustain,y
@@ -581,28 +604,45 @@ Note_decay:
 		inc state,x
 	:sta currentVolume_H,x
 	ora instDuty,y
-	pha
-	jsr Note_bend
+
 	ldy CHANNEL_OFFSETS,x
-	sta CHANNEL_LO,y
-	pla
 	sta CHANNEL_VOL,y
+
+	lda currentPeriod_L,x
+	sta CHANNEL_LO,y
+
+	lda hasHiPeriodChanged
+	beq @skipHiByte
+		lda currentPeriod_H,x
+		sta CHANNEL_HI,y
+@skipHiByte:
 	rts
 
 Note_sustain:
+	jsr Note_bend
+
 	ldy instrument,x
 	lda currentVolume_H,x
 	ora instDuty,y
-	pha 
-	jsr Note_bend
+	
 	ldy CHANNEL_OFFSETS,x
-	sta CHANNEL_LO,y
-	pla
 	sta CHANNEL_VOL,y
+
+	lda currentPeriod_L,x
+	sta CHANNEL_LO,y
+
+	lda hasHiPeriodChanged
+	beq @skipHiByte
+		lda currentPeriod_H,x
+		sta CHANNEL_HI,y
+@skipHiByte:
 	rts
 
 Note_release:
+	jsr Note_bend
+	
 	ldy instrument,x
+
 	sec
 	lda currentVolume_L,x
 	sbc instRelease_L,y;fade out the note a little every frame
@@ -613,19 +653,27 @@ Note_release:
 		lda #0;dont let volume go negative
 	:sta currentVolume_H,x
 	ora instDuty,y
-	pha 
-	jsr Note_bend
+
 	ldy CHANNEL_OFFSETS,x
-	sta CHANNEL_LO,y
-	pla
 	sta CHANNEL_VOL,y
+	
+	lda currentPeriod_L,x
+	sta CHANNEL_LO,y
+
+	lda hasHiPeriodChanged
+	beq @skipHiByte
+		lda currentPeriod_H,x
+		sta CHANNEL_HI,y
+@skipHiByte:
 	rts
 
 Note_bend:
+	lda #FALSE
+	sta hasHiPeriodChanged
+
 	ldy instrument,x
 	lda instBend,y
 	bne @hasBend
-		lda currentPeriod_L,x
 		rts
 @hasBend:
 	pha ;
@@ -638,9 +686,12 @@ Note_bend:
 	clc ;calculate the target note
 	lda note,x
 	adc Bend_target,y
+
 	tay ;convert to numerical period
 	lda periodTable_L,y
-	sta targetPeriod,x
+	sta targetPeriod_L,x
+	lda periodTable_H,y
+	sta targetPeriod_H,x
 	
 	pla ;restore bend
 	tay
@@ -649,20 +700,40 @@ Note_bend:
 	lda currentPeriod_LL,x
 	sbc Bend_speed_L,y
 	sta currentPeriod_LL,x
+
 	lda currentPeriod_L,x
 	sbc Bend_speed_H,y
-	cmp targetPeriod,x
-	bcs :+
-		lda targetPeriod,x ;ensure we don't overshoot
-	:sta currentPeriod_L,x
+	sta currentPeriod_L,x
+	bcs @noChange
+		lda currentPeriod_H,x
+		sbc #0
+		sta currentPeriod_H,x
+		lda #1
+		sta hasHiPeriodChanged
+@noChange:
+	lda currentPeriod_L,x;if the current period is lower
+	cmp targetPeriod_L,x;this will clear the carry
+	lda currentPeriod_H,x;and will leave the carry clear
+	sbc targetPeriod_H,x;if the note high byte is lesser or equal
+	bcs @notUnderTarget
+		lda targetPeriod_H,x
+		sta currentPeriod_H,x 
+		lda targetPeriod_L,x
+		sta currentPeriod_L,x 
+@notUnderTarget:
+	lda currentPeriod_L,x
 	rts
+
 @bendDown:
 	sec ;calculate the target note
 	lda note,x
 	sbc Bend_target,y
+
 	tay ;convert to numerical period
 	lda periodTable_L,y
-	sta targetPeriod,x
+	sta targetPeriod_L,x
+	lda periodTable_H,y
+	sta targetPeriod_H,x
 
 	pla ;restore bend
 	tay
@@ -671,12 +742,30 @@ Note_bend:
 	lda currentPeriod_LL,x
 	adc Bend_speed_L,y
 	sta currentPeriod_LL,x
+
 	lda currentPeriod_L,x
 	adc Bend_speed_H,y
-	cmp targetPeriod,x
-	bcc :+
-		lda targetPeriod,x ;ensure we do not overshoot
-	:sta currentPeriod_L,x
+	sta currentPeriod_L,x
+	bcc @highUnchanged
+
+		lda currentPeriod_H,x
+		adc #0
+		sta currentPeriod_H,x
+		lda #1
+		sta hasHiPeriodChanged
+
+@highUnchanged:	
+	lda currentPeriod_L,x;if the current period is higher
+	cmp targetPeriod_L,x;this will set the carry
+	lda currentPeriod_H,x;and will leave the carry set
+	sbc targetPeriod_H,x;if current high byte is greater or equal
+	bcc @notOverTarget
+		lda targetPeriod_L,x; clamp the values
+		sta currentPeriod_L,x 
+		lda targetPeriod_H,x
+		sta currentPeriod_H,x
+@notOverTarget:
+	lda currentPeriod_L,x
 	rts
 
 .rodata	
@@ -1143,66 +1232,96 @@ INST06=$06;explosion small craft
 INST07=$07;player hit
 INST08=$08;powerup
 INST09=$09;player shots
+INST0A=$0a;bomb bass
+INST0B=$0b;bomb crash
+INST0C=$0c;bomb twinkle
+INST0D=$0d;charm woosh
 instDuty:;ddlc vvvv
-	.byte DUTY02, DUTY02, TRI, NOISE, DUTY02, DUTY00, NOISE, DUTY02, DUTY02, NOISE
+	.byte DUTY02,DUTY02,TRI,NOISE,DUTY02,DUTY00,NOISE,DUTY02
+	.byte DUTY02,NOISE,DUTY02,NOISE,DUTY02,NOISE
 instAttack_H:
-	.byte 8, 8, 15, 15, 15, 15, 15, 15, 6, 15
+	.byte 8, 8, 15, 15, 15, 15, 15, 15
+	.byte 6, 15, 15, 15, 15, 6
 instAttack_L:
-	.byte 0, 0, 0, 0, 00, 00, 00, 0
+	.byte 0, 0, 0, 0, 0, 0, 0 
+	.byte 0, 0, 0, 0, 0, 0
 instDecay:
-	.byte 5, 4, 0, 5, 1, 3, 4, 2, 1, 8
+	.byte 5, 4, 0, 5, 1, 3, 4, 2
+	.byte 1, 8, 0, 2, 8, 0
 instSustain:;volume minus number below
-	.byte 3, 2, 0, 5, 3, 3, 4, 4, 1, 8
+	.byte 3, 2, 0, 5, 3, 3, 4, 4
+	.byte 1, 8, 0, 3, 15, 0
 instRelease_H:
-	.byte 1, 1, 15, 0, 0, 15, 0, 5, 0, 1
+	.byte 1, 1, 15, 0, 0, 15, 0, 5
+	.byte 0, 1, 0, 0, 15, 1
 instRelease_L:
-	.byte 0, 0, 0, 128, 64, 0, 128, 0, 64, 0
+	.byte 0, 0, 0, 128, 64, 0, 128, 0
+	.byte 64, 0, 0, 64, 0, 0
 instBend:
-	.byte 00, 01, 0, 0, 0, 0, 2, 3, 0, 0
-
-SFX01= 01;explosion small craft
-SFX02= 02; player ouch
-SFX03= 03; Powerup melody
-SFX04= 04; Powerup harmony
-SFX05= 05; player shots
-
-SFX_instrument:
-	.byte NULL, INST06, INST07, INST08, INST08, INST09
-SFX_Priority:
-	.byte 128, 255, 128, 128, 01
-SFX_volume:
-	.byte NULL, 12, 08, 7, 7, 11
-SFX_targetTrack:
-	.byte NULL, 03, 01, 00, 01, 03
-SFX_loops_L:
-	.byte NULL, <SFX_loop00, <SFX_loop01, <SFX_loop02, <SFX_loop03, <SFX_loop04
-SFX_loops_H:
-	.byte NULL, >SFX_loop00, >SFX_loop01, >SFX_loop02, >SFX_loop03, >SFX_loop04
-
-SFX_loop00:
-	.byte N0B, 6, 9, NULL
-SFX_loop01:
-	.byte D7, 06, 3, NULL
-SFX_loop02:
-	.byte D4, 3, 0, Gb4, 3, 9, D5, 6, 12, A4, 6, 18, NULL
-SFX_loop03:
-	.byte Gb4, 3, 0, A4, 3, 9, Gb5, 6, 12, D5, 6, 18, NULL
-SFX_loop04:
-	.byte N0D, 3, 3, NULL
+	.byte 00, 01, 0, 0, 0, 0, 2, 3
+	.byte 0, 0, 4, 5, 0, 6
 
 Bend_flags:;|uuuu uunv|
 ;n - negative chane  (going higher)
 ;v - vibrato (disregards nra)
-	.byte NULL, %10, %00, %00
+	.byte NULL, %10, %00, %00, %00, %10, %00
 Bend_speed_H:
-	.byte NULL, 06, 00, 32
+	.byte NULL, 06, 00, 32, 96, 0, 0
 
 Bend_speed_L:
-	.byte NULL, 128, 64, 0
+	.byte NULL, 128, 64, 0, 0,128,192
 
 Bend_target:;(half steps)
-	.byte NULL, 01, 4, 36
+	.byte NULL, 01, 4, 36, 24, 3, 14
 	
+SFX01=01;explosion small craft
+SFX02=02;player ouch
+SFX03=03;Powerup melody
+SFX04=04;Powerup harmony
+SFX05=05;player shots
+SFX06=06;bomb bass
+SFX07=07;bomb crash
+SFX08=08;bomb twinkle
+SFX09=09;charm woosh
+SFX_instrument:
+	.byte NULL,INST06,INST07,INST08,INST08,INST09,INST0A,INST0B
+	.byte INST0C,INST0D
+;256 is high priority
+SFX_Priority:
+	.byte NULL, 128, 255, 128, 128, 32, 192, 192
+	.byte 192, 192
+SFX_volume:
+	.byte NULL, 12, 08, 7, 7, 11, 15, 15
+	.byte 8, 11
+SFX_targetTrack:
+	.byte NULL, 03, 01, 00, 01, 03, 01, 03
+	.byte 00, 03
+SFX_loops_L:
+	.byte NULL,<SFX_loop01,<SFX_loop02,<SFX_loop03,<SFX_loop04,<SFX_loop05,<SFX_loop06,<SFX_loop07
+	.byte <SFX_loop08,<SFX_loop09
+SFX_loops_H:
+	.byte NULL,>SFX_loop01,>SFX_loop02,>SFX_loop03,>SFX_loop04,>SFX_loop05,>SFX_loop06,>SFX_loop07
+	.byte >SFX_loop08,>SFX_loop09
+
+SFX_loop01:
+	.byte N0B, 6, 9, NULL
+SFX_loop02:
+	.byte D7, 06, 3, NULL
+SFX_loop03:
+	.byte D4, 3, 0, Gb4, 3, 9, D5, 6, 12, A4, 6, 18, NULL
+SFX_loop04:
+	.byte Gb4, 3, 0, A4, 3, 9, Gb5, 6, 12, D5, 6, 18, NULL
+SFX_loop05:
+	.byte N0D, 3, 3, NULL
+SFX_loop06:
+	.byte D3,3,0,D3,13,0,NULL
+SFX_loop07:
+	.byte N0E,03,0,N0E,03,64,NULL
+SFX_loop08:
+	.byte Gb6, 1, 0, A6, 1, 0, D7, 1, 0,Gb6, 1, 1, A6, 1, 1, D7, 1, 2, Gb6, 1, 3, A6, 1, 4, D7, 1, 0, NULL
+SFX_loop09:
+	.byte N00,24,0,NULL
+
 KICK_ADDRESS= <(( DPCM_kick - $C000) >> 6)
 KICK_LENGTH= ((DPCM_kickEnd - DPCM_kick) >> 4)
 SNARE_ADDRESS= <(( DPCM_snare  - $C000) >> 6)
@@ -1345,7 +1464,10 @@ periodTable_H:
   .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
   .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
   .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-  .byte $00,$00,$00,$00,$00,$00,$00,$00
+  .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+  .byte $00,$00,$00,$00
 
 .segment "DRUMS"
 .align 64
