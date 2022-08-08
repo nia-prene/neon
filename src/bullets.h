@@ -8,6 +8,7 @@
 .globalzp octant
 .globalzp numberOfBullets
 .globalzp bulletAngle
+.globalzp Bullets_fastForwardFrames
 
 ;attributes
 .global isEnemyBulletActive
@@ -28,8 +29,9 @@
 .global Bullets_i
 
 ;functions
-.global Enemy_Bullet
+.global Bullets_new
 .global Enemy_Bullets
 .global aimBullet
 .global updateEnemyBullets
 .global Bullets_toCharms
+.global Charms_tick

@@ -4,18 +4,22 @@
 .include "player.h"
 .include "sprites.h"
 .include "bombs.h"
+.include "enemies.h"
 
 BULLETS_VARIETIES=8
 MAX_ENEMY_BULLETS=56
 
 .zeropage
+;arguments
 quickBulletX: .res 1
 quickBulletY: .res 1
+Bullets_fastForwardFrames:.res 1
+
 bulletType: .res 4
 octant: .res 1
 bulletAngle: .res 1
 numberOfBullets: .res 1
-Bullets_spriteBank: .res BULLETS_VARIETIES
+;Bullets_spriteBank: .res BULLETS_VARIETIES
 Bullets_willSpritesShuffle: .res 1
 
 .data
@@ -32,59 +36,63 @@ enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
 Bullets_diameter: .res MAX_ENEMY_BULLETS
 Bullets_isCharm: .res MAX_ENEMY_BULLETS
 Bullets_isBullet: .res MAX_ENEMY_BULLETS
-Bullets_i: .res MAX_ENEMY_BULLETS
+Bullets_fastForward: .res MAX_ENEMY_BULLETS
 
 .code
-Enemy_Bullet:
-;push y, x, id
-	jsr Enemy_Bullets_getAvailable;c,x(void)
-	bcc @bulletsFull;returns clear if full
-
-	pla;retrieve bullet id
-	tay ;y is bullet ID
-
-	lda romEnemyBulletBehaviorH,y
-	sta enemyBulletBehaviorH,x
-	lda romEnemyBulletBehaviorL,y
-	sta enemyBulletBehaviorL,x
-
-	lda #TRUE
-	sta Bullets_isBullet,x
-	lda #FALSE
-	sta Bullets_isCharm,x
-
-	tya ;restore bullet
-;now use the lowes 2 bits to get the bullet type loaded during enemy wave
-	and #%00000011 
-	tay 
-	lda bulletType,y
-	tay 
-
-	lda romEnemyBulletMetasprite,y;copy metasprite
-	sta enemyBulletMetasprite,x
+Bullets_new:;void(a)
 	
-	lda romEnemyBulletHitbox1,y;copy hitbox
-	sta enemyBulletHitbox1,x
-	lda romEnemyBulletHitbox2,y
-	sta enemyBulletHitbox2,x
+	pha	
 
-	lda Bullets_diameterROM,y;copy diameter
-	sta Bullets_diameter,x
-
-	pla
-	sta enemyBulletXH,x
-	pla	
-	sta enemyBulletYH,x
-	rts
+	jsr Enemy_Bullets_getAvailable;c,y(void) | x
+	bcc @bulletsFull;returns clear if full
+	
+		lda enemyXH,x
+		sta enemyBulletXH,y
+		lda enemyYH,x
+		sta enemyBulletYH,y
+	
+		pla;retrieve bullet id
+		tax ;y is bullet ID
+	
+		lda romEnemyBulletBehaviorL,x;get the function
+		sta enemyBulletBehaviorL,y
+		lda romEnemyBulletBehaviorH,x
+		sta enemyBulletBehaviorH,y
+	
+		lda #TRUE
+		sta Bullets_isBullet,y; it's a bullet
+		lda #FALSE
+		sta Bullets_isCharm,y; not a charm
+		
+		lda Bullets_fastForwardFrames; it may be fastForwarded
+		sta Bullets_fastForward,y
+		lda #NULL; this is default as 0
+		sta Bullets_fastForwardFrames
+	
+		txa ;restore bullet
+;now use the lowes 2 bits to get the bullet type loaded during enemy wave
+		and #%00000011 
+		tax 
+		lda bulletType,x
+		tax 
+	
+		lda romEnemyBulletHitbox1,x;copy hitbox
+		sta enemyBulletHitbox1,y
+		lda romEnemyBulletHitbox2,x
+		sta enemyBulletHitbox2,y
+	
+		lda Bullets_diameterROM,x;copy diameter
+		sta Bullets_diameter,y
+	
+		rts
 @bulletsFull:
-	pla
-	pla
 	pla
 	rts
 
 Enemy_Bullets:
 ;quickBulletY - y coordinate
 ;save bullet
+	
 @bulletLoop:
 	jsr Enemy_Bullets_getAvailable
 	bcc @bulletsFull;returns clear if full
@@ -92,7 +100,9 @@ Enemy_Bullets:
 	sta enemyBulletXH,x
 	lda quickBulletY
 	sta enemyBulletYH,x
-
+	
+	lda Bullets_fastForwardFrames
+	sta Bullets_fastForward,x
 	pla;retrieve bullet id
 	tay ;y is bullet ID
 
@@ -125,6 +135,10 @@ Enemy_Bullets:
 	
 	dec numberOfBullets
 	bne @bulletLoop
+
+	lda #FALSE
+	sta Bullets_fastForwardFrames
+
 	rts
 @bulletsFull:
 ;pull id
@@ -133,48 +147,82 @@ Enemy_Bullets:
 	bne @bulletsFull
 	rts
 
-Enemy_Bullets_getAvailable:; c,x (void)
+Enemy_Bullets_getAvailable:; c,y () | x
 ;loops through bullet collection, finds inactive bullet, sets to active, returns offset
 ;returns
 ;x - active offset
 ;carry clear if full, set if success
-	ldx #MAX_ENEMY_BULLETS-1
+	ldy #MAX_ENEMY_BULLETS-1
 @bulletLoop:
-	lda isEnemyBulletActive,x
-	beq @returnBullet
-	dex
+	lda isEnemyBulletActive,y
+	bne @nextBullet
+		lda #TRUE;set active
+		sta isEnemyBulletActive,y
+		sec ;mark success
+		rts
+@nextBullet:
+	dey
 	bpl @bulletLoop
 	clc;mark full
-	rts
-@returnBullet:
-	lda #TRUE;set active
-	sta isEnemyBulletActive,x
-	sec ;mark success
 	rts
 
 updateEnemyBullets:;(void)
 ;pushes all bullet offsets and functions onto stack and returns
+
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
-	lda isEnemyBulletActive,x
+	lda Bullets_isBullet,x
 	beq @skipBullet;skip inactive bullets
 		cmp #1
 		bne @decreaseHold
+			ldy Bullets_fastForward,x
+		@fastForward:
 			txa
 			pha; save array index
 			lda enemyBulletBehaviorH,x
 			pha; push function pointer H
 			lda enemyBulletBehaviorL,x
 			pha; push function pointer L
+			dey
+			bpl @fastForward
+			
+			lda #FALSE
+			sta Bullets_fastForward,x
+
+			txa; get the metasprite
+			and #%00000011; lowest 2 bits = type
+			tay
+			lda Bullets_spriteBank,y
+			sta enemyBulletMetasprite,x
+
 @skipBullet:
 	dex ;x--
 	bpl @bulletLoop ;while x>=0
-	rts
 @decreaseHold:
-	dec isEnemyBulletActive,x
+	dec Bullets_isBullet,x
 	dex ;x--
 	bpl @bulletLoop ;while x>=0
 	rts
+
+Charms_tick:
+
+	ldx #MAX_ENEMY_BULLETS-1
+@charmLoop:
+	lda Bullets_isCharm,x
+	beq @skipBullet;skip inactive charms
+		txa
+		pha; save array index
+		lda enemyBulletBehaviorH,x
+		pha; push function pointer H
+		lda enemyBulletBehaviorL,x
+		pha; push function pointer L
+
+@skipBullet:
+	dex ;x--
+	bpl @charmLoop ;while x>=0
+	
+	rts
+
 
 aimBullet:
 ;arguments:
@@ -319,6 +367,8 @@ Charms_move:
 	rts
 .rodata
 
+Bullets_spriteBank:
+	.byte SPRITE02,SPRITE02,SPRITE02,SPRITE02
 ;the following attributes are the bullets type. The bullet type is stored with the enemy wave, so that each bullet can change sprite, width, etc throughout gameplay at the beginning of each enemy wave, where it will remain constant until the next enemy wave is loaded.
 romEnemyBulletHitbox1:
 	.byte 2, 3
@@ -375,12 +425,14 @@ romEnemyBulletMetasprite:
 	sta enemyBulletXH,x
 	rts
 @clearBullet:
-;shift bit out
-	lsr isEnemyBulletActive,x
+	jmp Bullet_clear
+.endmacro
+Bullet_clear:
+	lda #FALSE
+	sta isEnemyBulletActive,x
+	sta	Bullets_isBullet,x
 	rts
-.endmacro 
-Bullet_spriteBank:
-	.byte 0, 1, 1, 1, 1, 1, 1, 1
+
 bullet00:
 	bulletFib 3, #2, #0, #0, #0 
 bullet01:

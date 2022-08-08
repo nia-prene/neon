@@ -21,6 +21,7 @@
 .include "apu.h"
 .include "bombs.h"
 .include "hud.h"
+.include "patterns.h"
 
 .zeropage
 Gamestate_current: .res 1
@@ -76,9 +77,11 @@ gamestate00:
 	ldx Gamepads_last
 	jsr	Bombs_toss ;void(a,x)
 
-	jsr updateEnemyBullets
 	jsr updateEnemies
+	jsr Patterns_tick
 	jsr dispenseEnemies
+	jsr updateEnemyBullets
+	jsr Charms_tick
 
 	jsr Player_collectCharms
 	jsr Player_isHit

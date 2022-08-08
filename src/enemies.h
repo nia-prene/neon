@@ -17,6 +17,7 @@
 .global enemyWidth
 .global enemyPalette
 .global isEnemyActive
+.global Enemies_pattern
 
 .global initializeEnemy
 .global updateEnemies

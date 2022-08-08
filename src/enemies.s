@@ -22,7 +22,6 @@ Enemies_pointValue_H: .res MAX_ENEMIES
 Enemies_pointValue_L: .res MAX_ENEMIES
 i: .res MAX_ENEMIES
 j: .res MAX_ENEMIES
-k: .res 1
 enemyBehaviorH: .res MAX_ENEMIES
 enemyBehaviorL: .res MAX_ENEMIES
 enemyMetasprite: .res MAX_ENEMIES
@@ -31,6 +30,7 @@ enemyHitboxX2: .res MAX_ENEMIES
 enemyHitboxY2: .res MAX_ENEMIES
 enemyWidth: .res MAX_ENEMIES
 enemyPalette: .res MAX_ENEMIES
+Enemies_pattern:.res MAX_ENEMIES
 isEnemyActive: .res MAX_ENEMIES
 
 .code
@@ -306,7 +306,7 @@ ENEMY04=4
 ENEMY05=5
 ENEMY06=6;Ready?
 ENEMY07=7;Go!
-ENEMY08=$8;piper boss
+ENEMY08=$8;reese boss
 .rodata
 ;first byte is a burner byte so we can use zero flag to denote empty slot
 romEnemyBehaviorH:
@@ -405,7 +405,7 @@ Y_SPEED_L=128
 	pha
 	lda #3
 	sta numberOfBullets
-	jmp Enemy_Bullets
+	rts
 .endproc
 .proc enemy02
 SHOT_Y_OFFSET=16
@@ -480,7 +480,7 @@ Y_SPEED_L=128
 	pha
 	lda #3
 	sta numberOfBullets
-	jmp Enemy_Bullets
+	rts
 .endproc
 
 .proc enemy03
@@ -546,7 +546,7 @@ Y_SPEED_L=4
 	adc #4
 	sta i,x
 	pha
-	jmp Enemy_Bullet
+	rts
 @animationFrames:
 	.byte SPRITE10, SPRITE11
 .endproc
@@ -606,7 +606,7 @@ Y_SPEED_L=4
 	sbc #4
 	sta j,x
 	pha
-	jmp Enemy_Bullet
+	rts
 .endproc
 
 .proc enemy05
@@ -659,7 +659,7 @@ Y_SPEED_L=4
 	sta j,x
 	and #%01111111
 	pha
-	jmp Enemy_Bullet
+	rts
 @underWater:
 	and #%01100000
 	lsr
@@ -743,42 +743,10 @@ Y_OFFSET=32
 	sta enemyMetasprite,x
 	lda #Y_OFFSET
 	sta enemyYH,x
-	sbc #32
-	pha
 	lda #X_OFFSET
 	sta enemyXH,x
-	adc #4
-	pha
+	lda #01
+	sta Enemies_pattern,x
 	jsr Enemies_isAlive
-	lda k
-	and #%00000001
-	bne @return
-	lda k
-	and #%00000100
-	;bne @shot2
-	lda i
-	pha
-	clc
-	adc #34
-	and #%01111111
-	sta i
-	inc k
-	jmp Enemy_Bullet
-@shot2:
-	pla
-	pla
-	inc k
-	rts
-	lda j
-	pha
-	sec
-	sbc #34
-	sta j
-	inc k
-	jmp Enemy_Bullet
-@return:
-	pla
-	pla
-	inc k
 	rts
 .endproc
