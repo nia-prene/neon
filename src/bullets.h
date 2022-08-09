@@ -30,6 +30,7 @@
 
 ;functions
 .global Bullets_new
+.global Bullets_newGroup
 .global Enemy_Bullets
 .global aimBullet
 .global updateEnemyBullets

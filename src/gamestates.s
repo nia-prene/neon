@@ -77,9 +77,9 @@ gamestate00:
 	ldx Gamepads_last
 	jsr	Bombs_toss ;void(a,x)
 
+	jsr dispenseEnemies
 	jsr updateEnemies
 	jsr Patterns_tick
-	jsr dispenseEnemies
 	jsr updateEnemyBullets
 	jsr Charms_tick
 

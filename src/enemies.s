@@ -1,5 +1,7 @@
-.include "lib.h"
 .include "enemies.h"
+
+.include "lib.h"
+
 .include "player.h"
 .include "sprites.h"
 .include "playerbullets.h"
@@ -7,6 +9,7 @@
 .include "pickups.h"
 .include "score.h"
 .include "apu.h"
+.include "patterns.h"
 
 .zeropage
 totalDamage: .res 1
@@ -32,6 +35,8 @@ enemyWidth: .res MAX_ENEMIES
 enemyPalette: .res MAX_ENEMIES
 Enemies_pattern:.res MAX_ENEMIES
 isEnemyActive: .res MAX_ENEMIES
+Enemies_timeElapsed:.res MAX_ENEMIES
+
 
 .code
 initializeEnemy:;void (a,x,y)
@@ -62,6 +67,10 @@ initializeEnemy:;void (a,x,y)
 	;copy data from rom
 	pla
 	tay
+
+	lda #$ff
+	sta Enemies_timeElapsed,x
+
 ;copy function pointers
 	lda romEnemyBehaviorH,y
 	sta enemyBehaviorH,x
@@ -132,17 +141,19 @@ updateEnemies:
 ;returns - none
 	ldx #MAX_ENEMIES-1
 @enemyUpdateLoop:
-;update active enemies
-	lda isEnemyActive,x
+
+	lda isEnemyActive,x;update active enemies
 	beq @nextEnemy
-;save index
-	txa
-	pha
-;push function onto stack
-	lda enemyBehaviorH,x
-	pha
-	lda enemyBehaviorL,x
-	pha
+
+		txa; save index
+		pha
+
+		lda enemyBehaviorH,x;push function onto stack
+		pha
+		lda enemyBehaviorL,x
+		pha
+
+		inc Enemies_timeElapsed,x
 @nextEnemy:
 ;x--
 	dex
@@ -738,15 +749,22 @@ X_OFFSET=116
 Y_OFFSET=32
 	pla
 	tax
-	sec
+
 	lda #$18
 	sta enemyMetasprite,x
-	lda #Y_OFFSET
-	sta enemyYH,x
-	lda #X_OFFSET
+	
+	lda #X_OFFSET; set y
 	sta enemyXH,x
-	lda #01
-	sta Enemies_pattern,x
-	jsr Enemies_isAlive
+	lda #Y_OFFSET; set x
+	sta enemyYH,x
+	
+	lda i,x
+		bne @noNewPattern
+		lda #01; #PATTERN01
+		jsr Patterns_new; void(a,x) | x,y
+@noNewPattern:
+
+	jsr Enemies_isAlive; c(x) | x
+	
 	rts
 .endproc

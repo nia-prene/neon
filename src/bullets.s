@@ -13,12 +13,13 @@ MAX_ENEMY_BULLETS=56
 ;arguments
 quickBulletX: .res 1
 quickBulletY: .res 1
+numberOfBullets: .res 1
+
 Bullets_fastForwardFrames:.res 1
 
 bulletType: .res 4
 octant: .res 1
 bulletAngle: .res 1
-numberOfBullets: .res 1
 ;Bullets_spriteBank: .res BULLETS_VARIETIES
 Bullets_willSpritesShuffle: .res 1
 
@@ -39,20 +40,20 @@ Bullets_isBullet: .res MAX_ENEMY_BULLETS
 Bullets_fastForward: .res MAX_ENEMY_BULLETS
 
 .code
-Bullets_new:;void(a)
+Bullets_new:;void(x) 
 	
-	pha	
+	pha; save bullet
 
 	jsr Enemy_Bullets_getAvailable;c,y(void) | x
 	bcc @bulletsFull;returns clear if full
 	
-		lda enemyXH,x
+		lda enemyXH,x; copy enemy y and x
 		sta enemyBulletXH,y
 		lda enemyYH,x
-		sta enemyBulletYH,y
+		sta enemyBulletYH,y;
 	
-		pla;retrieve bullet id
-		tax ;y is bullet ID
+		pla; retrieve bullet id
+		tax; x is bullet ID
 	
 		lda romEnemyBulletBehaviorL,x;get the function
 		sta enemyBulletBehaviorL,y
@@ -89,49 +90,56 @@ Bullets_new:;void(a)
 	pla
 	rts
 
-Enemy_Bullets:
-;quickBulletY - y coordinate
-;save bullet
+Bullets_newGroup:; void(a,x) |
+	sta numberOfBullets
+
+	lda enemyYH,x; copy enemy y and x
+	sta quickBulletY
+	lda enemyXH,x
+	sta quickBulletX
 	
 @bulletLoop:
-	jsr Enemy_Bullets_getAvailable
-	bcc @bulletsFull;returns clear if full
-	lda quickBulletX
-	sta enemyBulletXH,x
-	lda quickBulletY
-	sta enemyBulletYH,x
 	
-	lda Bullets_fastForwardFrames
-	sta Bullets_fastForward,x
-	pla;retrieve bullet id
-	tay ;y is bullet ID
+	jsr Enemy_Bullets_getAvailable; y(x) | x
+	bcc @bulletsFull;returns clear if full
 
-	lda romEnemyBulletBehaviorH,y
-	sta enemyBulletBehaviorH,x
-	lda romEnemyBulletBehaviorL,y
-	sta enemyBulletBehaviorL,x
+	pla;retrieve bullet id
+	tax ;x is bullet ID
+
+	lda romEnemyBulletBehaviorH,x
+	sta enemyBulletBehaviorH,y
+	lda romEnemyBulletBehaviorL,x
+	sta enemyBulletBehaviorL,y
 
 	lda #TRUE
-	sta Bullets_isBullet,x
+	sta Bullets_isBullet,y
 	lda #FALSE
-	sta Bullets_isCharm,x
+	sta Bullets_isCharm,y
 
-	tya ;restore ID
-	and #%00000011 ;get index
-	tay 
-	lda bulletType,y;[4]
-	tay ;y is type
+	lda quickBulletY
+	sta enemyBulletYH,y
+	lda quickBulletX
+	sta enemyBulletXH,y
+
+	lda Bullets_fastForwardFrames
+	sta Bullets_fastForward,y
 	
-	lda romEnemyBulletMetasprite,y;copy metasprite
-	sta enemyBulletMetasprite,x
+	txa ;restore ID
+	and #%00000000 ;force 0 todo
+	tax 
+	lda bulletType,x;[4]
+	tax ;y is type
 	
-	lda romEnemyBulletHitbox1,y;copy hitboxes
-	sta enemyBulletHitbox1,x
-	lda romEnemyBulletHitbox2,y
-	sta enemyBulletHitbox2,x
+	lda romEnemyBulletMetasprite,x;copy metasprite
+	sta enemyBulletMetasprite,y
 	
-	lda Bullets_diameterROM,y;copy diameter
-	sta Bullets_diameter,x
+	lda romEnemyBulletHitbox1,x;copy hitboxes
+	sta enemyBulletHitbox1,y
+	lda romEnemyBulletHitbox2,x
+	sta enemyBulletHitbox2,y
+	
+	lda Bullets_diameterROM,x;copy diameter
+	sta Bullets_diameter,y
 	
 	dec numberOfBullets
 	bne @bulletLoop
