@@ -125,15 +125,13 @@ buildEnemyBullets:
 	lda #TERMINATE;terminate
 	pha
 
-	lda o ;alternate building forward and backward 
-	ror
-	bcc @buildForward
-
-@buildBackward:
 	ldy #MAX_ENEMY_BULLETS-1
 @loopBackward:
-	lda isEnemyBulletActive,y
+	lda isEnemyBulletActive,y; if active
 	beq @skipBullet
+	lda Bullets_isInvisible,y; and not invisible
+	bne @skipInvisible
+		
 		lda enemyBulletMetasprite,y
 		pha
 		lda enemyBulletYH,y
@@ -142,28 +140,18 @@ buildEnemyBullets:
 		pha
 		lda #0; palette implied
 		pha
+
 @skipBullet:
 	dey
 	bpl @loopBackward
 	jmp buildSpritesShort
 
-@buildForward:
-	ldy #0
-@loopForward:
-	lda isEnemyBulletActive,y
-	beq @next
-		lda enemyBulletMetasprite,y
-		pha
-		lda enemyBulletYH,y
-		pha
-		lda enemyBulletXH,y
-		pha
-		lda #0; palette implied
-		pha
-@next:
-	iny
-	cpy #MAX_ENEMY_BULLETS
-	bcc @loopForward
+@skipInvisible:
+	sec
+	sbc #1
+	sta Bullets_isInvisible,y
+	dey
+	bpl @loopBackward
 	jmp buildSpritesShort
 
 

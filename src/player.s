@@ -367,6 +367,12 @@ HITBOX_HEIGHT=1
 	clc ;mark false, playr is unharmed
 	rts
 
+
+Player_fall:;void(a)
+	
+	
+
+
 Player_collectCharms:
 
 	ldx #MAX_ENEMY_BULLETS-1

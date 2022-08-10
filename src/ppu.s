@@ -345,9 +345,17 @@ PALETTE_BYTES=5
 	sta PPU_willVRAMUpdate
 	rts
 
-PPU_NMIPlan01:
+PPU_NMIPlan01:; void(a) |
 ;fades in colors
 ;save the main stack
+
+	lsr
+	lsr
+	lsr
+
+	and #%11; msb of g
+	tay
+
 	tsx
 	stx Main_stack
 ;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted

@@ -35,8 +35,8 @@ main:
 	lda #0
 	sta Main_currentPlayer
 ;there is no frame that needs renderso set to TRUE
-	lda #1
-	sta Gamestate_current
+	lda #GAMESTATE01
+	jsr	Gamestates_new
 	sec
 	rol hasFrameBeenRendered
 ;reset the scores
@@ -61,7 +61,9 @@ gameLoop:
 	pha
 	lda #<(@endOfFrameHousekeeping-1)
 	pha
-	ldy Gamestate_current
+
+	jsr Gamestates_tick
+	ldy Gamestates_current
 	lda Gamestates_H,y
 	pha
 	lda Gamestates_L,y

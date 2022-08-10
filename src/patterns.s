@@ -60,14 +60,14 @@ BULLETCOUNT=8
 
 	bne @noPattern
 		
-		lda #6
+		lda #8
 		sta Bullets_fastForwardFrames
 		
 		lda p,x
 		pha
 
 		clc
-		adc #(SPEEDS * 3)
+		adc #(SPEEDS * 15)
 		sta p,x
 
 		lda #BULLETCOUNT-1

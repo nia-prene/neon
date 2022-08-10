@@ -63,8 +63,10 @@ WOOSH_TIMER=32
 					
 					ldx #MAX_ENEMY_BULLETS
 				@bulletLoop:
-					lda Bullets_isBullet,x ;if bullet is active
+					lda isEnemyBulletActive,x ;if bullet is active
 					beq @nextBullet ;else next bullet
+					lda Bullets_isInvisible,x ;and visible
+					bne @deleteBullet	
 						
 						lda #<(Bullets_toCharms-1);change function ptr
 						sta enemyBulletBehaviorL,x
@@ -79,8 +81,21 @@ WOOSH_TIMER=32
 				@nextBullet:
 					dex ;x--
 					bpl @bulletLoop;while x < 0
+					
+					sec; return true
+					rts
+
+				@deleteBullet:
+					lda #FALSE
+					sta isEnemyBulletActive,x
+					dex
+					bpl @bulletLoop
+					
+					sec; return true
+					rts
+
+
 @noBomb:
-	
 	lda Bombs_timeElapsed
 	cmp #WOOSH_TIMER
 	bne @noWoosh
@@ -92,5 +107,6 @@ WOOSH_TIMER=32
 		pla
 @noWoosh:
 
+	clc; return false
 	rts
 

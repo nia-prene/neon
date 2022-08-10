@@ -37,7 +37,7 @@ enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
 Bullets_diameter: .res MAX_ENEMY_BULLETS
 Bullets_isCharm: .res MAX_ENEMY_BULLETS
 Bullets_isBullet: .res MAX_ENEMY_BULLETS
-Bullets_fastForward: .res MAX_ENEMY_BULLETS
+Bullets_isInvisible: .res MAX_ENEMY_BULLETS
 
 .code
 Bullets_new:;void(x) 
@@ -66,7 +66,7 @@ Bullets_new:;void(x)
 		sta Bullets_isCharm,y; not a charm
 		
 		lda Bullets_fastForwardFrames; it may be fastForwarded
-		sta Bullets_fastForward,y
+		sta Bullets_isInvisible,y
 		lda #NULL; this is default as 0
 		sta Bullets_fastForwardFrames
 	
@@ -122,7 +122,7 @@ Bullets_newGroup:; void(a,x) |
 	sta enemyBulletXH,y
 
 	lda Bullets_fastForwardFrames
-	sta Bullets_fastForward,y
+	sta Bullets_isInvisible,y
 	
 	txa ;restore ID
 	and #%00000000 ;force 0 todo
@@ -183,20 +183,14 @@ updateEnemyBullets:;(void)
 	beq @skipBullet;skip inactive bullets
 		cmp #1
 		bne @decreaseHold
-			ldy Bullets_fastForward,x
-		@fastForward:
+
 			txa
 			pha; save array index
 			lda enemyBulletBehaviorH,x
 			pha; push function pointer H
 			lda enemyBulletBehaviorL,x
 			pha; push function pointer L
-			dey
-			bpl @fastForward
 			
-			lda #FALSE
-			sta Bullets_fastForward,x
-
 			txa; get the metasprite
 			and #%00000011; lowest 2 bits = type
 			tay
@@ -313,7 +307,6 @@ Charms_move:
 	tax
 	
 	lda Player_xPos_H;aim for middle of player
-	adc #4
 
 	sec
 	sbc enemyBulletXH,x
@@ -345,7 +338,6 @@ Charms_move:
 
 @doY:
 	lda Player_yPos_H;aim for middle of player
-	adc #4
 
 	sec
 	sbc enemyBulletYH,x
@@ -371,7 +363,6 @@ Charms_move:
 	lda enemyBulletYH,x
 	sbc Charm_speed_H,y
 	sta enemyBulletYH,x
-@return:
 	rts
 .rodata
 

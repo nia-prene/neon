@@ -24,27 +24,44 @@
 .include "patterns.h"
 
 .zeropage
-Gamestate_current: .res 1
+Gamestates_current: .res 1
+Gamestates_next: .res 1
+
 currentScene: .res 1
 nextScene: .res 1
 Main_currentPlayer: .res 1
 g:.res 1
 
 .code
-GAMESTATE00=$00;main game loop
-GAMESTATE01=$01;loading a level
-GAMESTATE02=$02;fade in screen while scroll
-GAMESTATE03=$03;move player to start pos, ease in status bar
-GAMESTATE04=$04;ease out status bar, move player to dialogue spt
-GAMESTATE05=$05;ease in textbox, move player/boss to dialogue spt
-GAMESTATE06=$06;fade out screen while scroll
-GAMESTATE07=$07;music test state
-GAMESTATE08=$08;game pause
+GAMESTATE00=$00; main game loop
+GAMESTATE01=$01; loading a level
+GAMESTATE02=$02; fade in screen while scroll
+GAMESTATE03=$03; move player to start pos, ease in status bar
+GAMESTATE04=$04; ease out status bar, move player to dialogue spt
+GAMESTATE05=$05; ease in textbox, move player/boss to dialogue spt
+GAMESTATE06=$06; fade out screen while scroll
+GAMESTATE07=$07; music test state
+GAMESTATE08=$08; game pause
+GAMESTATE09=$09; post bomb
+GAMESTATE0A=$0A; player is falling after hit
 
-Gamestates_H:
-	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1), >(gamestate08-1)
-Gamestates_L:
-	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1), <(gamestate08-1)
+Gamestates_new:; void(a) |
+	
+	sta Gamestates_next
+
+	rts
+
+Gamestates_tick:
+	
+	inc g
+	lda Gamestates_next
+	cmp Gamestates_current
+	beq @statePersists
+		sta Gamestates_current
+		lda #0
+		sta g
+@statePersists:
+	rts
 
 gamestate00:
 ;the main gameplay loop
@@ -58,7 +75,7 @@ gamestate00:
 		and #BUTTON_START
 		bne @noPause
 			lda #GAMESTATE08;pause game
-			sta Gamestate_current
+			jsr Gamestates_new
 			jsr APU_pauseMusic; silence the music
 			jsr APU_pauseSFX; silence the SFX
 @noPause:
@@ -75,8 +92,11 @@ gamestate00:
 
 	ldy Gamepads_state
 	ldx Gamepads_last
-	jsr	Bombs_toss ;void(a,x)
-
+	jsr	Bombs_toss ;c(a,x)
+	bcc @noBomb
+		lda #GAMESTATE09
+		jsr Gamestates_new; a()
+@noBomb:
 	jsr dispenseEnemies
 	jsr updateEnemies
 	jsr Patterns_tick
@@ -85,22 +105,24 @@ gamestate00:
 
 	jsr Player_collectCharms
 	jsr Player_isHit
-	bcc @tallyScore
+	bcc @playerUnharmed
+		
+		lda #GAMESTATE0A
+		jsr Gamestates_new; void(a)
 		lda #SFX02
 		jsr SFX_newEffect
-		ldx Main_currentPlayer
-		dec Player_powerLevel,x
+		dec Player_powerLevel
 		bpl @decreaseHearts
 			lda #0
-			sta Player_powerLevel,x
+			sta Player_powerLevel
 	@decreaseHearts:
 		lda #TRUE
 		sta Player_haveHeartsChanged
-		dec Player_hearts,x
-		bpl @tallyScore
+		dec Player_hearts
+		bpl @playerUnharmed
 			lda #5;gameover code here
-			sta Player_hearts,x
-@tallyScore:
+			sta Player_hearts
+@playerUnharmed:
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame;(x)
 	jsr OAM_build;(c,a)
@@ -142,11 +164,11 @@ gamestate01:;void(currentPlayer, currentScene)
 	jsr OAM_initSprite0
 	jsr PPU_resetScroll
 	jsr enableRendering;()
+
 	lda #GAMESTATE02
-	sta Gamestate_current
-	lda #00
-	sta g
+	jsr Gamestates_new; void(a)
 	rts
+
 @playerPalette:
 	.byte PALETTE00
 
@@ -154,20 +176,15 @@ gamestate02:
 ;fade in screen
 	jsr PPU_updateScroll
 	lda g
-	clc
-	adc #8
-	sta g
-	bne :+
+	eor #%11000
+	bne @statePersists
+
 		lda #GAMESTATE03
-		sta Gamestate_current
-		rts
-:	clc
-	and #%11000000
-	rol
-	rol
-	rol
-	tay
-	jsr PPU_NMIPlan01;(y)
+		jsr Gamestates_new
+
+@statePersists:
+	lda g
+	jsr PPU_NMIPlan01;(a)
 	rts
 
 gamestate03:
@@ -191,7 +208,7 @@ SCORE_OFFSET=7
 	sta g
 	bne :+
 		lda #GAMESTATE00 
-		sta Gamestate_current
+		jsr Gamestates_new
 :
 	rts
 
@@ -212,7 +229,7 @@ gamestate04:
 	sta g
 	bne :+
 		lda #GAMESTATE05
-		sta Gamestate_current
+		jsr Gamestates_new
 :	rts
 
 gamestate05:
@@ -248,8 +265,7 @@ gamestate06:
 	sta g
 	bne :+
 		lda #GAMESTATE02
-		sta Gamestate_current
-		rts
+		jmp Gamestates_new
 :	clc
 	and #%11000000
 	rol
@@ -308,8 +324,10 @@ gamestate08:
 		lda Gamepads_last;and not pressed last frame
 		and #BUTTON_START
 		bne @stayPaused
+
 			lda #GAMESTATE00;resume game
-			sta Gamestate_current
+			jsr Gamestates_new
+		
 			jsr APU_resumeMusic
 			jsr APU_resumeSFX
 
@@ -326,3 +344,105 @@ gamestate08:
 	jsr OAM_clearRemaining;x()
 	jsr PPU_waitForSprite0Hit
 	rts
+
+gamestate09:; after a bomb goes off
+
+	jsr PPU_updateScroll;void()
+	jsr Score_clearFrameTally;void()
+	
+	lda Gamepads_state
+	and #BUTTON_START;if start button pressed
+	beq @noPause
+		lda Gamepads_last;and not pressed last frame
+		and #BUTTON_START
+		bne @noPause
+			lda #GAMESTATE08;pause game
+			jsr Gamestates_new
+			jsr APU_pauseMusic; silence the music
+			jsr APU_pauseSFX; silence the SFX
+@noPause:
+
+	lda Gamepads_state
+	jsr Player_move;(a)
+
+	jsr PlayerBullets_move;void()
+
+	lda Gamepads_state
+	jsr PlayerBullets_shoot;(a)
+	
+	ldy Gamepads_state
+	ldx Gamepads_last
+	jsr	Bombs_toss ;c(a,x)
+	
+	jsr PPU_waitForSprite0Reset;()
+
+	jsr dispenseEnemies
+	jsr updateEnemies
+	jsr updateEnemyBullets
+	jsr Charms_tick
+
+	jsr Player_collectCharms
+	
+	ldx Main_currentPlayer
+	jsr Score_tallyFrame;(x)
+	jsr OAM_build;(c,a)
+	jsr PPU_waitForSprite0Hit
+	jsr PPU_NMIPlan00
+	
+	inc g
+	lda g
+	rol
+	bcc @statePersists
+
+		lda #GAMESTATE00; change back to main gamestate
+		jsr Gamestates_new
+
+@statePersists:
+
+	rts
+
+
+gamestate0A:
+;the main gameplay loop
+	jsr PPU_updateScroll;void()
+	jsr Score_clearFrameTally;void()
+	
+	lda Gamepads_state
+	and #BUTTON_START;if start button pressed
+	beq @noPause
+		lda Gamepads_last;and not pressed last frame
+		and #BUTTON_START
+		bne @noPause
+			lda #GAMESTATE08;pause game
+			jsr Gamestates_new
+			jsr APU_pauseMusic; silence the music
+			jsr APU_pauseSFX; silence the SFX
+@noPause:
+
+	jsr PlayerBullets_move;void()
+
+	jsr PPU_waitForSprite0Reset;()
+
+	ldy Gamepads_state
+	ldx Gamepads_last
+	jsr	Bombs_toss ;c(a,x)
+	bcc @noBomb
+		lda #GAMESTATE09
+		jsr Gamestates_new; a()
+@noBomb:
+	jsr dispenseEnemies
+	jsr updateEnemies
+	jsr updateEnemyBullets
+	jsr Charms_tick
+
+	ldx Main_currentPlayer
+	jsr Score_tallyFrame;(x)
+	jsr OAM_build;(c,a)
+	jsr PPU_waitForSprite0Hit
+	jsr PPU_NMIPlan00
+	rts
+
+Gamestates_H:
+	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1), >(gamestate08-1), >(gamestate09-1), >(gamestate0A-1)
+Gamestates_L:
+	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1), <(gamestate08-1), <(gamestate09-1), <(gamestate0A-1)
