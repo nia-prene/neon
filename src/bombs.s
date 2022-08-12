@@ -73,11 +73,6 @@ WOOSH_TIMER=32
 						lda #>(Bullets_toCharms-1)
 						sta enemyBulletBehaviorH,x
 				
-						lda #TRUE
-						sta Bullets_isCharm,x ;its a charm now
-						lda #FALSE
-						sta Bullets_isBullet,x;its not a bullet
-
 				@nextBullet:
 					dex ;x--
 					bpl @bulletLoop;while x < 0

@@ -251,7 +251,7 @@ PPU_dimScreen:;void()
 	lda currentMaskSettings
 	ora #DIM_SCREEN
 	sta PPUMASK
-	sta currentMaskSettings
+
 	rts
 
 PPU_lightenScreen:;void()

@@ -52,51 +52,36 @@ Sprite0_setDestination:
 	sta Sprite0_destination
 	rts
 
-OAM_build:;c (c,a)
+OAM_build00:;c()
 ;builds oam 
 ;call with carry set to exclude player
 ;a - gamepad
 ;returns carry clear if oam overflow
-	inc o ;module iterator
+	sta o ;module iterator
+
 	ldx #4;skip sprite 0
 	
-	lda #%01000000
-	bit Bombs_timeElapsed ;if time > 128
-	php
-	bvc @buildBulletsUnderPlayer
-	
-		jsr buildEnemyBullets
+	jsr buildEnemyBullets
+	bcs @oamFull
+
+
+	lda Hitbox_sprite;see if hitbox renders first
+	beq @buildWithoutHitbox
+		jsr buildHitbox
 		bcs @oamFull
-
-@buildBulletsUnderPlayer:
-	
-	lda Player_willRender
-	beq @buildWithoutPlayer
-
-		lda Hitbox_sprite;see if hitbox renders first
-		beq @buildWithoutHitbox
-			jsr buildHitbox
-			bcs @oamFull
-	@buildWithoutHitbox:
+@buildWithoutHitbox:
 
 	jsr OAM_buildPlayer
 	bcs @oamFull
 
-@buildWithoutPlayer:
-
-	plp ;if time < 128
-	bvs @bulletsUnderPlayer
-	
-		jsr buildEnemyBullets
-		bcs @oamFull
-
-@bulletsUnderPlayer:
 	jsr buildEnemies
 	bcs @oamFull
+	
 	jsr buildPlayerBullets
 	bcs @oamFull
+
 	jsr OAM_clearRemaining
-	rts
+
 @oamFull:
 	rts
 

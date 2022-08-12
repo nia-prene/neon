@@ -44,6 +44,7 @@ GAMESTATE07=$07; music test state
 GAMESTATE08=$08; game pause
 GAMESTATE09=$09; post bomb
 GAMESTATE0A=$0A; player is falling after hit
+GAMESTATE0B=$0B; player recovering after hit
 
 Gamestates_new:; void(a) |
 	
@@ -69,16 +70,8 @@ gamestate00:
 	jsr Score_clearFrameTally;void()
 	
 	lda Gamepads_state
-	and #BUTTON_START;if start button pressed
-	beq @noPause
-		lda Gamepads_last;and not pressed last frame
-		and #BUTTON_START
-		bne @noPause
-			lda #GAMESTATE08;pause game
-			jsr Gamestates_new
-			jsr APU_pauseMusic; silence the music
-			jsr APU_pauseSFX; silence the SFX
-@noPause:
+	ldx Gamepads_last;and not pressed last frame
+	jsr Gamestates_pause; void(a,x) |
 
 	lda Gamepads_state
 	jsr Player_move;(a)
@@ -90,6 +83,12 @@ gamestate00:
 	
 	jsr PPU_waitForSprite0Reset;()
 
+	jsr dispenseEnemies
+	jsr updateEnemies
+
+	jsr updateEnemyBullets
+	jsr Patterns_tick
+
 	ldy Gamepads_state
 	ldx Gamepads_last
 	jsr	Bombs_toss ;c(a,x)
@@ -97,37 +96,26 @@ gamestate00:
 		lda #GAMESTATE09
 		jsr Gamestates_new; a()
 @noBomb:
-	jsr dispenseEnemies
-	jsr updateEnemies
-	jsr Patterns_tick
-	jsr updateEnemyBullets
-	jsr Charms_tick
-
-	jsr Player_collectCharms
+	
 	jsr Player_isHit
 	bcc @playerUnharmed
 		
+		jsr Player_hit
 		lda #GAMESTATE0A
 		jsr Gamestates_new; void(a)
-		lda #SFX02
-		jsr SFX_newEffect
-		dec Player_powerLevel
-		bpl @decreaseHearts
-			lda #0
-			sta Player_powerLevel
-	@decreaseHearts:
-		lda #TRUE
-		sta Player_haveHeartsChanged
-		dec Player_hearts
-		bpl @playerUnharmed
-			lda #5;gameover code here
-			sta Player_hearts
 @playerUnharmed:
+
+	lda g
+	jsr OAM_build00; c(a) |
+	
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame;(x)
-	jsr OAM_build;(c,a)
+	
+	jsr PPU_dimScreen; see how much frame is left over
 	jsr PPU_waitForSprite0Hit
-	jsr PPU_NMIPlan00
+	
+	jsr PPU_NMIPlan00; void() |
+	
 	rts
 
 gamestate01:;void(currentPlayer, currentScene)
@@ -135,31 +123,31 @@ gamestate01:;void(currentPlayer, currentScene)
 	jsr APU_init
 
 	jsr APU_setSong
-	jsr disableRendering;()
+	jsr disableRendering; ()
 	ldx #0
-	jsr OAM_clearRemaining;(x)
+	jsr OAM_clearRemaining; (x)
 	ldx Main_currentPlayer
 	lda @playerPalette,x
 	tax
 	ldy #4
-	jsr setPalette;(x,y)
+	jsr setPalette; (x,y)
 	ldx #PURPLE_BULLET
 	ldy #7
-	jsr setPalette;(x,y)
+	jsr setPalette; (x,y)
 
 	jsr Player_prepare
 	jsr Bombs_init
 
 	ldx nextScene
-	jsr setPaletteCollection;(x)
+	jsr setPaletteCollection; (x)
 
 	ldx nextScene
-	jsr Tiles_getScreenPointer;(x)
+	jsr Tiles_getScreenPointer; (x)
 
-	jsr renderAllTiles;()
+	jsr renderAllTiles; ()
 	jsr PPU_renderRightScreen
 	ldx nextScene
-	jsr Waves_reset;(x)
+	jsr Waves_reset; (x)
 	ldx nextScene
 	jsr OAM_initSprite0
 	jsr PPU_resetScroll
@@ -315,12 +303,14 @@ gamestate07:
 	rts
 
 gamestate08:
+
 	jsr PPU_dimScreen
 	jsr PPU_waitForSprite0Reset;void()
 
 	lda Gamepads_state
 	and #BUTTON_START;if start button pressed
 	beq @stayPaused
+
 		lda Gamepads_last;and not pressed last frame
 		and #BUTTON_START
 		bne @stayPaused
@@ -330,15 +320,8 @@ gamestate08:
 		
 			jsr APU_resumeMusic
 			jsr APU_resumeSFX
-
-			ldx #4
-			jsr OAM_buildPause;x(x)
-			jsr OAM_clearRemaining;x()
-
-			jsr PPU_waitForSprite0Hit
-			jsr PPU_lightenScreen
-			rts
 @stayPaused:
+
 	ldx #4
 	jsr OAM_buildPause;x(x)
 	jsr OAM_clearRemaining;x()
@@ -351,16 +334,8 @@ gamestate09:; after a bomb goes off
 	jsr Score_clearFrameTally;void()
 	
 	lda Gamepads_state
-	and #BUTTON_START;if start button pressed
-	beq @noPause
-		lda Gamepads_last;and not pressed last frame
-		and #BUTTON_START
-		bne @noPause
-			lda #GAMESTATE08;pause game
-			jsr Gamestates_new
-			jsr APU_pauseMusic; silence the music
-			jsr APU_pauseSFX; silence the SFX
-@noPause:
+	ldx Gamepads_last
+	jsr Gamestates_pause
 
 	lda Gamepads_state
 	jsr Player_move;(a)
@@ -379,19 +354,21 @@ gamestate09:; after a bomb goes off
 	jsr dispenseEnemies
 	jsr updateEnemies
 	jsr updateEnemyBullets
-	jsr Charms_tick
-
+	
 	jsr Player_collectCharms
 	
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame;(x)
-	jsr OAM_build;(c,a)
+	
+	lda g
+	jsr OAM_build00; (a)
+	
+	jsr PPU_dimScreen
 	jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
 	
-	inc g
 	lda g
-	rol
+	adc #1 ;if g+1 sets carry (g = 255)
 	bcc @statePersists
 
 		lda #GAMESTATE00; change back to main gamestate
@@ -402,16 +379,86 @@ gamestate09:; after a bomb goes off
 	rts
 
 
-gamestate0A:
-;the main gameplay loop
+gamestate0A:; falling off broom
+
 	jsr PPU_updateScroll;void()
 	jsr Score_clearFrameTally;void()
 	
 	lda Gamepads_state
+	ldx Gamepads_last
+	jsr Gamestates_pause;c(a,x) |
+
+	lda g
+	jsr	Player_fall;void(a,f)
+	jsr PlayerBullets_move;void()
+
+	jsr PPU_waitForSprite0Reset;()
+
+	jsr dispenseEnemies
+	jsr updateEnemies
+	jsr updateEnemyBullets
+
+	ldx Main_currentPlayer
+	jsr Score_tallyFrame; (x)
+
+	jsr OAM_build00; (a)
+
+	jsr PPU_waitForSprite0Hit
+	jsr PPU_NMIPlan00
+
+	lda g
+	rol
+	rol
+	rol;if frames >= 32
+	bcc @statePersists
+		lda #GAMESTATE0B; load recovery state
+		jsr Gamestates_new
+@statePersists:
+	rts
+
+
+gamestate0B:; recovering from fall
+
+	jsr PPU_updateScroll;void()
+	jsr Score_clearFrameTally;void()
+	
+	lda Gamepads_state
+	ldx Gamepads_last
+	jsr Gamestates_pause;c(a,x) |
+	
+	lda g
+	jsr	Player_isRecovered;c(a,f)
+	bcc @stillRecovering
+		lda #GAMESTATE00
+		jsr Gamestates_new
+
+@stillRecovering:
+	jsr PlayerBullets_move;void()
+
+	jsr PPU_waitForSprite0Reset;()
+
+	jsr dispenseEnemies
+	jsr updateEnemies
+	jsr updateEnemyBullets
+
+	ldx Main_currentPlayer
+	jsr Score_tallyFrame;(x)
+	
+	jsr OAM_build00;(c,a)
+	
+	jsr PPU_waitForSprite0Hit
+	
+	jsr PPU_NMIPlan00
+	
+	rts
+
+
+Gamestates_pause:;c(a,x) |
+
 	and #BUTTON_START;if start button pressed
 	beq @noPause
-		lda Gamepads_last;and not pressed last frame
-		and #BUTTON_START
+		txa;  
+		and #BUTTON_START; and not pressed last frame
 		bne @noPause
 			lda #GAMESTATE08;pause game
 			jsr Gamestates_new
@@ -419,30 +466,10 @@ gamestate0A:
 			jsr APU_pauseSFX; silence the SFX
 @noPause:
 
-	jsr PlayerBullets_move;void()
-
-	jsr PPU_waitForSprite0Reset;()
-
-	ldy Gamepads_state
-	ldx Gamepads_last
-	jsr	Bombs_toss ;c(a,x)
-	bcc @noBomb
-		lda #GAMESTATE09
-		jsr Gamestates_new; a()
-@noBomb:
-	jsr dispenseEnemies
-	jsr updateEnemies
-	jsr updateEnemyBullets
-	jsr Charms_tick
-
-	ldx Main_currentPlayer
-	jsr Score_tallyFrame;(x)
-	jsr OAM_build;(c,a)
-	jsr PPU_waitForSprite0Hit
-	jsr PPU_NMIPlan00
 	rts
 
+
 Gamestates_H:
-	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1), >(gamestate08-1), >(gamestate09-1), >(gamestate0A-1)
+	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1), >(gamestate08-1), >(gamestate09-1), >(gamestate0A-1), >(gamestate0B-1)
 Gamestates_L:
-	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1), <(gamestate08-1), <(gamestate09-1), <(gamestate0A-1)
+	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1), <(gamestate08-1), <(gamestate09-1), <(gamestate0A-1), <(gamestate0B-1)

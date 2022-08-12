@@ -6,6 +6,7 @@
 .include "palettes.h"
 .include "enemies.h"
 .include "bullets.h"
+.include "apu.h"
 
 PLAYERS_MAX=2
 .zeropage
@@ -29,6 +30,7 @@ Players_powerLevel: .res PLAYERS_MAX
 Players_hearts: .res PLAYERS_MAX
 Players_bombs: .res PLAYERS_MAX
 
+Player_yHitPos: .res 1
 Player_sprite: .res 1
 Player_iFrames: .res 1
 Player_willRender: .res 1
@@ -293,13 +295,10 @@ HITBOX_X_OFFSET=6
 HITBOX_Y_OFFSET=12
 HITBOX_WIDTH=1
 HITBOX_HEIGHT=1
-;if player is invincible, theyre unharmed
-	lda Player_iFrames
-	bne @playerInvincible
-;else, check bullets
+	
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
-	lda Bullets_isBullet,x ;if active
+	lda isEnemyBulletActive,x ;if active
 	beq @nextBullet ;else
 		sec ;find x distance
 		lda enemyBulletXH,x
@@ -345,32 +344,91 @@ HITBOX_HEIGHT=1
 	sta sprite2RightOrBottom
 	jsr checkCollision
 	bcc @nextBullet
-		inc Player_iFrames;turn player invincible	
 		rts ;return carry set
 @nextBullet:
 	dex
 	bpl @bulletLoop
-@playerUnharmed:
+	
 	clc ;mark false
 	rts
-@playerInvincible:
-;advance i Frames
-	lda Player_iFrames
-	and #%00010000
-	sta Player_willRender
-	inc Player_iFrames	
-	bne :+
-	;reset iframes after 4 seconds
-		lda #TRUE
-		sta Player_willRender
-:
-	clc ;mark false, playr is unharmed
+
+
+Player_hit:
+
+	sec; decrease power level
+	lda Player_powerLevel
+	sbc #1
+	bcs :+
+		lda #0; no underflow
+		sec; reset carry
+	:sta Player_powerLevel
+
+	;sec; decrease hearts
+	lda Player_hearts
+	sbc #1
+	bcs :+
+		lda #5; do gameover stuff
+	:sta Player_hearts
+	
+	lda #SFX02
+	jsr SFX_newEffect
+	
+	lda #TRUE
+	sta Player_haveHeartsChanged
 	rts
+
+
+
 
 
 Player_fall:;void(a)
+FALL_SPEED=1
+	bne @notFirstTime
+		lda Player_yPos_H
+		sta Player_yHitPos
+@notFirstTime:
+	clc
+	lda Player_yPos_H
+	adc #FALL_SPEED; move player down
+	bcc :+; if y > 255
+		lda #255; y = 255
+	:sta Player_yPos_H
+
+	; todo animation
+	rts
 	
 	
+Player_isRecovered:;void(f)
+	
+	bne @notFirstTime
+		lda #255
+		sta Player_yPos_H; move player to bottom
+@notFirstTime:
+	
+	lda Player_yHitPos
+	eor #%11111111
+	rol
+	rol
+	rol
+	
+	and #%11
+	clc
+	adc #2
+	eor #%11111111
+	
+	adc Player_yPos_H; move player up
+
+	cmp Player_yHitPos
+	bcs :+; if y > 255
+		lda Player_yHitPos; y = 255
+		sta Player_yPos_H
+		sec
+		rts
+	:sta Player_yPos_H
+	
+	clc; mark false
+	; todo animation
+	rts
 
 
 Player_collectCharms:
@@ -378,7 +436,7 @@ Player_collectCharms:
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
 
-	lda Bullets_isCharm,x ;if active
+	lda isEnemyBulletActive,x ;if active
 	beq @nextBullet ;else
 
 		sec ;find x distance
@@ -423,7 +481,6 @@ Player_collectCharms:
 		bcc @nextBullet
 			lda #FALSE
 			sta isEnemyBulletActive,x
-			sta Bullets_isCharm,x
 
 @nextBullet:
 	dex

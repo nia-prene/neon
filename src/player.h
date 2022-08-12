@@ -13,10 +13,13 @@
 .global Hitbox_sprite
 
 .global Player_init
+.global Player_prepare
 .global Player_move
 .global Player_shoot
 .global Player_isHit
-.global Player_prepare
+.global Player_hit
+.global Player_fall
+.global Player_isRecovered
 .global Player_toStartingPos
 .global Player_toConvo
 .global Player_setHitboxAnimation

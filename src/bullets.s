@@ -35,8 +35,6 @@ enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
 Bullets_diameter: .res MAX_ENEMY_BULLETS
-Bullets_isCharm: .res MAX_ENEMY_BULLETS
-Bullets_isBullet: .res MAX_ENEMY_BULLETS
 Bullets_isInvisible: .res MAX_ENEMY_BULLETS
 
 .code
@@ -60,11 +58,6 @@ Bullets_new:;void(x)
 		lda romEnemyBulletBehaviorH,x
 		sta enemyBulletBehaviorH,y
 	
-		lda #TRUE
-		sta Bullets_isBullet,y; it's a bullet
-		lda #FALSE
-		sta Bullets_isCharm,y; not a charm
-		
 		lda Bullets_fastForwardFrames; it may be fastForwarded
 		sta Bullets_isInvisible,y
 		lda #NULL; this is default as 0
@@ -110,11 +103,6 @@ Bullets_newGroup:; void(a,x) |
 	sta enemyBulletBehaviorH,y
 	lda romEnemyBulletBehaviorL,x
 	sta enemyBulletBehaviorL,y
-
-	lda #TRUE
-	sta Bullets_isBullet,y
-	lda #FALSE
-	sta Bullets_isCharm,y
 
 	lda quickBulletY
 	sta enemyBulletYH,y
@@ -179,7 +167,7 @@ updateEnemyBullets:;(void)
 
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
-	lda Bullets_isBullet,x
+	lda isEnemyBulletActive,x
 	beq @skipBullet;skip inactive bullets
 		cmp #1
 		bne @decreaseHold
@@ -200,29 +188,11 @@ updateEnemyBullets:;(void)
 @skipBullet:
 	dex ;x--
 	bpl @bulletLoop ;while x>=0
+	rts
 @decreaseHold:
-	dec Bullets_isBullet,x
+	dec isEnemyBulletActive,x
 	dex ;x--
 	bpl @bulletLoop ;while x>=0
-	rts
-
-Charms_tick:
-
-	ldx #MAX_ENEMY_BULLETS-1
-@charmLoop:
-	lda Bullets_isCharm,x
-	beq @skipBullet;skip inactive charms
-		txa
-		pha; save array index
-		lda enemyBulletBehaviorH,x
-		pha; push function pointer H
-		lda enemyBulletBehaviorL,x
-		pha; push function pointer L
-
-@skipBullet:
-	dex ;x--
-	bpl @charmLoop ;while x>=0
-	
 	rts
 
 
@@ -429,7 +399,6 @@ romEnemyBulletMetasprite:
 Bullet_clear:
 	lda #FALSE
 	sta isEnemyBulletActive,x
-	sta	Bullets_isBullet,x
 	rts
 
 bullet00:

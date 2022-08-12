@@ -103,7 +103,6 @@ initializeEnemy:;void (a,x,y)
 	sta enemyPalette,x
 ;it is helpful to have i at zero, and j at 128 so patterns can mirror
 	sta i,x
-	lda #128	
 	sta j,x
 	rts
 @enemiesFull:
@@ -760,10 +759,13 @@ Y_OFFSET=32
 	
 	lda i,x
 		bne @noNewPattern
+		lda j,x
+		bne @noNewPattern
 		lda #01; #PATTERN01
+		sta j,x
 		jsr Patterns_new; void(a,x) | x,y
 @noNewPattern:
-
+	inc i
 	jsr Enemies_isAlive; c(x) | x
 	
 	rts
