@@ -30,7 +30,6 @@ Players_powerLevel: .res PLAYERS_MAX
 Players_hearts: .res PLAYERS_MAX
 Players_bombs: .res PLAYERS_MAX
 
-Player_yHitPos: .res 1
 Player_sprite: .res 1
 Player_iFrames: .res 1
 Player_willRender: .res 1
@@ -378,15 +377,9 @@ Player_hit:
 	rts
 
 
-
-
-
-Player_fall:;void(a)
+Player_fall:;void()
 FALL_SPEED=1
-	bne @notFirstTime
-		lda Player_yPos_H
-		sta Player_yHitPos
-@notFirstTime:
+	
 	clc
 	lda Player_yPos_H
 	adc #FALL_SPEED; move player down
@@ -398,36 +391,30 @@ FALL_SPEED=1
 	rts
 	
 	
-Player_isRecovered:;void(f)
-	
+Player_recover:;void(f)
+RECOVER_Y=128
+RECOVER_SPEED=5
+
 	bne @notFirstTime
 		lda #255
 		sta Player_yPos_H; move player to bottom
 @notFirstTime:
 	
-	lda Player_yHitPos
-	eor #%11111111
-	rol
-	rol
-	rol
-	
-	and #%11
 	clc
-	adc #2
-	eor #%11111111
+	lda Player_yPos_H	
+	sbc #RECOVER_SPEED
 	
-	adc Player_yPos_H; move player up
-
-	cmp Player_yHitPos
+	cmp #RECOVER_Y
 	bcs :+; if y > 255
-		lda Player_yHitPos; y = 255
+		lda #RECOVER_Y
 		sta Player_yPos_H
-		sec
+		
+		sec; return true
 		rts
+
 	:sta Player_yPos_H
 	
 	clc; mark false
-	; todo animation
 	rts
 
 

@@ -29,11 +29,15 @@
 .global Bullets_isInvisible
 .global Bullets_i
 
+.global Charms_getActive
+
+
 ;functions
 .global Bullets_new
 .global Bullets_newGroup
 .global Enemy_Bullets
 .global aimBullet
 .global updateEnemyBullets
-.global Bullets_toCharms
+.global Bullets_toCharm
+.global Charms_spin
 .global Charms_tick

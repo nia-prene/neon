@@ -14,8 +14,8 @@ MAX_ENEMY_BULLETS=56
 quickBulletX: .res 1
 quickBulletY: .res 1
 numberOfBullets: .res 1
-
 Bullets_fastForwardFrames:.res 1
+Charms_framesElapsed: .res 1
 
 bulletType: .res 4
 octant: .res 1
@@ -36,6 +36,7 @@ enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
 Bullets_diameter: .res MAX_ENEMY_BULLETS
 Bullets_isInvisible: .res MAX_ENEMY_BULLETS
+Charms_isActive: .res 1
 
 .code
 Bullets_new:;void(x) 
@@ -65,7 +66,8 @@ Bullets_new:;void(x)
 	
 		txa ;restore bullet
 ;now use the lowes 2 bits to get the bullet type loaded during enemy wave
-		and #%00000011 
+	
+	and #%00000011 
 		tax 
 		lda bulletType,x
 		tax 
@@ -184,15 +186,51 @@ updateEnemyBullets:;(void)
 			tay
 			lda Bullets_spriteBank,y
 			sta enemyBulletMetasprite,x
+			jmp @skipBullet
+@decreaseHold:
 
+	dec isEnemyBulletActive,x
 @skipBullet:
+
 	dex ;x--
 	bpl @bulletLoop ;while x>=0
 	rts
-@decreaseHold:
-	dec isEnemyBulletActive,x
+
+
+Charms_tick:; (void)
+;pushes all bullet offsets and functions onto stack and returns
+	
+	lda #FALSE
+	sta Charms_isActive
+	ldx #MAX_ENEMY_BULLETS-1; for x
+
+@bulletLoop:
+	lda isEnemyBulletActive,x; if active
+	beq @skipBullet;skip inactive bullets
+		
+		;lda #TRUE; a is already true
+		sta Charms_isActive
+
+		txa
+		pha; save array index
+		
+		lda enemyBulletBehaviorH,x
+		pha; push function pointer H
+		lda enemyBulletBehaviorL,x
+		pha; push function pointer L
+@skipBullet:
+
 	dex ;x--
 	bpl @bulletLoop ;while x>=0
+	
+	inc Charms_framesElapsed	
+	
+	rts
+
+
+;used to see if charms are still on screen
+Charms_getActive:
+	lda Charms_isActive
 	rts
 
 
@@ -232,30 +270,28 @@ aimBullet:
 	sta bulletAngle
 	rts
 
-Bullets_toCharms:;void(s)
+
+Bullets_toCharm:; void(x) | x
+	
+	lda #255
+	sta Charms_framesElapsed; iterator increments before
+
+	lda #TRUE
+	sta Charms_isActive
+
+	lda #<(Charms_spin-1);change function ptr
+	sta enemyBulletBehaviorL,x
+	lda #>(Charms_spin-1)
+	sta enemyBulletBehaviorH,x
+	
+	rts
+
+
+Charms_spin:;void(s)
 
 	pla
 	tax
-	
-	lda Bombs_timeElapsed
-	cmp #32
-	bcc @statePersists
 
-		lda #<(Charms_move-1)
-		sta enemyBulletBehaviorL,x
-		lda #>(Charms_move-1)
-		sta enemyBulletBehaviorH,x
-		rts
-@statePersists:
-
-	
-	lda Bombs_timeElapsed
-	and #%00000111
-	tay
-
-	lda @charmAnimation,y
-	sta enemyBulletMetasprite,x
-	
 	lda enemyBulletYH,x
 	clc
 	adc #1
@@ -263,13 +299,27 @@ Bullets_toCharms:;void(s)
 		lda #255
 	:sta enemyBulletYH,x
 
+		
+	lda Charms_framesElapsed
+	cmp #32
+	bcc @statePersists
+
+		lda #<(Charms_move-1)
+		sta enemyBulletBehaviorL,x
+		lda #>(Charms_move-1)
+		sta enemyBulletBehaviorH,x
+@statePersists:
+	
+	and #%1
+	tay
+	lda @spinAnimation,y
+	sta enemyBulletMetasprite,x
+
 	rts
-@charmAnimation:
-	.byte SPRITE20,SPRITE1E,SPRITE20,SPRITE1E,SPRITE20
-	.byte SPRITE1E,SPRITE20,SPRITE1E,SPRITE20
-	.byte SPRITE1E,SPRITE1E,SPRITE1F,SPRITE1F
-	.byte SPRITE20,SPRITE20,SPRITE20,SPRITE20
-	.byte SPRITE22,SPRITE22,SPRITE22,SPRITE1E
+
+@spinAnimation:
+	.byte SPRITE20,SPRITE1E
+	
 
 Charms_move:
 

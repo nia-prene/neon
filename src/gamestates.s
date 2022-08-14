@@ -45,6 +45,7 @@ GAMESTATE08=$08; game pause
 GAMESTATE09=$09; post bomb
 GAMESTATE0A=$0A; player is falling after hit
 GAMESTATE0B=$0B; player recovering after hit
+GAMESTATE0C=$0C; time period of no enemy shooting
 
 Gamestates_new:; void(a) |
 	
@@ -302,6 +303,8 @@ gamestate07:
 @dontPlaySFX:
 	rts
 
+
+; game paused state
 gamestate08:
 
 	jsr PPU_dimScreen
@@ -345,15 +348,11 @@ gamestate09:; after a bomb goes off
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
 	
-	ldy Gamepads_state
-	ldx Gamepads_last
-	jsr	Bombs_toss ;c(a,x)
-	
 	jsr PPU_waitForSprite0Reset;()
 
 	jsr dispenseEnemies
 	jsr updateEnemies
-	jsr updateEnemyBullets
+	jsr Charms_tick
 	
 	jsr Player_collectCharms
 	
@@ -366,12 +365,11 @@ gamestate09:; after a bomb goes off
 	jsr PPU_dimScreen
 	jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
-	
-	lda g
-	adc #1 ;if g+1 sets carry (g = 255)
-	bcc @statePersists
 
-		lda #GAMESTATE00; change back to main gamestate
+	jsr	Charms_getActive; a()
+	bne @statePersists
+
+		lda #GAMESTATE0C; go to brief firing hold 
 		jsr Gamestates_new
 
 @statePersists:
@@ -427,12 +425,12 @@ gamestate0B:; recovering from fall
 	jsr Gamestates_pause;c(a,x) |
 	
 	lda g
-	jsr	Player_isRecovered;c(a,f)
+	jsr	Player_recover;c(a,f)
 	bcc @stillRecovering
-		lda #GAMESTATE00
+		lda #GAMESTATE0C
 		jsr Gamestates_new
-
 @stillRecovering:
+
 	jsr PlayerBullets_move;void()
 
 	jsr PPU_waitForSprite0Reset;()
@@ -453,6 +451,47 @@ gamestate0B:; recovering from fall
 	rts
 
 
+gamestate0C:; a moment of no enemy shooting
+
+	jsr PPU_updateScroll;void()
+	jsr Score_clearFrameTally;void()
+	
+	lda Gamepads_state
+	ldx Gamepads_last
+	jsr Gamestates_pause;c(a,x) |
+	
+	lda Gamepads_state
+	jsr	Player_move;void(a) |
+
+	jsr PlayerBullets_move;void()
+
+	lda Gamepads_state
+	jsr PlayerBullets_shoot;(a)
+
+	jsr PPU_waitForSprite0Reset;()
+
+	jsr dispenseEnemies
+	jsr updateEnemies
+	jsr updateEnemyBullets
+
+	ldx Main_currentPlayer
+	jsr Score_tallyFrame;(x)
+	
+	jsr OAM_build00;(c,a)
+	
+	jsr PPU_waitForSprite0Hit
+	
+	jsr PPU_NMIPlan00
+
+	lda g
+	cmp #128; frames
+	bcc @statePersists
+		lda #GAMESTATE00
+		jsr	Gamestates_new
+@statePersists:
+	
+	rts
+
 Gamestates_pause:;c(a,x) |
 
 	and #BUTTON_START;if start button pressed
@@ -470,6 +509,6 @@ Gamestates_pause:;c(a,x) |
 
 
 Gamestates_H:
-	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1), >(gamestate08-1), >(gamestate09-1), >(gamestate0A-1), >(gamestate0B-1)
+	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1), >(gamestate08-1), >(gamestate09-1), >(gamestate0A-1), >(gamestate0B-1), >(gamestate0C-1)
 Gamestates_L:
-	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1), <(gamestate08-1), <(gamestate09-1), <(gamestate0A-1), <(gamestate0B-1)
+	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1), <(gamestate08-1), <(gamestate09-1), <(gamestate0A-1), <(gamestate0B-1), <(gamestate0C-1)

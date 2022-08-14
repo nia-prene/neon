@@ -19,7 +19,7 @@
 .global Player_isHit
 .global Player_hit
 .global Player_fall
-.global Player_isRecovered
+.global Player_recover
 .global Player_toStartingPos
 .global Player_toConvo
 .global Player_setHitboxAnimation
