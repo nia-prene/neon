@@ -17,7 +17,6 @@ numberOfBullets: .res 1
 Bullets_fastForwardFrames:.res 1
 Charms_framesElapsed: .res 1
 
-bulletType: .res 4
 octant: .res 1
 bulletAngle: .res 1
 ;Bullets_spriteBank: .res BULLETS_VARIETIES
@@ -64,13 +63,7 @@ Bullets_new:;void(x)
 		lda #NULL; this is default as 0
 		sta Bullets_fastForwardFrames
 	
-		txa ;restore bullet
-;now use the lowes 2 bits to get the bullet type loaded during enemy wave
-	
-	and #%00000011 
-		tax 
-		lda bulletType,x
-		tax 
+		ldx #0; for now, force bullet 0
 	
 		lda romEnemyBulletHitbox1,x;copy hitbox
 		sta enemyBulletHitbox1,y
@@ -114,11 +107,7 @@ Bullets_newGroup:; void(a,x) |
 	lda Bullets_fastForwardFrames
 	sta Bullets_isInvisible,y
 	
-	txa ;restore ID
-	and #%00000000 ;force 0 todo
-	tax 
-	lda bulletType,x;[4]
-	tax ;y is type
+	ldx #0; for now force 0
 	
 	lda romEnemyBulletMetasprite,x;copy metasprite
 	sta enemyBulletMetasprite,y

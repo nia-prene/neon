@@ -1,4 +1,4 @@
 .global dispenseEnemies
-.global Waves_reset
+.global Waves_new
 
 .globalzp WAVESTRING00

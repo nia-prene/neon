@@ -147,8 +147,10 @@ gamestate01:;void(currentPlayer, currentScene)
 
 	jsr renderAllTiles; ()
 	jsr PPU_renderRightScreen
+
 	ldx nextScene
-	jsr Waves_reset; (x)
+	jsr Waves_new; (x)
+
 	ldx nextScene
 	jsr OAM_initSprite0
 	jsr PPU_resetScroll

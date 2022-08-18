@@ -113,15 +113,3 @@ setPaletteCollection:;(x)
 	ldy #03
 	jmp setPalette
 
-Palettes_swapEnemyPalettes:
-;sets new palettes for a new wave of enemies (does not render)
-;arguments
-;2 on stack, palettes to set
-	pla
-	tax
-	ldy #6
-	jsr setPalette
-	pla
-	tax
-	ldy #5
-	jmp setPalette

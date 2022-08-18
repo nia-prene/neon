@@ -21,3 +21,6 @@
 
 .global initializeEnemy
 .global updateEnemies
+
+; objects
+.globalzp ENEMY01

@@ -43,29 +43,13 @@ initializeEnemy:;void (a,x,y)
 ;places enemy from slot onto enemy array and screen coordinates
 ;arguments
 ;a - enemy
-;x - x coordinate
-;y - y coordinate
-	;save enemy
-	pha
-	;save x
-	txa
-	pha
-	;save y
-	tya
-	pha
-	;save x coordinate
-	jsr getAvailableEnemy
+	
+	pha; save enemy
+
+	jsr getAvailableEnemy; x() | y
 	bcc @enemiesFull
-	;returns x - available enemy
-	;retains y, enemy
-	;get y coordinate
-	pla
-	sta enemyYH,x
-	;get x coordinate
-	pla
-	sta enemyXH,x
-	;copy data from rom
-	pla
+	
+	pla;copy data from rom
 	tay
 
 	lda #$ff
@@ -104,11 +88,16 @@ initializeEnemy:;void (a,x,y)
 ;it is helpful to have i at zero, and j at 128 so patterns can mirror
 	sta i,x
 	sta j,x
+
+	sec; mark success
+
 	rts
 @enemiesFull:
 	pla
 	pla
 	pla
+
+	clc; mark full
 	rts
 
 getAvailableEnemy:
@@ -309,7 +298,7 @@ Enemies_explodeSmall:
 	jsr SFX_newEffect
 	rts
 .endmacro
-ENEMY01=1
+ENEMY01=1; small drone flying uptodown lefttoright
 ENEMY02=2
 ENEMY03=3
 ENEMY04=4
@@ -320,33 +309,33 @@ ENEMY08=$8;reese boss
 .rodata
 ;first byte is a burner byte so we can use zero flag to denote empty slot
 romEnemyBehaviorH:
-	.byte TERMINATE, >(enemy01-1), >(enemy02-1), >(enemy03-1), >(enemy04-1), >(enemy05-1), >(enemy06-1), >(enemy07-1), >(enemy08-1)
+	.byte NULL, >(enemy01-1), >(enemy02-1), >(enemy03-1), >(enemy04-1), >(enemy05-1), >(enemy06-1), >(enemy07-1), >(enemy08-1)
 romEnemyBehaviorL:
-	.byte TERMINATE, <(enemy01-1), <(enemy02-1), <(enemy03-1), <(enemy04-1), <(enemy05-1), <(enemy06-1), <(enemy07-1), <(enemy08-1)
+	.byte NULL, <(enemy01-1), <(enemy02-1), <(enemy03-1), <(enemy04-1), <(enemy05-1), <(enemy06-1), <(enemy07-1), <(enemy08-1)
 romEnemyMetasprite:
-	.byte TERMINATE, SPRITE0F, SPRITE0F, SPRITE10, SPRITE10, SPRITE14, SPRITE15, SPRITE16, SPRITE21
+	.byte NULL, SPRITE0F, SPRITE0F, SPRITE10, SPRITE10, SPRITE14, SPRITE15, SPRITE16, SPRITE21
 romEnemyHPL: 
-	.byte TERMINATE, 02, 02, 25, 25, 128, 0, 0, 0
+	.byte NULL, 02, 02, 25, 25, 128, 0, 0, 0
 romEnemyHPH:
-	.byte TERMINATE, 00, 00, 00, 00, 00,  0, 0, 1
+	.byte NULL, 00, 00, 00, 00, 00,  0, 0, 1
 pointValue_L:
-	.byte TERMINATE, $19, $19, $32, $32, $64,  0, 0, 0
+	.byte NULL, $19, $19, $32, $32, $64,  0, 0, 0
 pointValue_H:
-	.byte TERMINATE, 00, 00, 00, 00, 00,  0, 0, 0
+	.byte NULL, 00, 00, 00, 00, 00,  0, 0, 0
 ;the type determines the width, height, and how it is built in oam
 romEnemyWidth:
-	.byte TERMINATE, 16, 16, 16, 16, 16,  0, 0, 16
+	.byte NULL, 16, 16, 16, 16, 16,  0, 0, 16
 romEnemyHitboxX1:
-	.byte TERMINATE, 02, 02, 02, 02, 02,  0, 0, 02
+	.byte NULL, 02, 02, 02, 02, 02,  0, 0, 02
 romEnemyHitboxX2:
-	.byte TERMINATE, 12, 12, 12, 12, 12,  0, 0, 12
+	.byte NULL, 12, 12, 12, 12, 12,  0, 0, 12
 romEnemyHitboxY2:
-	.byte TERMINATE, 14, 14, 30, 30, 14,  0, 0, 30
+	.byte NULL, 14, 14, 30, 30, 14,  0, 0, 30
 
 .proc enemy01
 SHOT_Y_OFFSET=16
 SHOT_X_OFFSET=4
-Y_SPEED_H=1
+Y_SPEED_H=2
 Y_SPEED_L=128
 ;placed along top (y = 0), ascends and pulls slightly to the right
 	pla
@@ -378,45 +367,19 @@ Y_SPEED_L=128
 	adc enemyXH,x
 	bcs @clearEnemy
 	sta enemyXH,x
+
 	jsr Enemies_isAlive 
-	bcc @enemyHit
-	lda i,x
-	bne @return
-	lda enemyYH,x
-	cmp #32
-	bcc @shoot
-@return:
+	bcc @enemyDestroyed
 	rts
-@enemyHit:
+@enemyDestroyed:
 	explode	0, #FALSE
 @clearEnemy:
 	lda #FALSE
 	sta isEnemyActive,x
 	rts
-@shoot:
-	lda #TRUE
-	sta i,x
-	clc
-	lda enemyYH,x
-	adc #SHOT_Y_OFFSET
-	sta quickBulletY
-	lda enemyXH,x
-	adc #SHOT_X_OFFSET
-	sta quickBulletX
-	jsr aimBullet
-	and #%11111100
-	ora #%00000001
-	pha
-	clc
-	adc #5
-	pha
-	sec
-	sbc #8
-	pha
-	lda #3
-	sta numberOfBullets
-	rts
 .endproc
+
+
 .proc enemy02
 SHOT_Y_OFFSET=16
 SHOT_X_OFFSET=4
