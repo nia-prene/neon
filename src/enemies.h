@@ -24,3 +24,10 @@
 
 ; objects
 .globalzp ENEMY01
+.globalzp ENEMY02
+.globalzp ENEMY03
+.globalzp ENEMY04
+.globalzp ENEMY05
+.globalzp ENEMY06
+.globalzp ENEMY07
+.globalzp ENEMY08

@@ -24,8 +24,11 @@
 .include "patterns.h"
 
 .zeropage
+
+Gamestates_last: .res 1
 Gamestates_current: .res 1
 Gamestates_next: .res 1
+Gamestates_primary: .res 1
 
 currentScene: .res 1
 nextScene: .res 1
@@ -46,6 +49,7 @@ GAMESTATE09=$09; post bomb
 GAMESTATE0A=$0A; player is falling after hit
 GAMESTATE0B=$0B; player recovering after hit
 GAMESTATE0C=$0C; time period of no enemy shooting
+GAMESTATE0D=$0D; Boss fight
 
 Gamestates_new:; void(a) |
 	
@@ -55,15 +59,23 @@ Gamestates_new:; void(a) |
 
 Gamestates_tick:
 	
-	inc g
-	lda Gamestates_next
-	cmp Gamestates_current
+	inc g; increment iterator
+
+	lda Gamestates_current; if state has changed
+	cmp Gamestates_next
 	beq @statePersists
-		sta Gamestates_current
-		lda #0
+
+		sta Gamestates_last; mark as previous state
+		lda Gamestates_next
+		sta Gamestates_current; change to new one
+		
+		lda #0; zero out the iterator
 		sta g
+
 @statePersists:
+
 	rts
+
 
 gamestate00:
 ;the main gameplay loop
@@ -71,7 +83,7 @@ gamestate00:
 	jsr Score_clearFrameTally;void()
 	
 	lda Gamepads_state
-	ldx Gamepads_last;and not pressed last frame
+	ldx Gamepads_last
 	jsr Gamestates_pause; void(a,x) |
 
 	lda Gamepads_state
@@ -84,7 +96,7 @@ gamestate00:
 	
 	jsr PPU_waitForSprite0Reset;()
 
-	jsr dispenseEnemies
+	jsr Waves_dispense
 	jsr updateEnemies
 
 	jsr updateEnemyBullets
@@ -96,6 +108,8 @@ gamestate00:
 	bcc @noBomb
 		lda #GAMESTATE09
 		jsr Gamestates_new; a()
+		lda #GAMESTATE00
+		sta Gamestates_primary
 @noBomb:
 	
 	jsr Player_isHit
@@ -307,7 +321,7 @@ gamestate07:
 
 
 ; game paused state
-gamestate08:
+gamestate08:; void()
 
 	jsr PPU_dimScreen
 	jsr PPU_waitForSprite0Reset;void()
@@ -320,7 +334,7 @@ gamestate08:
 		and #BUTTON_START
 		bne @stayPaused
 
-			lda #GAMESTATE00;resume game
+			lda Gamestates_last;resume game
 			jsr Gamestates_new
 		
 			jsr APU_resumeMusic
@@ -331,7 +345,9 @@ gamestate08:
 	jsr OAM_buildPause;x(x)
 	jsr OAM_clearRemaining;x()
 	jsr PPU_waitForSprite0Hit
+	
 	rts
+
 
 gamestate09:; after a bomb goes off
 
@@ -352,7 +368,7 @@ gamestate09:; after a bomb goes off
 	
 	jsr PPU_waitForSprite0Reset;()
 
-	jsr dispenseEnemies
+	jsr Waves_dispense 
 	jsr updateEnemies
 	jsr Charms_tick
 	
@@ -394,7 +410,7 @@ gamestate0A:; falling off broom
 
 	jsr PPU_waitForSprite0Reset;()
 
-	jsr dispenseEnemies
+	jsr Waves_dispense 
 	jsr updateEnemies
 	jsr updateEnemyBullets
 
@@ -437,7 +453,7 @@ gamestate0B:; recovering from fall
 
 	jsr PPU_waitForSprite0Reset;()
 
-	jsr dispenseEnemies
+	jsr Waves_dispense
 	jsr updateEnemies
 	jsr updateEnemyBullets
 
@@ -453,7 +469,7 @@ gamestate0B:; recovering from fall
 	rts
 
 
-gamestate0C:; a moment of no enemy shooting
+gamestate0C:; a moment of no shooting
 
 	jsr PPU_updateScroll;void()
 	jsr Score_clearFrameTally;void()
@@ -472,7 +488,7 @@ gamestate0C:; a moment of no enemy shooting
 
 	jsr PPU_waitForSprite0Reset;()
 
-	jsr dispenseEnemies
+	jsr Waves_dispense 
 	jsr updateEnemies
 	jsr updateEnemyBullets
 
@@ -480,16 +496,18 @@ gamestate0C:; a moment of no enemy shooting
 	jsr Score_tallyFrame;(x)
 	
 	jsr OAM_build00;(c,a)
-	
+	jsr PPU_dimScreen
+
 	jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00
 
+
 	lda g
 	cmp #128; frames
 	bcc @statePersists
-		lda #GAMESTATE00
-		jsr	Gamestates_new
+		lda Gamestates_primary
+		jsr	Gamestates_new; void(a)
 @statePersists:
 	
 	rts

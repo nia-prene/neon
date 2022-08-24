@@ -12,10 +12,10 @@ levelWavePointer: .res 2 ;points to the collection of waves for the level
 wavePointer: .res 2 ;points to the current wave in use
 waveIndex: .res 1 ;keeps track of current wave in the collection
 enemyIndex: .res 1 ;keeps track of which enemy is next
-w: .res 1 
 
+.data
 Waves_hold:.res 1; hold for x frames
-
+Waves_isEmpty:.res 1
 
 
 CONCURRENT=$FE ;signals that two enemies are to be dispensed this frame
@@ -37,17 +37,21 @@ Waves_new:;void(x)
 	lda #0
 	sta waveIndex
 
-	jmp Waves_next; void()
+	jmp Waves_next; c()
 
 
-dispenseEnemies:
-	
+Waves_dispense:; void()
+
+	lda Waves_isEmpty
+	bne @return
+
 	clc
 	lda Waves_hold
 	sbc #1
 	bcc @dispenseEnemy
 		
 		sta Waves_hold; return if timer >= 0
+
 		rts
 
 @dispenseEnemy:
@@ -57,7 +61,7 @@ dispenseEnemies:
 	lda (wavePointer),y; if null (to terminate) new wave
 	bne @addAnother
 		
-		jmp Waves_next
+		jmp Waves_next; c()
 
 @addAnother:
 
@@ -69,28 +73,30 @@ dispenseEnemies:
 	ldy enemyIndex
 	bcc @enemiesFull
 	
-	lda (wavePointer),y; get position on screen
+		lda (wavePointer),y; get position on screen
 	
-	iny
-	sty enemyIndex
+		iny
+		sty enemyIndex
 
-	rol
-	rol
-	rol
-	pha
-	and #%11
-	tay
-	pla
-	ror
-	and #%11111100
-	pha
+		rol; get 2 MSBs isolated in bit 0 and 1
+		rol
+		rol
+		pha
+		and #%11
+		tay; use as index
 
-	lda @sides_H,y; get the function pointer
-	pha
-	lda @sides_L,y
-	pha
+		pla; get 6 LSBs in 2-7
+		ror
+		and #%11111100
+		pha
+	
+		lda @sides_H,y; jump to a side dependent function
+		pha
+		lda @sides_L,y
+		pha
 
-	rts; void(x) | x
+		rts; void(x) | x
+
 @enemiesFull:
 
 	iny
@@ -109,7 +115,8 @@ dispenseEnemies:
 	iny
 	sty enemyIndex
 	
-	sec; mark success
+@return:
+
 	rts
 
 @sides_L:
@@ -143,45 +150,46 @@ dispenseEnemies:
 	sta enemyXH,x
 	jmp @setTime
 
-Waves_next:
+Waves_next:; c()
+;returns false if no more enemies
 
 	ldy waveIndex; recall index
 	lda (levelWavePointer),y; get next wave
-	beq @bossTime
+	beq @noMoreEnemies
 
-	iny
-	sty waveIndex
+		iny
+		sty waveIndex
 	
-	pha; save wave
+		pha; save wave
 
-	tax; get the pointer
-	lda wavePointerL,x
-	sta wavePointer
-	lda wavePointerH,x
-	sta wavePointer+1
+		tax; get the pointer
+		lda wavePointerL,x
+		sta wavePointer
+		lda wavePointerH,x
+		sta wavePointer+1
 
-
-
-	lda Wave_palette00,x
-	tax
-	ldy #5
-	jsr setPalette; void(x,y)
+		lda Wave_palette00,x
+		tax
+		ldy #5
+		jsr setPalette; void(x,y)
 	
-	pla
-	lda Wave_palette01,x
-	tax
-	ldy #6
-	jsr setPalette; void(x,y)
+		pla; restore the wave
+		tax
+
+		lda Wave_palette01,x
+		tax
+		ldy #6
+		jsr setPalette; void(x,y)
 	
-	lda #0
-	sta enemyIndex
+		lda #0
+		sta enemyIndex
+		rts
 
-	sec; mark success
-	rts
+@noMoreEnemies:
 
-@bossTime:
+	lda #TRUE
+	sta Waves_isEmpty
 
-	clc; mark end
 	rts
 
 
@@ -193,8 +201,9 @@ waveStrings_H:
 waveStrings_L:
 	.byte <waveString00
 waveString00:
-	.byte WAVE01,WAVE01,WAVE01,WAVE01
-	.byte WAVE01,WAVE01,WAVE01,WAVE01
+	.byte WAVE01
+	.byte WAVE01
+	.byte WAVE02
 	.byte NULL
 ;pointers to individual enemy waves (below)
 
@@ -213,9 +222,9 @@ BOTTOM=%10
 LEFT=%11
 
 Wave_palette00:
-	.byte PALETTE06
+	.byte NULL,PALETTE06,PALETTE08
 Wave_palette01:
-	.byte PALETTE06
+	.byte NULL,PALETTE06,PALETTE09
 
 ;individual enemy waves
 ;	.byte enemy, position, hold, etc, NULL
@@ -231,6 +240,9 @@ wave01:
 	.byte NULL
 
 wave02:
+	.byte ENEMY08, TOP|22, 1
+	.byte NULL
+
 wave03:
 wave04:
 wave05:

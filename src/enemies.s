@@ -340,27 +340,26 @@ Y_SPEED_L=128
 ;placed along top (y = 0), ascends and pulls slightly to the right
 	pla
 	tax
-	clc
-;move down at a rate of 1.5 px per frame
+
+	clc;move down at a constant rate
 	lda enemyYL,x
 	adc #Y_SPEED_L
 	sta enemyYL,x
+	
 	lda enemyYH,x
 	adc #Y_SPEED_H
-;clear if offscreen
-	bcs @clearEnemy
+	bcs @clearEnemy;clear if offscreen
 	sta enemyYH,x
-;isolate bit 7, shift to bit 0
-	rol
+
+	rol;isolate bit 7, shift to bit 0
 	rol
 	and #%00000001
-;save on y
-	tay
+	tay;save on y
+
 	lda enemyYH,x
-;isolate bits 0-6, shift them left
-	asl
-	clc
+	asl;isolate bits 0-6, shift them left
 ;X coordinate = x + |0000000y yyyyyyy0| created from y coordinate hibyte
+	clc
 	adc enemyXL,x
 	sta enemyXL,x
 	tya
@@ -706,6 +705,8 @@ Y_OFFSET=64
 @return:
 	rts
 .endproc
+
+
 .proc enemy08
 X_OFFSET=116
 Y_OFFSET=32
