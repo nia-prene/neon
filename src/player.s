@@ -323,9 +323,9 @@ HITBOX_HEIGHT=1
 	sta sprite1RightOrBottom
 	;copy bullet x bounded box
 	lda enemyBulletXH,x
-	adc enemyBulletHitbox1,x
+	adc #2
 	sta sprite2LeftOrTop
-	adc enemyBulletHitbox2,x
+	adc #4
 	sta sprite2RightOrBottom
 	jsr checkCollision
 	bcc @nextBullet;if outside box
@@ -337,9 +337,9 @@ HITBOX_HEIGHT=1
 	sta sprite1RightOrBottom
 	;copy bullet y bounded box
 	lda enemyBulletYH,x
-	adc enemyBulletHitbox1,x
+	adc #2
 	sta sprite2LeftOrTop
-	adc enemyBulletHitbox2,x
+	adc #4
 	sta sprite2RightOrBottom
 	jsr checkCollision
 	bcc @nextBullet
@@ -450,7 +450,7 @@ Player_collectCharms:
 		;copy bullet x bounded box
 		lda enemyBulletXH,x
 		sta sprite2LeftOrTop
-		adc Bullets_diameter,x
+		adc #08
 		sta sprite2RightOrBottom
 		jsr checkCollision
 		bcc @nextBullet;if outside box
@@ -462,7 +462,7 @@ Player_collectCharms:
 		;copy bullet y bounded box
 		lda enemyBulletYH,x
 		sta sprite2LeftOrTop
-		adc Bullets_diameter,x
+		adc #8
 		sta sprite2RightOrBottom
 		jsr checkCollision
 		bcc @nextBullet

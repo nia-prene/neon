@@ -48,11 +48,11 @@ Bombs_toss:; void(y,x)
 				lda #SFX08; play twinkle
 				jsr SFX_newEffect; void(a)
 					
-				ldx #MAX_ENEMY_BULLETS
+				ldx #MAX_ENEMY_BULLETS-1
 			@bulletLoop:
 				lda isEnemyBulletActive,x; if bullet is active
 				beq @nextBullet; else next bullet
-				lda Bullets_isInvisible,x; and visible
+				lda Bullets_invisibility,x; and visible
 				bne @deleteBullet; delete invisible bullets	
 					
 					jsr Bullets_toCharm; void(x) | x

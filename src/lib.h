@@ -22,3 +22,5 @@
 
 ;functions
 .global checkCollision
+.global Lib_generateSeed
+.global Lib_getRandom

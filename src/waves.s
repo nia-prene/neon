@@ -201,10 +201,10 @@ waveStrings_H:
 waveStrings_L:
 	.byte <waveString00
 waveString00:
-	.byte WAVE01
-	.byte WAVE01
 	.byte WAVE02
 	.byte NULL
+	.byte WAVE01
+	.byte WAVE01
 ;pointers to individual enemy waves (below)
 
 WAVE01=$01;ligh drones moving left

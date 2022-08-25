@@ -94,7 +94,7 @@ gamestate00:
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
 	
-	jsr PPU_waitForSprite0Reset;()
+	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense
 	jsr updateEnemies
@@ -127,9 +127,9 @@ gamestate00:
 	jsr Score_tallyFrame;(x)
 	
 	jsr PPU_dimScreen; see how much frame is left over
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	
-	jsr PPU_NMIPlan00; void() |
+	;jsr PPU_NMIPlan00; void() |
 	
 	rts
 

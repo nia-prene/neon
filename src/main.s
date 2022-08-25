@@ -31,6 +31,7 @@ Main_frame_L: .res 1
 main:
 	NES_init
 	jsr PPU_init
+	jsr	Lib_generateSeed
 ;player 0 starts
 	lda #0
 	sta Main_currentPlayer

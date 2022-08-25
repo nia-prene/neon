@@ -1,4 +1,5 @@
 .include "bullets.h"
+
 .include "lib.h"
 
 .include "player.h"
@@ -7,7 +8,7 @@
 .include "enemies.h"
 
 BULLETS_VARIETIES=8
-MAX_ENEMY_BULLETS=56
+MAX_ENEMY_BULLETS=82
 
 .zeropage
 ;arguments
@@ -24,8 +25,6 @@ Bullets_willSpritesShuffle: .res 1
 
 .data
 isEnemyBulletActive: .res MAX_ENEMY_BULLETS
-enemyBulletHitbox1: .res MAX_ENEMY_BULLETS
-enemyBulletHitbox2: .res MAX_ENEMY_BULLETS
 enemyBulletBehaviorH: .res MAX_ENEMY_BULLETS
 enemyBulletBehaviorL: .res MAX_ENEMY_BULLETS
 enemyBulletXH: .res MAX_ENEMY_BULLETS
@@ -33,11 +32,12 @@ enemyBulletXL: .res MAX_ENEMY_BULLETS
 enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
 enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
-Bullets_diameter: .res MAX_ENEMY_BULLETS
-Bullets_isInvisible: .res MAX_ENEMY_BULLETS
+Bullets_invisibility: .res MAX_ENEMY_BULLETS
+
 Charms_isActive: .res 1
 
 .code
+
 Bullets_new:;void(x) 
 	
 	pha; save bullet
@@ -59,19 +59,11 @@ Bullets_new:;void(x)
 		sta enemyBulletBehaviorH,y
 	
 		lda Bullets_fastForwardFrames; it may be fastForwarded
-		sta Bullets_isInvisible,y
+		sta Bullets_invisibility,y
 		lda #NULL; this is default as 0
 		sta Bullets_fastForwardFrames
 	
 		ldx #0; for now, force bullet 0
-	
-		lda romEnemyBulletHitbox1,x;copy hitbox
-		sta enemyBulletHitbox1,y
-		lda romEnemyBulletHitbox2,x
-		sta enemyBulletHitbox2,y
-	
-		lda Bullets_diameterROM,x;copy diameter
-		sta Bullets_diameter,y
 	
 		rts
 @bulletsFull:
@@ -105,20 +97,12 @@ Bullets_newGroup:; void(a,x) |
 	sta enemyBulletXH,y
 
 	lda Bullets_fastForwardFrames
-	sta Bullets_isInvisible,y
+	sta Bullets_invisibility,y
 	
 	ldx #0; for now force 0
 	
 	lda romEnemyBulletMetasprite,x;copy metasprite
 	sta enemyBulletMetasprite,y
-	
-	lda romEnemyBulletHitbox1,x;copy hitboxes
-	sta enemyBulletHitbox1,y
-	lda romEnemyBulletHitbox2,x
-	sta enemyBulletHitbox2,y
-	
-	lda Bullets_diameterROM,x;copy diameter
-	sta Bullets_diameter,y
 	
 	dec numberOfBullets
 	bne @bulletLoop
@@ -169,6 +153,13 @@ updateEnemyBullets:;(void)
 			pha; push function pointer H
 			lda enemyBulletBehaviorL,x
 			pha; push function pointer L
+			
+			lda Bullets_invisibility,x; if invisible
+			beq :+
+				sec; tick down invisiblity
+				sbc #1
+				sta Bullets_invisibility,x
+			:
 			
 			txa; get the metasprite
 			and #%00000011; lowest 2 bits = type

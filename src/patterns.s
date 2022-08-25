@@ -52,15 +52,15 @@ Patterns_tick:
 
 .proc pattern01
 BULLETCOUNT=8
-
+BULLET_INVISIBILITY=16
 	pla
 	tax
 	lda Patterns_timeElapsed,x
-	bit Rate_slow
+	and #%00000011
 
 	bne @noPattern
 		
-		lda #8
+		lda #BULLET_INVISIBILITY
 		sta Bullets_fastForwardFrames
 		
 		lda p,x

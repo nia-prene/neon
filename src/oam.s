@@ -17,6 +17,7 @@ OAMDMA = $4014;(aaaa aaaa)OAM DMA high address
 MAX_OVERFLOW_FRAMES=8;
 .zeropage
 o: .res 1 	;general purpose iterator, increased once a frame
+shuffleIndex: .res 1
 buildX: .res 1
 buildY: .res 1
 buildPalette: .res 1
@@ -57,19 +58,21 @@ OAM_build00:;c()
 ;call with carry set to exclude player
 ;a - gamepad
 ;returns carry clear if oam overflow
-	sta o ;module iterator
+	dec o ;module iterator
 
 	ldx #4;skip sprite 0
 	
-	jsr buildEnemyBullets
-	bcs @oamFull
 
 
 	lda Hitbox_sprite;see if hitbox renders first
 	beq @buildWithoutHitbox
+
 		jsr buildHitbox
-		bcs @oamFull
+
 @buildWithoutHitbox:
+	
+	jsr buildEnemyBullets
+	bcs @oamFull
 
 	jsr OAM_buildPlayer
 	bcs @oamFull
@@ -92,51 +95,77 @@ PLAYER_HITBOX_X_OFFSET=2
 	lda #TERMINATE;terminate
 	pha
 
-	lda Hitbox_sprite
-	pha
 
 	clc
 	lda Player_yPos_H
 	adc #PLAYER_HITBOX_Y_OFFSET
 	pha
+
 	lda Player_xPos_H
 	adc #PLAYER_HITBOX_X_OFFSET
 	pha
-	lda #00
+
+	lda Hitbox_sprite
 	pha
+
 	jmp buildSpritesShort
 
 buildEnemyBullets:
+
 	lda #TERMINATE;terminate
 	pha
+	lda o
+	ror
+	bcc @buildForward
+	
+@buildBackward:
 
 	ldy #MAX_ENEMY_BULLETS-1
-@loopBackward:
+
+@backwardLoop:
+
 	lda isEnemyBulletActive,y; if active
 	beq @skipBullet
-	lda Bullets_isInvisible,y; and not invisible
-	bne @skipInvisible
+	lda Bullets_invisibility,y; and not invisible
+	bne @skipBullet
 		
-		lda enemyBulletMetasprite,y
-		pha
 		lda enemyBulletYH,y
 		pha
 		lda enemyBulletXH,y
 		pha
-		lda #0; palette implied
+		lda enemyBulletMetasprite,y
 		pha
 
 @skipBullet:
-	dey
-	bpl @loopBackward
-	jmp buildSpritesShort
 
-@skipInvisible:
-	sec
-	sbc #1
-	sta Bullets_isInvisible,y
 	dey
-	bpl @loopBackward
+	bpl @backwardLoop
+	
+	jmp buildSpritesShort
+	
+@buildForward:	
+	ldy #0
+
+@forwardLoop:
+
+	lda isEnemyBulletActive,y; if active
+	beq @skip
+	lda Bullets_invisibility,y; and not invisible
+	bne @skip
+		
+		lda enemyBulletYH,y
+		pha
+		lda enemyBulletXH,y
+		pha
+		lda enemyBulletMetasprite,y
+		pha
+
+@skip:
+
+	iny
+	cpy #MAX_ENEMY_BULLETS
+	bcc @forwardLoop
+
 	jmp buildSpritesShort
 
 
@@ -169,13 +198,11 @@ buildPlayerBullets:
 @loop0:
 	lda isActive,y
 	beq :+
-		lda bulletSprite,y
-		pha
 		lda bulletY,y
 		pha
 		lda bulletX,y
 		pha
-		lda #0;palette
+		lda bulletSprite,y
 		pha
 :	dey
 	bpl @loop0
@@ -185,13 +212,11 @@ buildPlayerBullets:
 @loop1:
 	lda isActive,y
 	beq :+
-		lda bulletSprite,y
-		pha
 		lda bulletY,y
 		pha
 		lda bulletX,y
 		pha
-		lda #0;palette
+		lda bulletSprite,y
 		pha
 :	iny
 	cpy #MAX_PLAYER_BULLETS
@@ -223,13 +248,11 @@ XPOS=110
 YPOS=64
 	lda #TERMINATE
 	pha
-	lda #SPRITE17
-	pha
 	lda #YPOS
 	pha
 	lda #XPOS
 	pha
-	lda #0
+	lda #SPRITE17
 	pha
 	jmp buildSpritesShort
 
@@ -314,7 +337,7 @@ buildSprites:
 
 buildSpritesShort:;x(x)
 ;builds collections of sprites
-;push metasprite, y, x, palette
+;push y, x, metasprite
 ;pull and use in reverse order
 ;returns
 ;x - current OAM position
@@ -324,16 +347,19 @@ buildSpritesShort:;x(x)
 	cmp #TERMINATE
 	beq @return
 @metaspriteLoop:
+
+	tay
+
 	pla
 	sta buildX
 	pla
 	sta buildY
-	pla
-	tay
+	
 	lda spritesL,y
 	sta spritePointer
 	lda spritesH,y
 	sta spritePointer+1
+
 	ldy #0
 	clc
 	@tileLoop:
@@ -371,12 +397,11 @@ buildSpritesShort:;x(x)
 	lda #$ff
 	jmp @returnX
 @oamFull:
-	pla ;null or palette
+	pla ;null or sprite
 	cmp #TERMINATE
 	beq @returnFull
 	pla ;x
 	pla ;y
-	pla ;sprite
 	jmp @oamFull
 @returnFull:
 	sec

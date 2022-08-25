@@ -19,7 +19,7 @@ sprite1RightOrBottom: .res 1
 sprite2LeftOrTop: .res 1
 sprite2RightOrBottom: .res 1
 Lib_errorCode: .res 1
-
+seed: .res 2
 .segment "HEADER"
 ;contains ines header 
 
@@ -58,3 +58,31 @@ checkCollision:
 	sec
 	rts
 
+Lib_generateSeed:
+	
+	lda seed+0
+	bne :+
+		lda #$AA
+		sta seed+0
+	:lda seed+1
+	bne :+
+		lda #$85
+		sta seed+0
+	:rts
+
+Lib_getRandom:; a()
+
+	ldy #8     ; iteration count
+	lda seed+0
+:
+	asl        ; shift the register
+	rol seed+1
+	bcc :+
+	eor #$39   ; apply XOR feedback whenever a 1 bit is shifted out
+:
+	dey
+	bne :--
+	sta seed+0
+	cmp #0     ; reload flags
+
+	rts

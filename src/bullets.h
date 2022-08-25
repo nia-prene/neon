@@ -26,8 +26,7 @@
 .global Bullets_isBullet
 .global Bullets_isCharm
 .global Bullets_diameter
-.global Bullets_isInvisible
-.global Bullets_i
+.global Bullets_invisibility
 
 .global Charms_getActive
 
