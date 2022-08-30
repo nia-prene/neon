@@ -12,6 +12,8 @@ SPEEDS=4
 Patterns_timeElapsed: .res PATTERNS_MAX
 p:.res PATTERNS_MAX
 
+bulletCount: .res 1
+
 .code
 
 Patterns_new:; void(a,x) | x y
@@ -51,42 +53,55 @@ Patterns_tick:
 
 
 .proc pattern01
-BULLETCOUNT=8
+BULLETCOUNT=16
 BULLET_INVISIBILITY=16
 	pla
 	tax
 	lda Patterns_timeElapsed,x
-	and #%00000011
+	and #%00000111
 
 	bne @noPattern
 		
-		lda #BULLET_INVISIBILITY
-		sta Bullets_fastForwardFrames
-		
 		lda p,x
-		pha
+
+		sta mathTemp
 
 		clc
-		adc #(SPEEDS * 15)
+		adc #(SPEEDS * 63)
 		sta p,x
 
-		lda #BULLETCOUNT-1
-		tay
-
-		pla; restore
-		pha; and save
+		lda #BULLETCOUNT
+		sta bulletCount
 
 	@bulletLoop:
 		
 		clc
+		lda mathTemp
 		adc #(256 / BULLETCOUNT)
-		pha
-		dey
-		bne @bulletLoop
 		
-		lda #BULLETCOUNT
-		jmp Bullets_newGroup; void(x) |
+		sta mathTemp
+
+		jsr Bullets_new; c,y() | x
+		bcc @abort
+		
+		lda mathTemp
+		sta Bullets_ID,y
+
+		lda enemyYH,x
+		sta enemyBulletYH,y
+		
+		lda enemyXH,x
+		sta enemyBulletXH,y
+		
+		lda #BULLET_INVISIBILITY
+		sta isEnemyBulletActive,y
+
+		dec bulletCount
+		bne @bulletLoop
+		jmp @abort
+		
 @noPattern:
+@abort:
 	rts
 .endproc
 

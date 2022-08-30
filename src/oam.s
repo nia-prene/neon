@@ -17,14 +17,15 @@ OAMDMA = $4014;(aaaa aaaa)OAM DMA high address
 MAX_OVERFLOW_FRAMES=8;
 .zeropage
 o: .res 1 	;general purpose iterator, increased once a frame
-shuffleIndex: .res 1
+bulletShuffle: .res 1
 buildX: .res 1
 buildY: .res 1
 buildPalette: .res 1
 spritePointer: .res 2
 
-Sprite0_destination: .res 1
+OAM_index:.res 1
 
+Sprite0_destination: .res 1
 .segment "OAM"
 OAM: .res 256
 
@@ -111,61 +112,107 @@ PLAYER_HITBOX_X_OFFSET=2
 	jmp buildSpritesShort
 
 buildEnemyBullets:
+LIMIT_BULLETS=48
+
+	stx OAM_index
 
 	lda #TERMINATE;terminate
 	pha
+
+	ldx #LIMIT_BULLETS
+	
 	lda o
 	ror
-	bcc @buildForward
+	bcc @shift
+		
+		lda bulletShuffle
+		clc
+		adc #MAX_ENEMY_BULLETS
+		cmp #MAX_ENEMY_BULLETS-1
+		bcc @setIterator
+			sbc #MAX_ENEMY_BULLETS-1
+			cmp #MAX_ENEMY_BULLETS-1
+			bcc	@setIterator
+				sbc #MAX_ENEMY_BULLETS-1
+				cmp #MAX_ENEMY_BULLETS-1
+				bcc	@setIterator
+					sbc #MAX_ENEMY_BULLETS-1
+					cmp #MAX_ENEMY_BULLETS-1
+					bcc	@setIterator
+						sbc #MAX_ENEMY_BULLETS-1
+						cmp #MAX_ENEMY_BULLETS-1
+						bcc	@setIterator
+						sbc #MAX_ENEMY_BULLETS-1
+
+@shift:
+	clc
+	lda bulletShuffle
+	adc #MAX_ENEMY_BULLETS/3
+	cmp #MAX_ENEMY_BULLETS-1
+	bcc @setIterator
+		sbc #MAX_ENEMY_BULLETS-1
+		cmp #MAX_ENEMY_BULLETS-1
+		bcc	@setIterator
+			sbc #MAX_ENEMY_BULLETS-1
+			cmp #MAX_ENEMY_BULLETS-1
+			bcc	@setIterator
+				sbc #MAX_ENEMY_BULLETS-1
+				cmp #MAX_ENEMY_BULLETS-1
+				bcc	@setIterator
+					sbc #MAX_ENEMY_BULLETS-1
+@setIterator:
 	
-@buildBackward:
+	sta bulletShuffle
+	tay
 
-	ldy #MAX_ENEMY_BULLETS-1
-
-@backwardLoop:
+@initialLoop:
 
 	lda isEnemyBulletActive,y; if active
-	beq @skipBullet
-	lda Bullets_invisibility,y; and not invisible
+	cmp #1
 	bne @skipBullet
 		
 		lda enemyBulletYH,y
 		pha
 		lda enemyBulletXH,y
 		pha
-		lda enemyBulletMetasprite,y
+		lda #SPRITE02
 		pha
+
+		dex
+		bmi @full
 
 @skipBullet:
 
 	dey
-	bpl @backwardLoop
+	bpl @initialLoop
 	
-	jmp buildSpritesShort
-	
-@buildForward:	
-	ldy #0
+	ldy #MAX_ENEMY_BULLETS-1
 
-@forwardLoop:
+@remainingLoop:
 
 	lda isEnemyBulletActive,y; if active
-	beq @skip
-	lda Bullets_invisibility,y; and not invisible
+	cmp #1
 	bne @skip
 		
 		lda enemyBulletYH,y
 		pha
 		lda enemyBulletXH,y
 		pha
-		lda enemyBulletMetasprite,y
+		lda #SPRITE02
 		pha
+
+		dex
+		bmi @full
 
 @skip:
 
-	iny
-	cpy #MAX_ENEMY_BULLETS
-	bcc @forwardLoop
+	dey
+	cpy bulletShuffle
+	bne @remainingLoop
 
+@full:
+
+	ldx OAM_index
 	jmp buildSpritesShort
 
 

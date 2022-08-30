@@ -8,7 +8,7 @@
 .include "enemies.h"
 
 BULLETS_VARIETIES=8
-MAX_ENEMY_BULLETS=82
+MAX_ENEMY_BULLETS=128
 
 .zeropage
 ;arguments
@@ -18,29 +18,32 @@ numberOfBullets: .res 1
 Bullets_fastForwardFrames:.res 1
 Charms_framesElapsed: .res 1
 
+;pointers
+Bullets_move: .res 2
+
+;locals
 octant: .res 1
 bulletAngle: .res 1
 ;Bullets_spriteBank: .res BULLETS_VARIETIES
 Bullets_willSpritesShuffle: .res 1
 
 .data
+Charms_isActive: .res 1
+
+enemyBulletBehaviorH: .res 1
+enemyBulletBehaviorL: .res 1
+
 isEnemyBulletActive: .res MAX_ENEMY_BULLETS
-enemyBulletBehaviorH: .res MAX_ENEMY_BULLETS
-enemyBulletBehaviorL: .res MAX_ENEMY_BULLETS
 enemyBulletXH: .res MAX_ENEMY_BULLETS
 enemyBulletXL: .res MAX_ENEMY_BULLETS
 enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
-enemyBulletMetasprite: .res MAX_ENEMY_BULLETS
-Bullets_invisibility: .res MAX_ENEMY_BULLETS
-
-Charms_isActive: .res 1
+enemyBulletMetasprite: .res 1
+Bullets_ID: .res MAX_ENEMY_BULLETS
 
 .code
 
-Bullets_new:;void(x) 
 	
-	pha; save bullet
 
 	jsr Enemy_Bullets_getAvailable;c,y(void) | x
 	bcc @bulletsFull;returns clear if full
@@ -50,20 +53,9 @@ Bullets_new:;void(x)
 		lda enemyYH,x
 		sta enemyBulletYH,y;
 	
-		pla; retrieve bullet id
-		tax; x is bullet ID
-	
-		lda romEnemyBulletBehaviorL,x;get the function
-		sta enemyBulletBehaviorL,y
-		lda romEnemyBulletBehaviorH,x
-		sta enemyBulletBehaviorH,y
 	
 		lda Bullets_fastForwardFrames; it may be fastForwarded
-		sta Bullets_invisibility,y
-		lda #NULL; this is default as 0
-		sta Bullets_fastForwardFrames
-	
-		ldx #0; for now, force bullet 0
+		sta isEnemyBulletActive,y
 	
 		rts
 @bulletsFull:
@@ -84,12 +76,7 @@ Bullets_newGroup:; void(a,x) |
 	bcc @bulletsFull;returns clear if full
 
 	pla;retrieve bullet id
-	tax ;x is bullet ID
-
-	lda romEnemyBulletBehaviorH,x
-	sta enemyBulletBehaviorH,y
-	lda romEnemyBulletBehaviorL,x
-	sta enemyBulletBehaviorL,y
+	sta Bullets_ID,y
 
 	lda quickBulletY
 	sta enemyBulletYH,y
@@ -97,18 +84,10 @@ Bullets_newGroup:; void(a,x) |
 	sta enemyBulletXH,y
 
 	lda Bullets_fastForwardFrames
-	sta Bullets_invisibility,y
-	
-	ldx #0; for now force 0
-	
-	lda romEnemyBulletMetasprite,x;copy metasprite
-	sta enemyBulletMetasprite,y
+	sta isEnemyBulletActive,y
 	
 	dec numberOfBullets
 	bne @bulletLoop
-
-	lda #FALSE
-	sta Bullets_fastForwardFrames
 
 	rts
 @bulletsFull:
@@ -118,17 +97,15 @@ Bullets_newGroup:; void(a,x) |
 	bne @bulletsFull
 	rts
 
-Enemy_Bullets_getAvailable:; c,y () | x
-;loops through bullet collection, finds inactive bullet, sets to active, returns offset
-;returns
-;x - active offset
-;carry clear if full, set if success
+Enemy_Bullets_getAvailable:
+Bullets_new:; c,y() | x
+;returns x - active offset
+;returns carry clear if full
+
 	ldy #MAX_ENEMY_BULLETS-1
 @bulletLoop:
 	lda isEnemyBulletActive,y
 	bne @nextBullet
-		lda #TRUE;set active
-		sta isEnemyBulletActive,y
 		sec ;mark success
 		rts
 @nextBullet:
@@ -141,69 +118,61 @@ updateEnemyBullets:;(void)
 ;pushes all bullet offsets and functions onto stack and returns
 
 	ldx #MAX_ENEMY_BULLETS-1
-@bulletLoop:
+
+Bullets_moveLoop:
 	lda isEnemyBulletActive,x
-	beq @skipBullet;skip inactive bullets
-		cmp #1
-		bne @decreaseHold
+	beq Bullets_tickDown;skip inactive bullets
+		
+		sec
+		sbc #1
+		beq :+; don't store a zero
+			sta isEnemyBulletActive,x
+		:
+		
+		ldy Bullets_ID,x
 
-			txa
-			pha; save array index
-			lda enemyBulletBehaviorH,x
-			pha; push function pointer H
-			lda enemyBulletBehaviorL,x
-			pha; push function pointer L
-			
-			lda Bullets_invisibility,x; if invisible
-			beq :+
-				sec; tick down invisiblity
-				sbc #1
-				sta Bullets_invisibility,x
-			:
-			
-			txa; get the metasprite
-			and #%00000011; lowest 2 bits = type
-			tay
-			lda Bullets_spriteBank,y
-			sta enemyBulletMetasprite,x
-			jmp @skipBullet
-@decreaseHold:
+		lda Bullets_move_L,y
+		sta Bullets_move+0
+		lda Bullets_move_H,y
+		sta Bullets_move+1
 
-	dec isEnemyBulletActive,x
-@skipBullet:
+		jmp (Bullets_move); void (a) | x
+		
+Bullets_tickDown:
 
 	dex ;x--
-	bpl @bulletLoop ;while x>=0
+	bpl Bullets_moveLoop;while x>=0
 	rts
 
 
-Charms_tick:; (void)
+Charms_spin:; (void)
 ;pushes all bullet offsets and functions onto stack and returns
 	
-	lda #FALSE
-	sta Charms_isActive
 	ldx #MAX_ENEMY_BULLETS-1; for x
 
-@bulletLoop:
+@charmLoop:
 	lda isEnemyBulletActive,x; if active
-	beq @skipBullet;skip inactive bullets
+	beq @skipCharm;skip inactive
 		
-		;lda #TRUE; a is already true
-		sta Charms_isActive
+		cmp #1
+		beq @visible
+			
+			lda #FALSE; clear invisible bullets
+			sta isEnemyBulletActive,x
 
-		txa
-		pha; save array index
-		
-		lda enemyBulletBehaviorH,x
-		pha; push function pointer H
-		lda enemyBulletBehaviorL,x
-		pha; push function pointer L
-@skipBullet:
+	@visible:
 
-	dex ;x--
-	bpl @bulletLoop ;while x>=0
+		clc; make them fall down
+		lda enemyBulletYH,x
+		adc #1
+		bcc :+
+			lda #255
+		:sta enemyBulletYH,x
+
+@skipCharm:
 	
-	inc Charms_framesElapsed	
+	dex ;x--
+	bpl @charmLoop;while x>=0
 	
 	rts
 
@@ -250,83 +219,85 @@ aimBullet:
 	sta bulletAngle
 	rts
 
+Bullets_clockwise:;void()
 
-Bullets_toCharm:; void(x) | x
-	
-	lda #255
-	sta Charms_framesElapsed; iterator increments before
+	ldy #MAX_ENEMY_BULLETS-1
 
-	lda #TRUE
-	sta Charms_isActive
+@bulletLoop:
 
-	lda #<(Charms_spin-1);change function ptr
-	sta enemyBulletBehaviorL,x
-	lda #>(Charms_spin-1)
-	sta enemyBulletBehaviorH,x
-	
+	lda isEnemyBulletActive,y
+	beq @nextBullet
+
+		clc
+		lda Bullets_ID,y
+		adc #4
+		sta Bullets_ID,y
+
+@nextBullet:
+
+	dey
+	bpl @bulletLoop
+
 	rts
 
+Charms_suck:
 
-Charms_spin:;void(s)
+	ldx #MAX_ENEMY_BULLETS-1
 
-	pla
-	tax
+@charmLoop:
 
-	lda enemyBulletYH,x
-	clc
-	adc #1
-	bcc :+
-		lda #255
-	:sta enemyBulletYH,x
-
+	lda isEnemyBulletActive,x
+	beq @nextCharm
 		
-	lda Charms_framesElapsed
-	cmp #32
-	bcc @statePersists
+		sec
+		lda Player_xPos_H
+		sbc enemyBulletXH,x
+		bcs @playerXGreater
 
-		lda #<(Charms_move-1)
-		sta enemyBulletBehaviorL,x
-		lda #>(Charms_move-1)
-		sta enemyBulletBehaviorH,x
-@statePersists:
+			eor #%11111111; ones compliment
+			tay
+			jmp @moveLeft
+
+	@playerXGreater:
 	
-	and #%1
-	tay
-	lda @spinAnimation,y
-	sta enemyBulletMetasprite,x
-
-	rts
-
-@spinAnimation:
-	.byte SPRITE20,SPRITE1E
-	
-
-Charms_move:
-
-	pla ;get the argument
-	tax
-	
-	lda Player_xPos_H;aim for middle of player
-
-	sec
-	sbc enemyBulletXH,x
-	bcs @playerXGreater
-
-		eor #%11111111
 		tay
-	
-		lda enemyBulletXL,x
-		sbc Charm_speed_L,y
-		sta enemyBulletXL,x
-		
-		lda enemyBulletXH,x
-		sbc Charm_speed_H,y
-		sta enemyBulletXH,x
-	
-		jmp @doY
+		jmp @moveRight
 
-@playerXGreater:
-	tay
+	@doY:
+
+		sec
+		lda Player_yPos_H
+		sbc enemyBulletYH,x
+		bcs @playerYGreater
+
+			eor #%11111111; ones compliment
+			tay
+			jmp @moveUp
+
+	@playerYGreater:
+
+		tay
+		jmp @moveDown
+
+@nextCharm:
+	
+	dex
+	bpl @charmLoop
+	rts
+
+@moveLeft:
+
+	lda enemyBulletXL,x
+	sbc Charm_speed_L,y
+	sta enemyBulletXL,x
+	
+	lda enemyBulletXH,x
+	sbc Charm_speed_H,y
+	sta enemyBulletXH,x
+
+	jmp @doY
+
+@moveRight:
 
 	lda enemyBulletXL,x
 	adc Charm_speed_L,y
@@ -335,26 +306,22 @@ Charms_move:
 	lda enemyBulletXH,x
 	adc Charm_speed_H,y
 	sta enemyBulletXH,x
+	
+	jmp @doY
 
-@doY:
-	lda Player_yPos_H;aim for middle of player
+@moveDown:
 
-	sec
-	sbc enemyBulletYH,x
-	bcc @playerYGreater
-		tay
+	lda enemyBulletYL,x
+	adc Charm_speed_L,y
+	sta enemyBulletYL,x
+	
+	lda enemyBulletYH,x
+	adc Charm_speed_H,y
+	sta enemyBulletYH,x
 
-		lda enemyBulletYL,x
-		adc Charm_speed_L,y
-		sta enemyBulletYL,x
-		
-		lda enemyBulletYH,x
-		adc Charm_speed_H,y
-		sta enemyBulletYH,x
-		rts
-@playerYGreater:
-	eor #%11111111
-	tay
+	jmp @nextCharm
+
+@moveUp:
 
 	lda enemyBulletYL,x
 	sbc Charm_speed_L,y
@@ -363,7 +330,9 @@ Charms_move:
 	lda enemyBulletYH,x
 	sbc Charm_speed_H,y
 	sta enemyBulletYH,x
-	rts
+
+	jmp @nextCharm
+
 .rodata
 
 Bullets_spriteBank:
@@ -379,8 +348,6 @@ romEnemyBulletMetasprite:
 	.byte SPRITE02,SPRITE03
 
 .macro bulletFib quadrant, X_H, X_L, Y_H, Y_L,
-	pla
-	tax
 .if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))
 	lda enemyBulletYL,x
 	sbc Y_L
@@ -422,14 +389,14 @@ romEnemyBulletMetasprite:
 .error "Must Supply Valid Quadrant"
 .endif
 	sta enemyBulletXH,x
-	rts
+	jmp Bullets_tickDown
 @clearBullet:
 	jmp Bullet_clear
 .endmacro
 Bullet_clear:
 	lda #FALSE
 	sta isEnemyBulletActive,x
-	rts
+	jmp Bullets_tickDown
 
 bullet00:
 	bulletFib 3, #2, #0, #0, #0 
@@ -943,521 +910,522 @@ bulletFE:
 	bulletFib 2, #1, #255, #0, #25 
 bulletFF:
 	bulletFib 2, #2, #255, #0, #18 
-romEnemyBulletBehaviorH:
-	.byte >(bullet00-1)
-	.byte >(bullet01-1)
-	.byte >(bullet02-1)
-	.byte >(bullet03-1)
-	.byte >(bullet04-1)
-	.byte >(bullet05-1)
-	.byte >(bullet06-1)
-	.byte >(bullet07-1)
-	.byte >(bullet08-1)
-	.byte >(bullet09-1)
-	.byte >(bullet0A-1)
-	.byte >(bullet0B-1)
-	.byte >(bullet0C-1)
-	.byte >(bullet0D-1)
-	.byte >(bullet0E-1)
-	.byte >(bullet0F-1)
-	.byte >(bullet10-1)
-	.byte >(bullet11-1)
-	.byte >(bullet12-1)
-	.byte >(bullet13-1)
-	.byte >(bullet14-1)
-	.byte >(bullet15-1)
-	.byte >(bullet16-1)
-	.byte >(bullet17-1)
-	.byte >(bullet18-1)
-	.byte >(bullet19-1)
-	.byte >(bullet1A-1)
-	.byte >(bullet1B-1)
-	.byte >(bullet1C-1)
-	.byte >(bullet1D-1)
-	.byte >(bullet1E-1)
-	.byte >(bullet1F-1)
-	.byte >(bullet20-1)
-	.byte >(bullet21-1)
-	.byte >(bullet22-1)
-	.byte >(bullet23-1)
-	.byte >(bullet24-1)
-	.byte >(bullet25-1)
-	.byte >(bullet26-1)
-	.byte >(bullet27-1)
-	.byte >(bullet28-1)
-	.byte >(bullet29-1)
-	.byte >(bullet2A-1)
-	.byte >(bullet2B-1)
-	.byte >(bullet2C-1)
-	.byte >(bullet2D-1)
-	.byte >(bullet2E-1)
-	.byte >(bullet2F-1)
-	.byte >(bullet30-1)
-	.byte >(bullet31-1)
-	.byte >(bullet32-1)
-	.byte >(bullet33-1)
-	.byte >(bullet34-1)
-	.byte >(bullet35-1)
-	.byte >(bullet36-1)
-	.byte >(bullet37-1)
-	.byte >(bullet38-1)
-	.byte >(bullet39-1)
-	.byte >(bullet3A-1)
-	.byte >(bullet3B-1)
-	.byte >(bullet3C-1)
-	.byte >(bullet3D-1)
-	.byte >(bullet3E-1)
-	.byte >(bullet3F-1)
-	.byte >(bullet40-1)
-	.byte >(bullet41-1)
-	.byte >(bullet42-1)
-	.byte >(bullet43-1)
-	.byte >(bullet44-1)
-	.byte >(bullet45-1)
-	.byte >(bullet46-1)
-	.byte >(bullet47-1)
-	.byte >(bullet48-1)
-	.byte >(bullet49-1)
-	.byte >(bullet4A-1)
-	.byte >(bullet4B-1)
-	.byte >(bullet4C-1)
-	.byte >(bullet4D-1)
-	.byte >(bullet4E-1)
-	.byte >(bullet4F-1)
-	.byte >(bullet50-1)
-	.byte >(bullet51-1)
-	.byte >(bullet52-1)
-	.byte >(bullet53-1)
-	.byte >(bullet54-1)
-	.byte >(bullet55-1)
-	.byte >(bullet56-1)
-	.byte >(bullet57-1)
-	.byte >(bullet58-1)
-	.byte >(bullet59-1)
-	.byte >(bullet5A-1)
-	.byte >(bullet5B-1)
-	.byte >(bullet5C-1)
-	.byte >(bullet5D-1)
-	.byte >(bullet5E-1)
-	.byte >(bullet5F-1)
-	.byte >(bullet60-1)
-	.byte >(bullet61-1)
-	.byte >(bullet62-1)
-	.byte >(bullet63-1)
-	.byte >(bullet64-1)
-	.byte >(bullet65-1)
-	.byte >(bullet66-1)
-	.byte >(bullet67-1)
-	.byte >(bullet68-1)
-	.byte >(bullet69-1)
-	.byte >(bullet6A-1)
-	.byte >(bullet6B-1)
-	.byte >(bullet6C-1)
-	.byte >(bullet6D-1)
-	.byte >(bullet6E-1)
-	.byte >(bullet6F-1)
-	.byte >(bullet70-1)
-	.byte >(bullet71-1)
-	.byte >(bullet72-1)
-	.byte >(bullet73-1)
-	.byte >(bullet74-1)
-	.byte >(bullet75-1)
-	.byte >(bullet76-1)
-	.byte >(bullet77-1)
-	.byte >(bullet78-1)
-	.byte >(bullet79-1)
-	.byte >(bullet7A-1)
-	.byte >(bullet7B-1)
-	.byte >(bullet7C-1)
-	.byte >(bullet7D-1)
-	.byte >(bullet7E-1)
-	.byte >(bullet7F-1)
-	.byte >(bullet80-1)
-	.byte >(bullet81-1)
-	.byte >(bullet82-1)
-	.byte >(bullet83-1)
-	.byte >(bullet84-1)
-	.byte >(bullet85-1)
-	.byte >(bullet86-1)
-	.byte >(bullet87-1)
-	.byte >(bullet88-1)
-	.byte >(bullet89-1)
-	.byte >(bullet8A-1)
-	.byte >(bullet8B-1)
-	.byte >(bullet8C-1)
-	.byte >(bullet8D-1)
-	.byte >(bullet8E-1)
-	.byte >(bullet8F-1)
-	.byte >(bullet90-1)
-	.byte >(bullet91-1)
-	.byte >(bullet92-1)
-	.byte >(bullet93-1)
-	.byte >(bullet94-1)
-	.byte >(bullet95-1)
-	.byte >(bullet96-1)
-	.byte >(bullet97-1)
-	.byte >(bullet98-1)
-	.byte >(bullet99-1)
-	.byte >(bullet9A-1)
-	.byte >(bullet9B-1)
-	.byte >(bullet9C-1)
-	.byte >(bullet9D-1)
-	.byte >(bullet9E-1)
-	.byte >(bullet9F-1)
-	.byte >(bulletA0-1)
-	.byte >(bulletA1-1)
-	.byte >(bulletA2-1)
-	.byte >(bulletA3-1)
-	.byte >(bulletA4-1)
-	.byte >(bulletA5-1)
-	.byte >(bulletA6-1)
-	.byte >(bulletA7-1)
-	.byte >(bulletA8-1)
-	.byte >(bulletA9-1)
-	.byte >(bulletAA-1)
-	.byte >(bulletAB-1)
-	.byte >(bulletAC-1)
-	.byte >(bulletAD-1)
-	.byte >(bulletAE-1)
-	.byte >(bulletAF-1)
-	.byte >(bulletB0-1)
-	.byte >(bulletB1-1)
-	.byte >(bulletB2-1)
-	.byte >(bulletB3-1)
-	.byte >(bulletB4-1)
-	.byte >(bulletB5-1)
-	.byte >(bulletB6-1)
-	.byte >(bulletB7-1)
-	.byte >(bulletB8-1)
-	.byte >(bulletB9-1)
-	.byte >(bulletBA-1)
-	.byte >(bulletBB-1)
-	.byte >(bulletBC-1)
-	.byte >(bulletBD-1)
-	.byte >(bulletBE-1)
-	.byte >(bulletBF-1)
-	.byte >(bulletC0-1)
-	.byte >(bulletC1-1)
-	.byte >(bulletC2-1)
-	.byte >(bulletC3-1)
-	.byte >(bulletC4-1)
-	.byte >(bulletC5-1)
-	.byte >(bulletC6-1)
-	.byte >(bulletC7-1)
-	.byte >(bulletC8-1)
-	.byte >(bulletC9-1)
-	.byte >(bulletCA-1)
-	.byte >(bulletCB-1)
-	.byte >(bulletCC-1)
-	.byte >(bulletCD-1)
-	.byte >(bulletCE-1)
-	.byte >(bulletCF-1)
-	.byte >(bulletD0-1)
-	.byte >(bulletD1-1)
-	.byte >(bulletD2-1)
-	.byte >(bulletD3-1)
-	.byte >(bulletD4-1)
-	.byte >(bulletD5-1)
-	.byte >(bulletD6-1)
-	.byte >(bulletD7-1)
-	.byte >(bulletD8-1)
-	.byte >(bulletD9-1)
-	.byte >(bulletDA-1)
-	.byte >(bulletDB-1)
-	.byte >(bulletDC-1)
-	.byte >(bulletDD-1)
-	.byte >(bulletDE-1)
-	.byte >(bulletDF-1)
-	.byte >(bulletE0-1)
-	.byte >(bulletE1-1)
-	.byte >(bulletE2-1)
-	.byte >(bulletE3-1)
-	.byte >(bulletE4-1)
-	.byte >(bulletE5-1)
-	.byte >(bulletE6-1)
-	.byte >(bulletE7-1)
-	.byte >(bulletE8-1)
-	.byte >(bulletE9-1)
-	.byte >(bulletEA-1)
-	.byte >(bulletEB-1)
-	.byte >(bulletEC-1)
-	.byte >(bulletED-1)
-	.byte >(bulletEE-1)
-	.byte >(bulletEF-1)
-	.byte >(bulletF0-1)
-	.byte >(bulletF1-1)
-	.byte >(bulletF2-1)
-	.byte >(bulletF3-1)
-	.byte >(bulletF4-1)
-	.byte >(bulletF5-1)
-	.byte >(bulletF6-1)
-	.byte >(bulletF7-1)
-	.byte >(bulletF8-1)
-	.byte >(bulletF9-1)
-	.byte >(bulletFA-1)
-	.byte >(bulletFB-1)
-	.byte >(bulletFC-1)
-	.byte >(bulletFD-1)
-	.byte >(bulletFE-1)
-	.byte >(bulletFF-1)
-romEnemyBulletBehaviorL:
-	.byte <(bullet00-1)
-	.byte <(bullet01-1)
-	.byte <(bullet02-1)
-	.byte <(bullet03-1)
-	.byte <(bullet04-1)
-	.byte <(bullet05-1)
-	.byte <(bullet06-1)
-	.byte <(bullet07-1)
-	.byte <(bullet08-1)
-	.byte <(bullet09-1)
-	.byte <(bullet0A-1)
-	.byte <(bullet0B-1)
-	.byte <(bullet0C-1)
-	.byte <(bullet0D-1)
-	.byte <(bullet0E-1)
-	.byte <(bullet0F-1)
-	.byte <(bullet10-1)
-	.byte <(bullet11-1)
-	.byte <(bullet12-1)
-	.byte <(bullet13-1)
-	.byte <(bullet14-1)
-	.byte <(bullet15-1)
-	.byte <(bullet16-1)
-	.byte <(bullet17-1)
-	.byte <(bullet18-1)
-	.byte <(bullet19-1)
-	.byte <(bullet1A-1)
-	.byte <(bullet1B-1)
-	.byte <(bullet1C-1)
-	.byte <(bullet1D-1)
-	.byte <(bullet1E-1)
-	.byte <(bullet1F-1)
-	.byte <(bullet20-1)
-	.byte <(bullet21-1)
-	.byte <(bullet22-1)
-	.byte <(bullet23-1)
-	.byte <(bullet24-1)
-	.byte <(bullet25-1)
-	.byte <(bullet26-1)
-	.byte <(bullet27-1)
-	.byte <(bullet28-1)
-	.byte <(bullet29-1)
-	.byte <(bullet2A-1)
-	.byte <(bullet2B-1)
-	.byte <(bullet2C-1)
-	.byte <(bullet2D-1)
-	.byte <(bullet2E-1)
-	.byte <(bullet2F-1)
-	.byte <(bullet30-1)
-	.byte <(bullet31-1)
-	.byte <(bullet32-1)
-	.byte <(bullet33-1)
-	.byte <(bullet34-1)
-	.byte <(bullet35-1)
-	.byte <(bullet36-1)
-	.byte <(bullet37-1)
-	.byte <(bullet38-1)
-	.byte <(bullet39-1)
-	.byte <(bullet3A-1)
-	.byte <(bullet3B-1)
-	.byte <(bullet3C-1)
-	.byte <(bullet3D-1)
-	.byte <(bullet3E-1)
-	.byte <(bullet3F-1)
-	.byte <(bullet40-1)
-	.byte <(bullet41-1)
-	.byte <(bullet42-1)
-	.byte <(bullet43-1)
-	.byte <(bullet44-1)
-	.byte <(bullet45-1)
-	.byte <(bullet46-1)
-	.byte <(bullet47-1)
-	.byte <(bullet48-1)
-	.byte <(bullet49-1)
-	.byte <(bullet4A-1)
-	.byte <(bullet4B-1)
-	.byte <(bullet4C-1)
-	.byte <(bullet4D-1)
-	.byte <(bullet4E-1)
-	.byte <(bullet4F-1)
-	.byte <(bullet50-1)
-	.byte <(bullet51-1)
-	.byte <(bullet52-1)
-	.byte <(bullet53-1)
-	.byte <(bullet54-1)
-	.byte <(bullet55-1)
-	.byte <(bullet56-1)
-	.byte <(bullet57-1)
-	.byte <(bullet58-1)
-	.byte <(bullet59-1)
-	.byte <(bullet5A-1)
-	.byte <(bullet5B-1)
-	.byte <(bullet5C-1)
-	.byte <(bullet5D-1)
-	.byte <(bullet5E-1)
-	.byte <(bullet5F-1)
-	.byte <(bullet60-1)
-	.byte <(bullet61-1)
-	.byte <(bullet62-1)
-	.byte <(bullet63-1)
-	.byte <(bullet64-1)
-	.byte <(bullet65-1)
-	.byte <(bullet66-1)
-	.byte <(bullet67-1)
-	.byte <(bullet68-1)
-	.byte <(bullet69-1)
-	.byte <(bullet6A-1)
-	.byte <(bullet6B-1)
-	.byte <(bullet6C-1)
-	.byte <(bullet6D-1)
-	.byte <(bullet6E-1)
-	.byte <(bullet6F-1)
-	.byte <(bullet70-1)
-	.byte <(bullet71-1)
-	.byte <(bullet72-1)
-	.byte <(bullet73-1)
-	.byte <(bullet74-1)
-	.byte <(bullet75-1)
-	.byte <(bullet76-1)
-	.byte <(bullet77-1)
-	.byte <(bullet78-1)
-	.byte <(bullet79-1)
-	.byte <(bullet7A-1)
-	.byte <(bullet7B-1)
-	.byte <(bullet7C-1)
-	.byte <(bullet7D-1)
-	.byte <(bullet7E-1)
-	.byte <(bullet7F-1)
-	.byte <(bullet80-1)
-	.byte <(bullet81-1)
-	.byte <(bullet82-1)
-	.byte <(bullet83-1)
-	.byte <(bullet84-1)
-	.byte <(bullet85-1)
-	.byte <(bullet86-1)
-	.byte <(bullet87-1)
-	.byte <(bullet88-1)
-	.byte <(bullet89-1)
-	.byte <(bullet8A-1)
-	.byte <(bullet8B-1)
-	.byte <(bullet8C-1)
-	.byte <(bullet8D-1)
-	.byte <(bullet8E-1)
-	.byte <(bullet8F-1)
-	.byte <(bullet90-1)
-	.byte <(bullet91-1)
-	.byte <(bullet92-1)
-	.byte <(bullet93-1)
-	.byte <(bullet94-1)
-	.byte <(bullet95-1)
-	.byte <(bullet96-1)
-	.byte <(bullet97-1)
-	.byte <(bullet98-1)
-	.byte <(bullet99-1)
-	.byte <(bullet9A-1)
-	.byte <(bullet9B-1)
-	.byte <(bullet9C-1)
-	.byte <(bullet9D-1)
-	.byte <(bullet9E-1)
-	.byte <(bullet9F-1)
-	.byte <(bulletA0-1)
-	.byte <(bulletA1-1)
-	.byte <(bulletA2-1)
-	.byte <(bulletA3-1)
-	.byte <(bulletA4-1)
-	.byte <(bulletA5-1)
-	.byte <(bulletA6-1)
-	.byte <(bulletA7-1)
-	.byte <(bulletA8-1)
-	.byte <(bulletA9-1)
-	.byte <(bulletAA-1)
-	.byte <(bulletAB-1)
-	.byte <(bulletAC-1)
-	.byte <(bulletAD-1)
-	.byte <(bulletAE-1)
-	.byte <(bulletAF-1)
-	.byte <(bulletB0-1)
-	.byte <(bulletB1-1)
-	.byte <(bulletB2-1)
-	.byte <(bulletB3-1)
-	.byte <(bulletB4-1)
-	.byte <(bulletB5-1)
-	.byte <(bulletB6-1)
-	.byte <(bulletB7-1)
-	.byte <(bulletB8-1)
-	.byte <(bulletB9-1)
-	.byte <(bulletBA-1)
-	.byte <(bulletBB-1)
-	.byte <(bulletBC-1)
-	.byte <(bulletBD-1)
-	.byte <(bulletBE-1)
-	.byte <(bulletBF-1)
-	.byte <(bulletC0-1)
-	.byte <(bulletC1-1)
-	.byte <(bulletC2-1)
-	.byte <(bulletC3-1)
-	.byte <(bulletC4-1)
-	.byte <(bulletC5-1)
-	.byte <(bulletC6-1)
-	.byte <(bulletC7-1)
-	.byte <(bulletC8-1)
-	.byte <(bulletC9-1)
-	.byte <(bulletCA-1)
-	.byte <(bulletCB-1)
-	.byte <(bulletCC-1)
-	.byte <(bulletCD-1)
-	.byte <(bulletCE-1)
-	.byte <(bulletCF-1)
-	.byte <(bulletD0-1)
-	.byte <(bulletD1-1)
-	.byte <(bulletD2-1)
-	.byte <(bulletD3-1)
-	.byte <(bulletD4-1)
-	.byte <(bulletD5-1)
-	.byte <(bulletD6-1)
-	.byte <(bulletD7-1)
-	.byte <(bulletD8-1)
-	.byte <(bulletD9-1)
-	.byte <(bulletDA-1)
-	.byte <(bulletDB-1)
-	.byte <(bulletDC-1)
-	.byte <(bulletDD-1)
-	.byte <(bulletDE-1)
-	.byte <(bulletDF-1)
-	.byte <(bulletE0-1)
-	.byte <(bulletE1-1)
-	.byte <(bulletE2-1)
-	.byte <(bulletE3-1)
-	.byte <(bulletE4-1)
-	.byte <(bulletE5-1)
-	.byte <(bulletE6-1)
-	.byte <(bulletE7-1)
-	.byte <(bulletE8-1)
-	.byte <(bulletE9-1)
-	.byte <(bulletEA-1)
-	.byte <(bulletEB-1)
-	.byte <(bulletEC-1)
-	.byte <(bulletED-1)
-	.byte <(bulletEE-1)
-	.byte <(bulletEF-1)
-	.byte <(bulletF0-1)
-	.byte <(bulletF1-1)
-	.byte <(bulletF2-1)
-	.byte <(bulletF3-1)
-	.byte <(bulletF4-1)
-	.byte <(bulletF5-1)
-	.byte <(bulletF6-1)
-	.byte <(bulletF7-1)
-	.byte <(bulletF8-1)
-	.byte <(bulletF9-1)
-	.byte <(bulletFA-1)
-	.byte <(bulletFB-1)
-	.byte <(bulletFC-1)
-	.byte <(bulletFD-1)
-	.byte <(bulletFE-1)
-	.byte <(bulletFF-1)
 	
+Bullets_move_H:
+	.byte >(bullet00)
+	.byte >(bullet01)
+	.byte >(bullet02)
+	.byte >(bullet03)
+	.byte >(bullet04)
+	.byte >(bullet05)
+	.byte >(bullet06)
+	.byte >(bullet07)
+	.byte >(bullet08)
+	.byte >(bullet09)
+	.byte >(bullet0A)
+	.byte >(bullet0B)
+	.byte >(bullet0C)
+	.byte >(bullet0D)
+	.byte >(bullet0E)
+	.byte >(bullet0F)
+	.byte >(bullet10)
+	.byte >(bullet11)
+	.byte >(bullet12)
+	.byte >(bullet13)
+	.byte >(bullet14)
+	.byte >(bullet15)
+	.byte >(bullet16)
+	.byte >(bullet17)
+	.byte >(bullet18)
+	.byte >(bullet19)
+	.byte >(bullet1A)
+	.byte >(bullet1B)
+	.byte >(bullet1C)
+	.byte >(bullet1D)
+	.byte >(bullet1E)
+	.byte >(bullet1F)
+	.byte >(bullet20)
+	.byte >(bullet21)
+	.byte >(bullet22)
+	.byte >(bullet23)
+	.byte >(bullet24)
+	.byte >(bullet25)
+	.byte >(bullet26)
+	.byte >(bullet27)
+	.byte >(bullet28)
+	.byte >(bullet29)
+	.byte >(bullet2A)
+	.byte >(bullet2B)
+	.byte >(bullet2C)
+	.byte >(bullet2D)
+	.byte >(bullet2E)
+	.byte >(bullet2F)
+	.byte >(bullet30)
+	.byte >(bullet31)
+	.byte >(bullet32)
+	.byte >(bullet33)
+	.byte >(bullet34)
+	.byte >(bullet35)
+	.byte >(bullet36)
+	.byte >(bullet37)
+	.byte >(bullet38)
+	.byte >(bullet39)
+	.byte >(bullet3A)
+	.byte >(bullet3B)
+	.byte >(bullet3C)
+	.byte >(bullet3D)
+	.byte >(bullet3E)
+	.byte >(bullet3F)
+	.byte >(bullet40)
+	.byte >(bullet41)
+	.byte >(bullet42)
+	.byte >(bullet43)
+	.byte >(bullet44)
+	.byte >(bullet45)
+	.byte >(bullet46)
+	.byte >(bullet47)
+	.byte >(bullet48)
+	.byte >(bullet49)
+	.byte >(bullet4A)
+	.byte >(bullet4B)
+	.byte >(bullet4C)
+	.byte >(bullet4D)
+	.byte >(bullet4E)
+	.byte >(bullet4F)
+	.byte >(bullet50)
+	.byte >(bullet51)
+	.byte >(bullet52)
+	.byte >(bullet53)
+	.byte >(bullet54)
+	.byte >(bullet55)
+	.byte >(bullet56)
+	.byte >(bullet57)
+	.byte >(bullet58)
+	.byte >(bullet59)
+	.byte >(bullet5A)
+	.byte >(bullet5B)
+	.byte >(bullet5C)
+	.byte >(bullet5D)
+	.byte >(bullet5E)
+	.byte >(bullet5F)
+	.byte >(bullet60)
+	.byte >(bullet61)
+	.byte >(bullet62)
+	.byte >(bullet63)
+	.byte >(bullet64)
+	.byte >(bullet65)
+	.byte >(bullet66)
+	.byte >(bullet67)
+	.byte >(bullet68)
+	.byte >(bullet69)
+	.byte >(bullet6A)
+	.byte >(bullet6B)
+	.byte >(bullet6C)
+	.byte >(bullet6D)
+	.byte >(bullet6E)
+	.byte >(bullet6F)
+	.byte >(bullet70)
+	.byte >(bullet71)
+	.byte >(bullet72)
+	.byte >(bullet73)
+	.byte >(bullet74)
+	.byte >(bullet75)
+	.byte >(bullet76)
+	.byte >(bullet77)
+	.byte >(bullet78)
+	.byte >(bullet79)
+	.byte >(bullet7A)
+	.byte >(bullet7B)
+	.byte >(bullet7C)
+	.byte >(bullet7D)
+	.byte >(bullet7E)
+	.byte >(bullet7F)
+	.byte >(bullet80)
+	.byte >(bullet81)
+	.byte >(bullet82)
+	.byte >(bullet83)
+	.byte >(bullet84)
+	.byte >(bullet85)
+	.byte >(bullet86)
+	.byte >(bullet87)
+	.byte >(bullet88)
+	.byte >(bullet89)
+	.byte >(bullet8A)
+	.byte >(bullet8B)
+	.byte >(bullet8C)
+	.byte >(bullet8D)
+	.byte >(bullet8E)
+	.byte >(bullet8F)
+	.byte >(bullet90)
+	.byte >(bullet91)
+	.byte >(bullet92)
+	.byte >(bullet93)
+	.byte >(bullet94)
+	.byte >(bullet95)
+	.byte >(bullet96)
+	.byte >(bullet97)
+	.byte >(bullet98)
+	.byte >(bullet99)
+	.byte >(bullet9A)
+	.byte >(bullet9B)
+	.byte >(bullet9C)
+	.byte >(bullet9D)
+	.byte >(bullet9E)
+	.byte >(bullet9F)
+	.byte >(bulletA0)
+	.byte >(bulletA1)
+	.byte >(bulletA2)
+	.byte >(bulletA3)
+	.byte >(bulletA4)
+	.byte >(bulletA5)
+	.byte >(bulletA6)
+	.byte >(bulletA7)
+	.byte >(bulletA8)
+	.byte >(bulletA9)
+	.byte >(bulletAA)
+	.byte >(bulletAB)
+	.byte >(bulletAC)
+	.byte >(bulletAD)
+	.byte >(bulletAE)
+	.byte >(bulletAF)
+	.byte >(bulletB0)
+	.byte >(bulletB1)
+	.byte >(bulletB2)
+	.byte >(bulletB3)
+	.byte >(bulletB4)
+	.byte >(bulletB5)
+	.byte >(bulletB6)
+	.byte >(bulletB7)
+	.byte >(bulletB8)
+	.byte >(bulletB9)
+	.byte >(bulletBA)
+	.byte >(bulletBB)
+	.byte >(bulletBC)
+	.byte >(bulletBD)
+	.byte >(bulletBE)
+	.byte >(bulletBF)
+	.byte >(bulletC0)
+	.byte >(bulletC1)
+	.byte >(bulletC2)
+	.byte >(bulletC3)
+	.byte >(bulletC4)
+	.byte >(bulletC5)
+	.byte >(bulletC6)
+	.byte >(bulletC7)
+	.byte >(bulletC8)
+	.byte >(bulletC9)
+	.byte >(bulletCA)
+	.byte >(bulletCB)
+	.byte >(bulletCC)
+	.byte >(bulletCD)
+	.byte >(bulletCE)
+	.byte >(bulletCF)
+	.byte >(bulletD0)
+	.byte >(bulletD1)
+	.byte >(bulletD2)
+	.byte >(bulletD3)
+	.byte >(bulletD4)
+	.byte >(bulletD5)
+	.byte >(bulletD6)
+	.byte >(bulletD7)
+	.byte >(bulletD8)
+	.byte >(bulletD9)
+	.byte >(bulletDA)
+	.byte >(bulletDB)
+	.byte >(bulletDC)
+	.byte >(bulletDD)
+	.byte >(bulletDE)
+	.byte >(bulletDF)
+	.byte >(bulletE0)
+	.byte >(bulletE1)
+	.byte >(bulletE2)
+	.byte >(bulletE3)
+	.byte >(bulletE4)
+	.byte >(bulletE5)
+	.byte >(bulletE6)
+	.byte >(bulletE7)
+	.byte >(bulletE8)
+	.byte >(bulletE9)
+	.byte >(bulletEA)
+	.byte >(bulletEB)
+	.byte >(bulletEC)
+	.byte >(bulletED)
+	.byte >(bulletEE)
+	.byte >(bulletEF)
+	.byte >(bulletF0)
+	.byte >(bulletF1)
+	.byte >(bulletF2)
+	.byte >(bulletF3)
+	.byte >(bulletF4)
+	.byte >(bulletF5)
+	.byte >(bulletF6)
+	.byte >(bulletF7)
+	.byte >(bulletF8)
+	.byte >(bulletF9)
+	.byte >(bulletFA)
+	.byte >(bulletFB)
+	.byte >(bulletFC)
+	.byte >(bulletFD)
+	.byte >(bulletFE)
+	.byte >(bulletFF)
+
+Bullets_move_L:
+	.byte <(bullet00)
+	.byte <(bullet01)
+	.byte <(bullet02)
+	.byte <(bullet03)
+	.byte <(bullet04)
+	.byte <(bullet05)
+	.byte <(bullet06)
+	.byte <(bullet07)
+	.byte <(bullet08)
+	.byte <(bullet09)
+	.byte <(bullet0A)
+	.byte <(bullet0B)
+	.byte <(bullet0C)
+	.byte <(bullet0D)
+	.byte <(bullet0E)
+	.byte <(bullet0F)
+	.byte <(bullet10)
+	.byte <(bullet11)
+	.byte <(bullet12)
+	.byte <(bullet13)
+	.byte <(bullet14)
+	.byte <(bullet15)
+	.byte <(bullet16)
+	.byte <(bullet17)
+	.byte <(bullet18)
+	.byte <(bullet19)
+	.byte <(bullet1A)
+	.byte <(bullet1B)
+	.byte <(bullet1C)
+	.byte <(bullet1D)
+	.byte <(bullet1E)
+	.byte <(bullet1F)
+	.byte <(bullet20)
+	.byte <(bullet21)
+	.byte <(bullet22)
+	.byte <(bullet23)
+	.byte <(bullet24)
+	.byte <(bullet25)
+	.byte <(bullet26)
+	.byte <(bullet27)
+	.byte <(bullet28)
+	.byte <(bullet29)
+	.byte <(bullet2A)
+	.byte <(bullet2B)
+	.byte <(bullet2C)
+	.byte <(bullet2D)
+	.byte <(bullet2E)
+	.byte <(bullet2F)
+	.byte <(bullet30)
+	.byte <(bullet31)
+	.byte <(bullet32)
+	.byte <(bullet33)
+	.byte <(bullet34)
+	.byte <(bullet35)
+	.byte <(bullet36)
+	.byte <(bullet37)
+	.byte <(bullet38)
+	.byte <(bullet39)
+	.byte <(bullet3A)
+	.byte <(bullet3B)
+	.byte <(bullet3C)
+	.byte <(bullet3D)
+	.byte <(bullet3E)
+	.byte <(bullet3F)
+	.byte <(bullet40)
+	.byte <(bullet41)
+	.byte <(bullet42)
+	.byte <(bullet43)
+	.byte <(bullet44)
+	.byte <(bullet45)
+	.byte <(bullet46)
+	.byte <(bullet47)
+	.byte <(bullet48)
+	.byte <(bullet49)
+	.byte <(bullet4A)
+	.byte <(bullet4B)
+	.byte <(bullet4C)
+	.byte <(bullet4D)
+	.byte <(bullet4E)
+	.byte <(bullet4F)
+	.byte <(bullet50)
+	.byte <(bullet51)
+	.byte <(bullet52)
+	.byte <(bullet53)
+	.byte <(bullet54)
+	.byte <(bullet55)
+	.byte <(bullet56)
+	.byte <(bullet57)
+	.byte <(bullet58)
+	.byte <(bullet59)
+	.byte <(bullet5A)
+	.byte <(bullet5B)
+	.byte <(bullet5C)
+	.byte <(bullet5D)
+	.byte <(bullet5E)
+	.byte <(bullet5F)
+	.byte <(bullet60)
+	.byte <(bullet61)
+	.byte <(bullet62)
+	.byte <(bullet63)
+	.byte <(bullet64)
+	.byte <(bullet65)
+	.byte <(bullet66)
+	.byte <(bullet67)
+	.byte <(bullet68)
+	.byte <(bullet69)
+	.byte <(bullet6A)
+	.byte <(bullet6B)
+	.byte <(bullet6C)
+	.byte <(bullet6D)
+	.byte <(bullet6E)
+	.byte <(bullet6F)
+	.byte <(bullet70)
+	.byte <(bullet71)
+	.byte <(bullet72)
+	.byte <(bullet73)
+	.byte <(bullet74)
+	.byte <(bullet75)
+	.byte <(bullet76)
+	.byte <(bullet77)
+	.byte <(bullet78)
+	.byte <(bullet79)
+	.byte <(bullet7A)
+	.byte <(bullet7B)
+	.byte <(bullet7C)
+	.byte <(bullet7D)
+	.byte <(bullet7E)
+	.byte <(bullet7F)
+	.byte <(bullet80)
+	.byte <(bullet81)
+	.byte <(bullet82)
+	.byte <(bullet83)
+	.byte <(bullet84)
+	.byte <(bullet85)
+	.byte <(bullet86)
+	.byte <(bullet87)
+	.byte <(bullet88)
+	.byte <(bullet89)
+	.byte <(bullet8A)
+	.byte <(bullet8B)
+	.byte <(bullet8C)
+	.byte <(bullet8D)
+	.byte <(bullet8E)
+	.byte <(bullet8F)
+	.byte <(bullet90)
+	.byte <(bullet91)
+	.byte <(bullet92)
+	.byte <(bullet93)
+	.byte <(bullet94)
+	.byte <(bullet95)
+	.byte <(bullet96)
+	.byte <(bullet97)
+	.byte <(bullet98)
+	.byte <(bullet99)
+	.byte <(bullet9A)
+	.byte <(bullet9B)
+	.byte <(bullet9C)
+	.byte <(bullet9D)
+	.byte <(bullet9E)
+	.byte <(bullet9F)
+	.byte <(bulletA0)
+	.byte <(bulletA1)
+	.byte <(bulletA2)
+	.byte <(bulletA3)
+	.byte <(bulletA4)
+	.byte <(bulletA5)
+	.byte <(bulletA6)
+	.byte <(bulletA7)
+	.byte <(bulletA8)
+	.byte <(bulletA9)
+	.byte <(bulletAA)
+	.byte <(bulletAB)
+	.byte <(bulletAC)
+	.byte <(bulletAD)
+	.byte <(bulletAE)
+	.byte <(bulletAF)
+	.byte <(bulletB0)
+	.byte <(bulletB1)
+	.byte <(bulletB2)
+	.byte <(bulletB3)
+	.byte <(bulletB4)
+	.byte <(bulletB5)
+	.byte <(bulletB6)
+	.byte <(bulletB7)
+	.byte <(bulletB8)
+	.byte <(bulletB9)
+	.byte <(bulletBA)
+	.byte <(bulletBB)
+	.byte <(bulletBC)
+	.byte <(bulletBD)
+	.byte <(bulletBE)
+	.byte <(bulletBF)
+	.byte <(bulletC0)
+	.byte <(bulletC1)
+	.byte <(bulletC2)
+	.byte <(bulletC3)
+	.byte <(bulletC4)
+	.byte <(bulletC5)
+	.byte <(bulletC6)
+	.byte <(bulletC7)
+	.byte <(bulletC8)
+	.byte <(bulletC9)
+	.byte <(bulletCA)
+	.byte <(bulletCB)
+	.byte <(bulletCC)
+	.byte <(bulletCD)
+	.byte <(bulletCE)
+	.byte <(bulletCF)
+	.byte <(bulletD0)
+	.byte <(bulletD1)
+	.byte <(bulletD2)
+	.byte <(bulletD3)
+	.byte <(bulletD4)
+	.byte <(bulletD5)
+	.byte <(bulletD6)
+	.byte <(bulletD7)
+	.byte <(bulletD8)
+	.byte <(bulletD9)
+	.byte <(bulletDA)
+	.byte <(bulletDB)
+	.byte <(bulletDC)
+	.byte <(bulletDD)
+	.byte <(bulletDE)
+	.byte <(bulletDF)
+	.byte <(bulletE0)
+	.byte <(bulletE1)
+	.byte <(bulletE2)
+	.byte <(bulletE3)
+	.byte <(bulletE4)
+	.byte <(bulletE5)
+	.byte <(bulletE6)
+	.byte <(bulletE7)
+	.byte <(bulletE8)
+	.byte <(bulletE9)
+	.byte <(bulletEA)
+	.byte <(bulletEB)
+	.byte <(bulletEC)
+	.byte <(bulletED)
+	.byte <(bulletEE)
+	.byte <(bulletEF)
+	.byte <(bulletF0)
+	.byte <(bulletF1)
+	.byte <(bulletF2)
+	.byte <(bulletF3)
+	.byte <(bulletF4)
+	.byte <(bulletF5)
+	.byte <(bulletF6)
+	.byte <(bulletF7)
+	.byte <(bulletF8)
+	.byte <(bulletF9)
+	.byte <(bulletFA)
+	.byte <(bulletFB)
+	.byte <(bulletFC)
+	.byte <(bulletFD)
+	.byte <(bulletFE)
+	.byte <(bulletFF)
 
 octant_adjust:
 	.byte %11000000		;; x+,y-,|x|>|y|

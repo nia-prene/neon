@@ -23,10 +23,7 @@
 .global enemyBulletMetasprite
 .global enemyBulletBehaviorH
 .global enemyBulletBehaviorL
-.global Bullets_isBullet
-.global Bullets_isCharm
-.global Bullets_diameter
-.global Bullets_invisibility
+.global Bullets_ID
 
 .global Charms_getActive
 
@@ -37,6 +34,7 @@
 .global Enemy_Bullets
 .global aimBullet
 .global updateEnemyBullets
+.global Bullets_clockwise
 .global Bullets_toCharm
 .global Charms_spin
-.global Charms_tick
+.global Charms_suck

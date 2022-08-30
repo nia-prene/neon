@@ -45,11 +45,11 @@ GAMESTATE05=$05; ease in textbox, move player/boss to dialogue spt
 GAMESTATE06=$06; fade out screen while scroll
 GAMESTATE07=$07; music test state
 GAMESTATE08=$08; game pause
-GAMESTATE09=$09; post bomb
-GAMESTATE0A=$0A; player is falling after hit
-GAMESTATE0B=$0B; player recovering after hit
-GAMESTATE0C=$0C; time period of no enemy shooting
-GAMESTATE0D=$0D; Boss fight
+GAMESTATE09=$09; Level - charms spinning 
+GAMESTATE0A=$0A; Level - player falling
+GAMESTATE0B=$0B; Level - player recovering
+GAMESTATE0C=$0C; Level - no enemies shooting
+GAMESTATE0D=$0D; Level - Charms sucking
 
 Gamestates_new:; void(a) |
 	
@@ -106,13 +106,13 @@ gamestate00:
 	ldx Gamepads_last
 	jsr	Bombs_toss ;c(a,x)
 	bcc @noBomb
+
 		lda #GAMESTATE09
 		jsr Gamestates_new; a()
-		lda #GAMESTATE00
-		sta Gamestates_primary
+
 @noBomb:
-	
-	jsr Player_isHit
+	clc
+	;jsr Player_isHit
 	bcc @playerUnharmed
 		
 		jsr Player_hit
@@ -349,7 +349,7 @@ gamestate08:; void()
 	rts
 
 
-gamestate09:; after a bomb goes off
+gamestate09:; Level - charms spinning
 
 	jsr PPU_updateScroll;void()
 	jsr Score_clearFrameTally;void()
@@ -370,8 +370,8 @@ gamestate09:; after a bomb goes off
 
 	jsr Waves_dispense 
 	jsr updateEnemies
-	jsr Charms_tick
 	
+	jsr Charms_spin
 	jsr Player_collectCharms
 	
 	ldx Main_currentPlayer
@@ -384,12 +384,11 @@ gamestate09:; after a bomb goes off
 	jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
 
-	jsr	Charms_getActive; a()
+	lda g
+	cmp #32
 	bne @statePersists
-
-		lda #GAMESTATE0C; go to brief firing hold 
-		jsr Gamestates_new
-
+		lda #GAMESTATE0D
+		jsr	Gamestates_new
 @statePersists:
 
 	rts
@@ -404,8 +403,8 @@ gamestate0A:; falling off broom
 	ldx Gamepads_last
 	jsr Gamestates_pause;c(a,x) |
 
-	lda g
 	jsr	Player_fall;void(a,f)
+
 	jsr PlayerBullets_move;void()
 
 	jsr PPU_waitForSprite0Reset;()
@@ -512,6 +511,51 @@ gamestate0C:; a moment of no shooting
 	
 	rts
 
+
+gamestate0D:; charms spinning, main game loop
+
+	jsr PPU_updateScroll;void()
+	jsr Score_clearFrameTally;void()
+	
+	lda Gamepads_state
+	ldx Gamepads_last
+	jsr Gamestates_pause
+
+	lda Gamepads_state
+	jsr Player_move;(a)
+
+	jsr PlayerBullets_move;void()
+
+	lda Gamepads_state
+	jsr PlayerBullets_shoot;(a)
+	
+	jsr PPU_waitForSprite0Reset;()
+
+	jsr Waves_dispense 
+	jsr updateEnemies
+	
+	jsr Charms_suck
+	jsr Player_collectCharms
+	
+	ldx Main_currentPlayer
+	jsr Score_tallyFrame;(x)
+	
+	jsr OAM_build00; (a)
+	
+	jsr PPU_dimScreen
+	jsr PPU_waitForSprite0Hit
+	jsr PPU_NMIPlan00
+
+	lda g
+	cmp #255
+	bne @statePersists
+		lda GAMESTATE00
+		jsr	Gamestates_new
+@statePersists:
+
+	rts
+
+
 Gamestates_pause:;c(a,x) |
 
 	and #BUTTON_START;if start button pressed
@@ -529,6 +573,6 @@ Gamestates_pause:;c(a,x) |
 
 
 Gamestates_H:
-	.byte >(gamestate00-1), >(gamestate01-1), >(gamestate02-1), >(gamestate03-1), >(gamestate04-1), >(gamestate05-1), >(gamestate06-1), >(gamestate07-1), >(gamestate08-1), >(gamestate09-1), >(gamestate0A-1), >(gamestate0B-1), >(gamestate0C-1)
+	.byte >(gamestate00-1),>(gamestate01-1),>(gamestate02-1),>(gamestate03-1),>(gamestate04-1),>(gamestate05-1),>(gamestate06-1),>(gamestate07-1),>(gamestate08-1),>(gamestate09-1),>(gamestate0A-1),>(gamestate0B-1),>(gamestate0C-1),>(gamestate0D-1)
 Gamestates_L:
-	.byte <(gamestate00-1), <(gamestate01-1), <(gamestate02-1), <(gamestate03-1), <(gamestate04-1), <(gamestate05-1), <(gamestate06-1), <(gamestate07-1), <(gamestate08-1), <(gamestate09-1), <(gamestate0A-1), <(gamestate0B-1), <(gamestate0C-1)
+	.byte <(gamestate00-1),<(gamestate01-1),<(gamestate02-1),<(gamestate03-1),<(gamestate04-1),<(gamestate05-1),<(gamestate06-1),<(gamestate07-1),<(gamestate08-1),<(gamestate09-1),<(gamestate0A-1),<(gamestate0B-1),<(gamestate0C-1),<(gamestate0D-1)

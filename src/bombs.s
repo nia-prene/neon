@@ -14,12 +14,12 @@ Bombs_init: ;void()
 	rts
 
 
-Bombs_toss:; void(y,x)
+Bombs_toss:; c(y,x)
+; arguments
 ; x - last gamepad state
 ; y - current gamepad state
-; update counter at beginning of frame
-; so that events following bomb toss
-; can start on 0
+; returns
+; c - true if bomb dropped
 	
 	tya; retrieve current gamepad state
 	and #BUTTON_A; if holding b
@@ -34,39 +34,21 @@ Bombs_toss:; void(y,x)
 				
 				sec; decrease bombs
 				sbc #1
-				bne :+
-					lda #3; no underflow
-				:sta Player_bombs
+				sta Player_bombs
 				
-				lda #TRUE
+				lda #TRUE; set it to render
 				sta Player_haveBombsChanged
 
 				lda #SFX06; play bass
 				jsr SFX_newEffect; void(a)
 				lda #SFX07; play boom
 				jsr SFX_newEffect; void(a)
-				lda #SFX08; play twinkle
-				jsr SFX_newEffect; void(a)
-					
-				ldx #MAX_ENEMY_BULLETS-1
-			@bulletLoop:
-				lda isEnemyBulletActive,x; if bullet is active
-				beq @nextBullet; else next bullet
-				lda Bullets_invisibility,x; and visible
-				bne @deleteBullet; delete invisible bullets	
-					
-					jsr Bullets_toCharm; void(x) | x
-					jmp @nextBullet
-			@deleteBullet:
-			
-				lda #FALSE
-				sta isEnemyBulletActive,x
-			@nextBullet:
-			
-				dex ;x--
-				bpl @bulletLoop;while x < 0
+				
 				sec
 				rts
+				;lda #SFX08; play twinkle
+				;jsr SFX_newEffect; void(a)
+					
 @noBomb:
 	clc
 	
