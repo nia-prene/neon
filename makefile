@@ -14,7 +14,7 @@ MONO = mono
 ASflags =-o $(builddir)$@ --debug-info
 LDflags =-o $(builddir)$@ -C $(configfile) --dbgfile $(builddir)$(debugfile)
 
-.PHONY all: $(objects) $(game) test
+.PHONY all: $(objects) $(game)
 
 $(objects): %.o: $(source)%.s $(source)%.h
 	$(AS) $(ASflags) $<
