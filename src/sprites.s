@@ -38,12 +38,9 @@ SPRITE20=$20;small star charm spin side
 SPRITE21=$21;piper frame 0
 SPRITE22=$22;small star charm spin right slant
 
-;format
-;name:
-;	.byte Y offset, tile, attribute byte, X offset
-;	.byte Y offset, tile, attribute byte, X offset
-;	.byte etc
-;	.byte TERMINATE (terminate)
+; format
+; 	Tile, Y, X, Attribute 
+;
 ;attribute byte format
 ;76543210
 ;||||||++- Palette of sprite
@@ -52,6 +49,13 @@ SPRITE22=$22;small star charm spin right slant
 ;|+------- Flip sprite horizontally
 ;+-------- Flip sprite vertically
 sprite00:
+	.lobytes 2, -16, -8, %0
+	.lobytes 2, -16,  0, %0
+	.lobytes 4,   0, -6, %0
+	.byte NULL
+
+
+
 	.byte 0, 0, %0, 0
 	.byte 0, 2, %0, 8
 	.byte 16, 4, %0, 2

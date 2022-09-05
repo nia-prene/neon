@@ -112,7 +112,7 @@ gamestate00:
 
 @noBomb:
 	clc
-	;jsr Player_isHit
+	jsr Player_isHit
 	bcc @playerUnharmed
 		
 		jsr Player_hit
@@ -127,9 +127,9 @@ gamestate00:
 	jsr Score_tallyFrame;(x)
 	
 	jsr PPU_dimScreen; see how much frame is left over
-	;jsr PPU_waitForSprite0Hit
+	jsr PPU_waitForSprite0Hit
 	
-	;jsr PPU_NMIPlan00; void() |
+	jsr PPU_NMIPlan00; void() |
 	
 	rts
 

@@ -28,6 +28,10 @@ OAM_index:.res 1
 Sprite0_destination: .res 1
 .segment "OAM"
 OAM: .res 256
+OFFSET_Y=0
+OFFSET_TILE=1
+OFFSET_ATTRIBUTE=2
+OFFSET_X=3
 
 .code
 .proc OAM_initSprite0
@@ -61,30 +65,31 @@ OAM_build00:;c()
 ;returns carry clear if oam overflow
 	dec o ;module iterator
 
-	ldx #4;skip sprite 0
+	lda #4;skip sprite 0
+	sta OAM_index
 	
 
 
 	lda Hitbox_sprite;see if hitbox renders first
 	beq @buildWithoutHitbox
 
-		jsr buildHitbox
+		;jsr buildHitbox
 
 @buildWithoutHitbox:
 	
-	jsr buildEnemyBullets
+	;jsr buildEnemyBullets
 	bcs @oamFull
 
 	jsr OAM_buildPlayer
 	bcs @oamFull
 
-	jsr buildEnemies
+	;jsr buildEnemies
 	bcs @oamFull
 	
-	jsr buildPlayerBullets
+	;jsr buildPlayerBullets
 	bcs @oamFull
 
-	jsr OAM_clearRemaining
+	;jsr OAM_clearRemaining
 
 @oamFull:
 	rts
@@ -216,21 +221,16 @@ LIMIT_BULLETS=48
 	jmp buildSpritesShort
 
 
-OAM_buildPlayer:
-;prepares player sprite for oam
-;first push a null to terminate 
-;then push sprite, y, x, palette
-	lda #TERMINATE;terminator
-	pha
-	lda Player_sprite
-	pha
+OAM_buildPlayer:; void()
+
 	lda Player_yPos_H
-	pha
+	sta buildY
+
 	lda Player_xPos_H
-	pha
-	lda #0;palette implied
-	pha
-	jmp buildSprites
+	sta buildX
+
+	lda Player_sprite
+	jmp OAM_build; void(a) |
 
 buildPlayerBullets:
 	lda #TERMINATE;terminate
@@ -304,6 +304,59 @@ YPOS=64
 	jmp buildSpritesShort
 
 .endproc
+
+OAM_build:;void (a) 
+;a - metasprite to build
+	tay; y is Meta Sprite
+
+	lda spritesL,y
+	sta spritePointer
+	lda spritesH,y
+	sta spritePointer+1
+	
+	ldy #0; sprite 0
+	
+	ldx OAM_index
+	beq @finished
+
+@spriteLoop:
+
+	lda (spritePointer),y
+	beq @finished
+
+		sta OAM+OFFSET_TILE,x
+		iny
+		
+		clc
+		lda buildY
+		adc (spritePointer),y
+		sta OAM+OFFSET_Y,x
+		iny
+
+		clc
+		lda buildX
+		adc (spritePointer),y
+		sta OAM+OFFSET_X,x
+		iny
+
+		lda (spritePointer),y
+		ora buildPalette
+		sta OAM+OFFSET_ATTRIBUTE,x
+		iny
+
+		inx
+		inx
+		inx
+		inx
+
+		beq @finished
+		
+		jmp @spriteLoop
+@finished:
+
+	stx OAM_index
+	rts
+
 
 buildSprites:
 ;builds collections of sprites
@@ -457,15 +510,22 @@ buildSpritesShort:;x(x)
 OAM_clearRemaining:
 ;arguments
 ;x-starting point to clear
-	lda #$ff
+	rts
+	ldx OAM_index
+
+	lda #$FF; clear y with FF
+
 @clearOAM:
-	sta OAM,x
+
+	sta OAM+OFFSET_Y,x
+
 	inx
 	inx
 	inx
-	sta OAM,x
 	inx
+
 	bne @clearOAM
+
 	rts
 
 OAM_beginDMA:
