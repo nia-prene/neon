@@ -55,6 +55,9 @@ Player_init:
 	sta Player_haveHeartsChanged
 	sta Player_haveBombsChanged
 	sta Player_willRender
+
+	lda #SPRITE01
+	sta Player_sprite
 	
 	rts
 
@@ -97,10 +100,10 @@ Player_move:;(controller) returns void
 FAST_MOVEMENT_H = 2	
 FAST_MOVEMENT_L = 0
 ;pixel per frame when moving slow
-MAX_RIGHT = 243
-MAX_LEFT = 00
-MAX_UP = 0
-MAX_DOWN = 202
+MAX_RIGHT = 253
+MAX_LEFT = 03
+MAX_UP = 8
+MAX_DOWN = 221
 SLOWDOWN_TIME=16
 DEPLOY_TIME=2
 RETRACT_TIME=8
@@ -178,6 +181,7 @@ RETRACT_TIME=8
 		sta Player_xPos_L
 		lda Player_xPos_H
 		sbc Player_speed_H
+		cmp #MAX_LEFT
 		bcs :+
 			lda #MAX_LEFT
 		:sta Player_xPos_H
@@ -207,6 +211,7 @@ RETRACT_TIME=8
 		sta Player_yPos_L
 		lda Player_yPos_H
 		sbc Player_speed_H
+		cmp #MAX_UP
 		bcs :+
 			lda #MAX_UP
 		:sta Player_yPos_H

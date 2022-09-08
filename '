@@ -210,30 +210,21 @@ buildPlayerBullets:
 buildEnemies:
 	
 	ldy #MAX_ENEMIES-1
-
 @enemyLoop:
 	lda isEnemyActive,y
 	beq @skipEnemy
-		
-		lda enemyYH,y
-		sta buildY
-		lda enemyXH,y
-		sta buildX
-		lda enemyPalette,y
-		sta buildPalette
-		
 		lda enemyMetasprite,y
-
-		sty yReg
-		jsr OAM_build; void(a)
-		ldy yReg
-
+		pha
+		lda enemyYH,y
+		pha
+		lda enemyXH,y
+		pha
+		lda enemyPalette,y
+		pha
 @skipEnemy:
-
 	dey
 	bpl @enemyLoop
-	rts
-
+	jmp buildSprites
 
 .proc OAM_buildPause
 XPOS=110
@@ -261,8 +252,8 @@ OAM_build:;void (a)
 	
 	ldy #0; sprite 0
 	
-	ldx OAM_index; get the index
-	beq @finished; return if sprites are full
+	ldx OAM_index
+	beq @finished
 
 @spriteLoop:
 

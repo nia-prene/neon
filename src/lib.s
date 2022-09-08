@@ -13,7 +13,12 @@ BUTTON_DOWN = %100
 BUTTON_LEFT = %10
 BUTTON_RIGHT = %1
 .zeropage
+
 mathTemp: .res 2
+
+yReg:.res 1
+xReg:.res 1
+
 sprite1LeftOrTop: .res 1
 sprite1RightOrBottom: .res 1
 sprite2LeftOrTop: .res 1

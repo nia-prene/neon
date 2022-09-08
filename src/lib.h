@@ -18,6 +18,8 @@
 .globalzp sprite2LeftOrTop
 .globalzp sprite2RightOrBottom
 .globalzp mathTemp
+.globalzp xReg
+.globalzp yReg
 .globalzp Lib_errorCode
 
 ;functions

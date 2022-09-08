@@ -2,14 +2,14 @@
 .include "sprites.h"
 
 .rodata
-PLAYER_SPRITE=0
-LARGE_STAR=1
+
+SPRITE01=1
 SPRITE02=2
 SPRITE03=3
-TARGET_SPRITE=4
+LARGE_STAR=4;Large Star
 HEART_SPRITE=5
-SPRITE06=6;player hitbox frame 0
-SPRITE07=7;player hitbox frame 1
+SPRITE06=6; unused
+SPRITE07=7; unused
 SMALL_STAR=8
 PLAYER_BEAM=9
 SPRITE0A=$0a;small explosion frame 0
@@ -48,41 +48,31 @@ SPRITE22=$22;small star charm spin right slant
 ;||+------ Priority (0: in front of background; 1: behind background)
 ;|+------- Flip sprite horizontally
 ;+-------- Flip sprite vertically
-sprite00:
+sprite01:
 	.lobytes 2, -16, -8, %0
-	.lobytes 2, -16,  0, %0
-	.lobytes 4,   0, -6, %0
+	.lobytes 4, -16,  0, %0
+	.lobytes 6,   0, -6, %0
 	.byte NULL
 
-
-
-	.byte 0, 0, %0, 0
-	.byte 0, 2, %0, 8
-	.byte 16, 4, %0, 2
-	.byte TERMINATE
-sprite01:
-	.byte 0, $20, %0, 0
-	.byte 0, $20, %01000000, 8
-	.byte TERMINATE
 sprite02:
-	.byte 0, $24, %00000011, 0
-	.byte TERMINATE
+	.lobytes $24, -4, -4, %00000011
+	.byte NULL
 sprite03:
 	.byte 0, $26, %00000011, 0
 	.byte 0, $26, %01000011, 8
 	.byte TERMINATE
 sprite04:
-	.byte 0, $60, %00000010, 0
-	.byte 0, $60, %01000010, 8
+	.byte 0, $20, %0, 0
+	.byte 0, $20, %01000000, 8
 	.byte TERMINATE
 sprite05:
 	.byte 0, $0a, %0, 0
 	.byte TERMINATE
 sprite06:
-	.byte 0, $06, %0,0
-	.byte TERMINATE
+	.lobytes $08,-4,-4,%0
+	.byte NULL
 sprite07:
-	.byte 0, $08, %0,0
+	.lobytes $0A,-4,-4,%0
 	.byte TERMINATE
 sprite08:
 	.byte 0, $22, %0, 0
@@ -159,26 +149,27 @@ sprite17:
 	.byte 0, $e2, %0, 28
 	.byte TERMINATE
 sprite18:
-	.byte 0, $a8, %01, 0
-	.byte 0, $aa, %01, 8
-	.byte 16, $ac, %10, 0
-	.byte 16, $ae, %10, 8
-	.byte TERMINATE
+	.lobytes $a8, -16, -8, %01
+	.lobytes $aa, -16,  0, %01
+	.lobytes $ac,   0, -8, %10
+	.lobytes $ae,   0,  0, %10
+	.byte NULL
 sprite19:
-	.byte 0,$06,%0,0
-	.byte TERMINATE
+	.lobytes $8,-4,-4,%0
+	.byte NULL
+	
 sprite1A:
-	.byte 0,$08,%0,0
-	.byte TERMINATE
+	.lobytes $0A,-4,-4,%0
+	.byte NULL
 sprite1B:
-	.byte 0,$0A,%0,0
-	.byte TERMINATE
+	.lobytes $0C,-4,-4,%0
+	.byte NULL
 sprite1C:
-	.byte 0,$08,%01000000,1
-	.byte TERMINATE
+	.lobytes $0A,-4,-3,%01000000
+	.byte NULL
 sprite1D:
-	.byte 0,$0c,%0,0
-	.byte TERMINATE
+	.lobytes $0E,-4,-4,%0
+	.byte NULL
 sprite1E:
 	.byte 0,$3a,%0,0
 	.byte TERMINATE
@@ -189,11 +180,11 @@ sprite20:
 	.byte 0,$3e,%0,0
 	.byte TERMINATE
 sprite21:
-	.byte 0, $a0, %01, 0
-	.byte 0, $a2, %01, 8
-	.byte 16, $a4, %10, 0
-	.byte 16, $a6, %10, 8
-	.byte TERMINATE
+	.lobytes $a0, -16, -8, %01
+	.lobytes $a2, -16,  0, %01
+	.lobytes $a4,   0, -8, %10
+	.lobytes $a6,   0,  0, %10
+	.byte NULL
 sprite22:
 	.byte 0,$3c,%01000000, 0
 	.byte TERMINATE
@@ -226,10 +217,10 @@ sprite2F:
 	
 ;pointer table
 spritesH:
-	.byte >sprite00, >sprite01, >sprite02, >sprite03, >sprite04, >sprite05, >sprite06, >sprite07, >sprite08, >sprite09, >sprite0A, >sprite0B, >sprite0C, >sprite0D, >sprite0E, >sprite0F
+	.byte NULL, >sprite01, >sprite02, >sprite03, >sprite04, >sprite05, >sprite06, >sprite07, >sprite08, >sprite09, >sprite0A, >sprite0B, >sprite0C, >sprite0D, >sprite0E, >sprite0F
 	.byte >sprite10, >sprite11, >sprite12, >sprite13, >sprite14, >sprite15, >sprite16, >sprite17, >sprite18, >sprite19, >sprite1A, >sprite1B, >sprite1C, >sprite1D, >sprite1E, >sprite1F
 	.byte >sprite20, >sprite21, >sprite22, >sprite23, >sprite24, >sprite25, >sprite26, >sprite27, >sprite28, >sprite29, >sprite2A, >sprite2B, >sprite2C, >sprite2D, >sprite2E, >sprite2F
 spritesL:
-	.byte <sprite00, <sprite01, <sprite02, <sprite03, <sprite04, <sprite05, <sprite06, <sprite07, <sprite08, <sprite09, <sprite0A, <sprite0B, <sprite0C, <sprite0D, <sprite0E, <sprite0F
+	.byte NULL, <sprite01, <sprite02, <sprite03, <sprite04, <sprite05, <sprite06, <sprite07, <sprite08, <sprite09, <sprite0A, <sprite0B, <sprite0C, <sprite0D, <sprite0E, <sprite0F
 	.byte <sprite10, <sprite11, <sprite12, <sprite13, <sprite14, <sprite15, <sprite16, <sprite17, <sprite18, <sprite19, <sprite1A, <sprite1B, <sprite1C, <sprite1D, <sprite1E, <sprite1F
 	.byte <sprite20, <sprite21, <sprite22, <sprite23, <sprite24, <sprite25, <sprite26, <sprite27, <sprite28, <sprite29, <sprite2A, <sprite2B, <sprite2C, <sprite2D, <sprite2E, <sprite2F

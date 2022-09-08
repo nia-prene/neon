@@ -112,7 +112,7 @@ gamestate00:
 
 @noBomb:
 	clc
-	jsr Player_isHit
+	;jsr Player_isHit
 	bcc @playerUnharmed
 		
 		jsr Player_hit
@@ -139,8 +139,7 @@ gamestate01:;void(currentPlayer, currentScene)
 
 	jsr APU_setSong
 	jsr disableRendering; ()
-	ldx #0
-	jsr OAM_clearRemaining; (x)
+	
 	ldx Main_currentPlayer
 	lda @playerPalette,x
 	tax
@@ -202,9 +201,7 @@ SCORE_OFFSET=7
 	jsr Player_toStartingPos
 	jsr HUD_easeIn;a()
 	jsr Sprite0_setSplit;(a)
-	ldx #4;skip sprite0
-	jsr OAM_buildPlayer;(x)
-	jsr OAM_clearRemaining;(x)
+	
 	jsr PPU_NMIPlan00
 	jsr PPU_waitForSprite0Hit
 	clc
@@ -224,9 +221,7 @@ gamestate04:
 	jsr Player_toConvo
 	jsr HUD_easeOut;a()
 	jsr Sprite0_setSplit;(a)
-	ldx #4;skip sprite0
-	jsr OAM_buildPlayer;x(x)
-	jsr OAM_clearRemaining;(x)
+	
 	jsr PPU_waitForSprite0Hit
 	clc
 	lda g
@@ -255,9 +250,6 @@ TEXTBOX_OFFSET=30
 	jsr Textbox_easeIn;a()
 	jsr Sprite0_setSplit;(a)
 	jsr PPU_NMIPlan02
-	ldx #4;skip sprite0
-	jsr OAM_buildPlayer;(x)
-	jsr OAM_clearRemaining;(x)
 	jsr PPU_waitForSprite0Hit
 	rts
 
@@ -341,9 +333,6 @@ gamestate08:; void()
 			jsr APU_resumeSFX
 @stayPaused:
 
-	ldx #4
-	jsr OAM_buildPause;x(x)
-	jsr OAM_clearRemaining;x()
 	jsr PPU_waitForSprite0Hit
 	
 	rts
