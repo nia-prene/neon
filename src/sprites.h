@@ -1,13 +1,13 @@
 ;objects
 .globalzp SPRITE01
-.globalzp LARGE_STAR
 .globalzp SPRITE02
 .globalzp SPRITE03
-.globalzp HEART_SPRITE
+.globalzp SPRITE04
+.globalzp SPRITE05
 .globalzp SPRITE06
 .globalzp SPRITE07
-.globalzp SMALL_STAR
-.globalzp PLAYER_BEAM
+.globalzp SPRITE08
+.globalzp SPRITE09
 .globalzp SPRITE0A
 .globalzp SPRITE0B
 .globalzp SPRITE0C

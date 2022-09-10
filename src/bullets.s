@@ -114,21 +114,21 @@ Bullets_new:; c,y() | x
 	clc;mark full
 	rts
 
-updateEnemyBullets:;(void)
-;pushes all bullet offsets and functions onto stack and returns
+Bullets_tick:; void()
 
-	ldx #MAX_ENEMY_BULLETS-1
+	ldx #MAX_ENEMY_BULLETS-1; for each bullet
 
 Bullets_moveLoop:
 	lda isEnemyBulletActive,x
 	beq Bullets_tickDown;skip inactive bullets
 		
-		sec
-		sbc #1
-		beq :+; don't store a zero
+		cmp #TRUE; if higher than true
+		beq @visible
+
+			sbc #1; decrease invisibility timer
 			sta isEnemyBulletActive,x
-		:
-		
+	@visible:
+
 		ldy Bullets_ID,x
 
 		lda Bullets_move_L,y
@@ -142,6 +142,7 @@ Bullets_tickDown:
 
 	dex ;x--
 	bpl Bullets_moveLoop;while x>=0
+	
 	rts
 
 

@@ -3,15 +3,15 @@
 
 .rodata
 
-SPRITE01=1
-SPRITE02=2
+SPRITE01=1; Player 1 neutral sprite
+SPRITE02=2; Small bullet
 SPRITE03=3
-LARGE_STAR=4;Large Star
-HEART_SPRITE=5
+SPRITE04=4; Player bullet large star
+SPRITE05=5; unused
 SPRITE06=6; unused
 SPRITE07=7; unused
-SMALL_STAR=8
-PLAYER_BEAM=9
+SPRITE08=8; Player small star bullet
+SPRITE09=9; Player beam bullet
 SPRITE0A=$0a;small explosion frame 0
 SPRITE0B=$0b;small explosion frame 1
 SPRITE0C=$0c;small explosion frame 2
@@ -49,9 +49,9 @@ SPRITE22=$22;small star charm spin right slant
 ;|+------- Flip sprite horizontally
 ;+-------- Flip sprite vertically
 sprite01:
-	.lobytes 2, -16, -8, %0
-	.lobytes 4, -16,  0, %0
-	.lobytes 6,   0, -6, %0
+	.lobytes 2, -13, -4, %0
+	.lobytes 4, -13,  4, %0
+	.lobytes 6,   3, -4, %0
 	.byte NULL
 
 sprite02:
@@ -62,9 +62,9 @@ sprite03:
 	.byte 0, $26, %01000011, 8
 	.byte TERMINATE
 sprite04:
-	.byte 0, $20, %0, 0
-	.byte 0, $20, %01000000, 8
-	.byte TERMINATE
+	.lobytes $20, -8, -8, %0
+	.lobytes $20, -8,  0, %01000000
+	.byte NULL
 sprite05:
 	.byte 0, $0a, %0, 0
 	.byte TERMINATE
@@ -73,13 +73,13 @@ sprite06:
 	.byte NULL
 sprite07:
 	.lobytes $0A,-4,-4,%0
-	.byte TERMINATE
+	.byte NULL
 sprite08:
-	.byte 0, $22, %0, 0
-	.byte TERMINATE
+	.lobytes $22, -8, -4, %0
+	.byte NULL
 sprite09:
-	.byte 0, $28, %0, 0
-	.byte TERMINATE
+	.lobytes $28, -8, -4, %0
+	.byte NULL
 sprite0A:
 	.byte 0, $40, %0, 0
 	.byte 0, $40, %01000000, 8

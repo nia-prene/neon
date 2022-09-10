@@ -293,63 +293,75 @@ Hitbox_state03:
 	.byte SPRITE1A,SPRITE1B
 
 Player_isHit:;c()
-PLAYER_HEIGHT=18
 MAX_BULLET_DIAMETER=16
-HITBOX_X_OFFSET=6
-HITBOX_Y_OFFSET=12
 HITBOX_WIDTH=1
 HITBOX_HEIGHT=1
 	
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
+
 	lda isEnemyBulletActive,x ;if active
-	beq @nextBullet ;else
+	beq @nextBullet ;else next
+
 		sec ;find x distance
 		lda enemyBulletXH,x
 		sbc Player_xPos_H
-		bcs @bulletGreaterX
-			eor #%11111111 ;if negative
-@bulletGreaterX:
+		bcs @compareX
+
+			eor #%11111111
+@compareX:
 	cmp #MAX_BULLET_DIAMETER; if x distance < width
 	bcs @nextBullet ;else
+
 	sec ;find y distance
 	lda enemyBulletYH,x
 	sbc Player_yPos_H
-	bcs @bulletGreaterY
-		eor #%11111111 ;if negative
-@bulletGreaterY:
-	cmp #PLAYER_HEIGHT ;if y distance < height
+	bcs @compareY
+
+		eor #%11111111; if negative, 1's compliment
+
+@compareY:
+	cmp #MAX_BULLET_DIAMETER; if y distance < height
 	bcs @nextBullet
-	;copy player x bounded box
-	lda Player_xPos_H
-	adc #HITBOX_X_OFFSET
+	
+	;clc; carry is clear
+	lda Player_xPos_H; find player x bounded box
 	sta sprite1LeftOrTop
-	adc #HITBOX_WIDTH
+	adc #HITBOX_WIDTH-1
 	sta sprite1RightOrBottom
-	;copy bullet x bounded box
+	
+	sec
 	lda enemyBulletXH,x
-	adc #2
+	sbc #2
 	sta sprite2LeftOrTop
+	clc
 	adc #4
 	sta sprite2RightOrBottom
+
 	jsr checkCollision
 	bcc @nextBullet;if outside box
-	;copy player y bounded box
+	
+	;clc; faster to leave it
 	lda Player_yPos_H
-	adc #HITBOX_Y_OFFSET-1;carry is set
 	sta sprite1LeftOrTop
-	adc #HITBOX_HEIGHT
+	adc #HITBOX_HEIGHT-1; carry is set
 	sta sprite1RightOrBottom
-	;copy bullet y bounded box
+	
+	sec
 	lda enemyBulletYH,x
-	adc #2
+	sbc #2
 	sta sprite2LeftOrTop
+	clc
 	adc #4
 	sta sprite2RightOrBottom
+
 	jsr checkCollision
 	bcc @nextBullet
+
 		rts ;return carry set
+
 @nextBullet:
+
 	dex
 	bpl @bulletLoop
 	
@@ -445,7 +457,7 @@ Player_collectCharms:
 		bcs @bulletGreaterY
 			eor #%11111111 ;if negative
 	@bulletGreaterY:
-		cmp #PLAYER_HEIGHT ;if y distance < height
+		cmp #MAX_BULLET_DIAMETER;if y distance < height
 		bcs @nextBullet
 		;copy player x bounded box
 		lda Player_xPos_H

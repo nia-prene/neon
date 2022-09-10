@@ -4,7 +4,7 @@ source = src/
 builddir = build/
 configfile = neon.cfg
 debugfile = neon.dbg
-EMULATOR = ~/programs/mesen/Mesen.exe
+EMULATOR = ~/Programs/Mesen/Mesen.exe
 cleanfiles = *.o *.dbg *.nes
 
 LD = ld65
@@ -23,7 +23,7 @@ $(game): $(objects)
 	$(LD) $(LDflags) $(builddir)*.o
 
 test: ${game}
-	${MONO} ${EMULATOR} ${builddir}${game}
+	${MONO} ${EMULATOR} ${builddir}${game} &
 
 clean:
 	-rm $(builddir)*.o

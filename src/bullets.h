@@ -33,7 +33,7 @@
 .global Bullets_newGroup
 .global Enemy_Bullets
 .global aimBullet
-.global updateEnemyBullets
+.global Bullets_tick
 .global Bullets_clockwise
 .global Bullets_toCharm
 .global Charms_spin

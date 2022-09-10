@@ -133,7 +133,7 @@ WIDTH=16
 	sbc #Y_OFFSET
 	bcc @bulletOffscreen
 	sta bulletY,x
-	lda #LARGE_STAR
+	lda #SPRITE04
 	sta bulletSprite,x
 	lda #DAMAGE
 	sta PlayerBullet_damage,x
@@ -165,7 +165,7 @@ WIDTH=8
 	sbc #Y_OFFSET
 	bcc @bullet1Offscreen
 	sta bulletY,x;y offset
-	lda #PLAYER_BEAM
+	lda #SPRITE09; beam
 	sta bulletSprite,x;sprite
 	lda #DAMAGE
 	sta PlayerBullet_damage,x
@@ -183,7 +183,7 @@ WIDTH=8
 	adc #X_OFFSET_2
 	bcs @bullet2Offscreen
 	sta bulletX,x;x offset
-	lda #PLAYER_BEAM
+	lda #SPRITE09
 	sta bulletSprite,x;sprite
 	lda #DAMAGE
 	sta PlayerBullet_damage,x
@@ -218,7 +218,7 @@ WIDTH=8
 	sbc #Y_OFFSET
 	bcc @bullet1Offscreen
 	sta bulletY,x;y offset
-	lda #SMALL_STAR
+	lda #SPRITE08
 	sta bulletSprite,x;sprite
 	lda #DAMAGE
 	sta PlayerBullet_damage,x
@@ -236,7 +236,7 @@ WIDTH=8
 	adc #X_OFFSET_2
 	bcs @bullet2Offscreen
 	sta bulletX,x;x offset
-	lda #SMALL_STAR
+	lda #SPRITE08
 	sta bulletSprite,x;sprite
 	lda #DAMAGE
 	sta PlayerBullet_damage,x

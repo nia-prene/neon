@@ -83,7 +83,7 @@ OAM_build00:;c()
 
 	jsr buildEnemies
 	
-	;jsr buildPlayerBullets
+	jsr buildPlayerBullets
 
 	jsr OAM_clearRemaining
 
@@ -101,62 +101,172 @@ PLAYER_HITBOX_X_OFFSET=2
 	lda Player_xPos_H
 	sta buildX
 
-	lda Hitbox_sprite
+	ldx Hitbox_sprite
 
 	jmp OAM_build; void(a)
 
-OAM_buildBullets:
-LIMIT_BULLETS=48
+.proc OAM_buildBullets
+LIMIT=48
 
 	ldx #MAX_ENEMY_BULLETS-1
-@initialLoop:
+	ldy #LIMIT
+	jsr firstPass; y(y) |
+	jsr secondPass; void(y) |
+	rts
+
+.align 64
+firstPass:
+@bulletLoop:
 
 	lda isEnemyBulletActive,x; if active
 	cmp #1
 	bne @skipBullet
 		
-		lda enemyBulletYH,x
-		sta buildY
-		lda enemyBulletXH,x
-		sta buildX	
-		stx mathTemp
-		lda #SPRITE02
-		jsr OAM_build
-		ldx mathTemp
+		dey; if limit has been met
+		bmi @full
+
+			stx xReg
+			sty yReg
+
+			lda enemyBulletYH,x
+			sta buildY
+			lda enemyBulletXH,x
+			sta buildX	
+
+			ldx #SPRITE02
+
+			lda spritesL,x
+			sta spritePointer
+			lda spritesH,x
+			sta spritePointer+1
+	
+			ldy #0; sprite 0
+	
+			ldx OAM_index; get the index
+
+		@spriteLoop:
+
+			lda (spritePointer),y
+			beq @finished; NULL 
+
+
+				sta OAM+OFFSET_TILE,x
+				iny
+		
+				clc
+				lda buildY
+				adc (spritePointer),y
+				sta OAM+OFFSET_Y,x
+				iny
+
+				clc
+				lda buildX
+				adc (spritePointer),y
+				sta OAM+OFFSET_X,x
+				iny
+
+				lda (spritePointer),y
+				sta OAM+OFFSET_ATTRIBUTE,x
+				iny
+
+				inx
+				inx
+				inx
+				inx
+
+				jmp @spriteLoop
+		@finished:
+
+			stx OAM_index
+			ldx xReg
+			ldy yReg
 
 @skipBullet:
 	dex
-	bpl @initialLoop
-	
+	bpl @bulletLoop
+
+@full:	
 	rts
 
-@remainingLoop:
 
-	lda isEnemyBulletActive,y; if active
+secondPass:
+@bulletLoop:
+
+	lda isEnemyBulletActive,x; if active
 	cmp #1
-	bne @skip
+	bne @skipBullet
 		
-		lda enemyBulletYH,y
-		pha
-		lda enemyBulletXH,y
-		pha
-		lda #SPRITE02
-		pha
-
-		dex
+		dey; if limit has been met
 		bmi @full
 
-@skip:
+			stx xReg
+			sty yReg
 
-	dey
-	cpy bulletShuffle
-	bne @remainingLoop
+			lda enemyBulletYH,x
+			sta buildY
+			lda enemyBulletXH,x
+			sta buildX	
 
-@full:
+			ldx #SPRITE02
 
-	ldx OAM_index
-	jmp buildSpritesShort
+			lda spritesL,x
+			sta spritePointer
+			lda spritesH,x
+			sta spritePointer+1
+	
+			ldy #0; sprite 0
+	
+			ldx OAM_index; get the index
 
+		@spriteLoop:
+
+			lda (spritePointer),y
+			beq @finished; NULL 
+
+
+				sta OAM+OFFSET_TILE,x
+				iny
+		
+				clc
+				lda buildY
+				adc (spritePointer),y
+				sta OAM+OFFSET_Y,x
+				iny
+
+				clc
+				lda buildX
+				adc (spritePointer),y
+				sta OAM+OFFSET_X,x
+				iny
+
+				lda (spritePointer),y
+				sta OAM+OFFSET_ATTRIBUTE,x
+				iny
+
+				inx
+				inx
+				inx
+				inx
+
+				jmp @spriteLoop
+		@finished:
+
+			stx OAM_index
+			ldx xReg
+			ldy yReg
+
+@skipBullet:
+	dex
+	bpl @bulletLoop
+
+@full:	
+	rts
+
+
+
+
+
+.endproc
 
 OAM_buildPlayer:; void()
 
@@ -166,46 +276,32 @@ OAM_buildPlayer:; void()
 	lda Player_xPos_H
 	sta buildX
 
-	lda Player_sprite
-	jmp OAM_build; void(a) |
+	ldx Player_sprite
+	jmp OAM_build; void(x) |
 
 buildPlayerBullets:
-	lda #TERMINATE;terminate
-	pha
-	lda o
-	ror
-	ror
-	ror
-	bcs @buildLoop1
-@buildLoop0:
+
 	ldy #MAX_PLAYER_BULLETS-1
-@loop0:
+
+@loop:
 	lda isActive,y
-	beq :+
+	beq @skipEnemy
+
 		lda bulletY,y
-		pha
+		sta buildY
 		lda bulletX,y
-		pha
-		lda bulletSprite,y
-		pha
-:	dey
-	bpl @loop0
-	jmp buildSpritesShort
-@buildLoop1:
-	ldy #0
-@loop1:
-	lda isActive,y
-	beq :+
-		lda bulletY,y
-		pha
-		lda bulletX,y
-		pha
-		lda bulletSprite,y
-		pha
-:	iny
-	cpy #MAX_PLAYER_BULLETS
-	bcc @loop1
-	jmp buildSpritesShort
+		sta buildX
+		ldx bulletSprite,y
+
+		sty yReg
+		jsr OAM_build; void(x)
+		ldy yReg
+
+@skipEnemy:	
+
+	dey
+	bpl @loop
+	rts
 
 buildEnemies:
 	
@@ -222,10 +318,10 @@ buildEnemies:
 		lda enemyPalette,y
 		sta buildPalette
 		
-		lda enemyMetasprite,y
+		ldx enemyMetasprite,y
 
 		sty yReg
-		jsr OAM_build; void(a)
+		jsr OAM_build; void(x)
 		ldy yReg
 
 @skipEnemy:
@@ -246,17 +342,17 @@ YPOS=64
 	pha
 	lda #SPRITE17
 	pha
-	jmp buildSpritesShort
+	;jmp buildSpritesShort
 
 .endproc
 
-OAM_build:;void (a) 
+.align 128
+OAM_build:;void (x) 
 ;a - metasprite to build
-	tay; y is Meta Sprite
 
-	lda spritesL,y
+	lda spritesL,x
 	sta spritePointer
-	lda spritesH,y
+	lda spritesH,x
 	sta spritePointer+1
 	
 	ldy #0; sprite 0
@@ -303,173 +399,26 @@ OAM_build:;void (a)
 	rts
 
 
-buildSprites:
-;builds collections of sprites
-;push tile, y, x, palette
-;pull and use in reverse order
-;returns
-;x - current OAM position
-	pla
-	cmp #TERMINATE
-	beq @return
-@metaspriteLoop:
-	sta buildPalette
-	pla
-	sta buildX
-	pla
-	sta buildY
-	pla
-	tay
-	lda spritesL,y
-	sta spritePointer
-	lda spritesH,y
-	sta spritePointer+1
-	ldy #0
-	clc
-	lda (spritePointer),y
-	@tileLoop:
-		adc buildY
-		bcs @yOverflow
-	@returnY:
-		sta OAM,x
-		inx
-		iny
-		lda (spritePointer),y
-		sta OAM,x
-		inx
-		iny
-		lda (spritePointer),y
-		ora buildPalette
-		sta OAM,x
-		inx
-		iny
-		lda (spritePointer),y
-		adc buildX
-		bcs @xOverflow
-	@returnX:
-		sta OAM,x
-		inx
-		beq @oamFull
-		iny
-		lda (spritePointer),y
-		cmp #TERMINATE
-		bne @tileLoop
-	pla
-	cmp #TERMINATE
-	bne @metaspriteLoop
-@return:
-	clc ;build successful
-	rts
-@yOverflow:
-	clc
-	lda #$ff
-	jmp @returnY
-@xOverflow:
-	clc
-	lda #$ff
-	jmp @returnX
-@oamFull:
-	pla ;null or palette
-	cmp #TERMINATE
-	beq @returnFull
-	pla ;x
-	pla ;y
-	pla ;sprite
-	jmp @oamFull
-@returnFull:
-	sec ;set full
-	rts
-
-buildSpritesShort:;x(x)
-;builds collections of sprites
-;push y, x, metasprite
-;pull and use in reverse order
-;returns
-;x - current OAM position
-
-;if first byte = null, no sprites
-	pla
-	cmp #TERMINATE
-	beq @return
-@metaspriteLoop:
-
-	tay
-
-	pla
-	sta buildX
-	pla
-	sta buildY
-	
-	lda spritesL,y
-	sta spritePointer
-	lda spritesH,y
-	sta spritePointer+1
-
-	ldy #0
-	clc
-	@tileLoop:
-		lda buildY
-		sta OAM,x
-		inx
-		iny
-		lda (spritePointer),y
-		sta OAM,x
-		inx
-		iny
-		lda (spritePointer),y
-		sta OAM,x
-		inx
-		iny
-		lda (spritePointer),y
-		adc buildX
-		bcs @xOverflow
-	@returnX:
-		sta OAM,x
-		inx
-		beq @oamFull
-		iny
-		lda (spritePointer),y
-		cmp #TERMINATE
-		bne @tileLoop
-	pla
-	cmp #TERMINATE
-	bne @metaspriteLoop
-@return:
-	clc
-	rts
-@xOverflow:
-	clc
-	lda #$ff
-	jmp @returnX
-@oamFull:
-	pla ;null or sprite
-	cmp #TERMINATE
-	beq @returnFull
-	pla ;x
-	pla ;y
-	jmp @oamFull
-@returnFull:
-	sec
-	rts
-
 OAM_clearRemaining:
 ;arguments
 ;x-starting point to clear
 	
 	ldx OAM_index
-	lda #$FF; clear y with FF
+	beq @done; already clear
 
-@clearOAM:
+		lda #$FF; clear y with FF
 
-	sta OAM+OFFSET_Y,x
+	@clearOAM:
 
-	inx
-	inx
-	inx
-	inx
+		sta OAM+OFFSET_Y,x
 
-	bne @clearOAM
+		inx
+		inx
+		inx
+		inx
 
+		bne @clearOAM
+@done:
 	rts
 
 OAM_beginDMA:

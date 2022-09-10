@@ -99,7 +99,7 @@ gamestate00:
 	jsr Waves_dispense
 	jsr updateEnemies
 
-	jsr updateEnemyBullets
+	jsr Bullets_tick
 	jsr Patterns_tick
 
 	ldy Gamepads_state
@@ -112,19 +112,17 @@ gamestate00:
 
 @noBomb:
 	clc
-	;jsr Player_isHit
+	jsr Player_isHit
 	bcc @playerUnharmed
 		
 		jsr Player_hit
 		lda #GAMESTATE0A
 		jsr Gamestates_new; void(a)
+
 @playerUnharmed:
 
-	lda g
-	jsr OAM_build00; c(a) |
+	jsr OAM_build00; void()
 	
-	ldx Main_currentPlayer
-	jsr Score_tallyFrame;(x)
 	
 	jsr PPU_dimScreen; see how much frame is left over
 	jsr PPU_waitForSprite0Hit
@@ -400,7 +398,7 @@ gamestate0A:; falling off broom
 
 	jsr Waves_dispense 
 	jsr updateEnemies
-	jsr updateEnemyBullets
+	jsr Bullets_tick
 
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame; (x)
@@ -443,7 +441,7 @@ gamestate0B:; recovering from fall
 
 	jsr Waves_dispense
 	jsr updateEnemies
-	jsr updateEnemyBullets
+	jsr Bullets_tick
 
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame;(x)
@@ -478,7 +476,7 @@ gamestate0C:; a moment of no shooting
 
 	jsr Waves_dispense 
 	jsr updateEnemies
-	jsr updateEnemyBullets
+	jsr Bullets_tick
 
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame;(x)

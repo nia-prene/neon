@@ -39,6 +39,14 @@ INES_SRAM   = 0 ; 1 = battery backed SRAM at $6000-7FFF
 .byte (INES_MAPPER & %11110000)
 .byte $0, $0, $0, $0, $0, $0, $0, $0 ; padding
 
+
+.macro CheckAlign start, end, alignsize
+    .align alignsize
+    .assert (end-start) <= alignsize, error, "CheckAlign too large"
+    .assert (end-start) > (alignsize/2), error, "CheckAlign too small"
+.endmacro
+
+
 .code
 checkCollision:
 ;checks if two bound boxes intersect
