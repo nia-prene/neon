@@ -17,7 +17,7 @@ bulletCount: .res 1
 
 .code
 
-Patterns_new:; void(a,x) | x y
+Patterns_new:; void(a,x) | x,y
 
 	sta Enemies_pattern,x; save the pattern
 	
@@ -32,49 +32,46 @@ Patterns_new:; void(a,x) | x y
 
 
 Patterns_tick:
-	ldx #PATTERNS_MAX
-@patternLoop:
-	lda Enemies_pattern,x
-	beq @nextPattern
+	ldx #PATTERNS_MAX-1
+Patterns_loop:
+	ldy Enemies_pattern,x
+	beq Patterns_tickDown
 		
-		tay
+		lda Patterns_L,y
+		sta Enemies_ptr+0
+		lda Patterns_H,y
+		sta Enemies_ptr+1
 		
 		txa; save offset
-		pha
+		jmp (Enemies_ptr)
+	Patterns_tickReturn:
 
-		lda Patterns_H,y
-		pha
-		lda Patterns_L,y
-		pha
-		
 		inc Patterns_timeElapsed,x; tick forward
-@nextPattern:
+		
+Patterns_tickDown:
 	dex
-	bpl @patternLoop
+	bpl Patterns_loop
 	rts
 
+PATTERN01=$01
 
 .proc pattern01
-SHOTS=8
+SHOTS=4
 RATE=%11
-BULLET_COUNT=8
-BULLET_INVISIBILITY=16
-FRAME_CHANGE=1
-PATTERN_CHANGE=8
+BULLET_COUNT=4
+BULLET_INVISIBILITY=24
+FRAME_CHANGE=8*15
+PATTERN_CHANGE=256/BULLET_COUNT
 MAX_TIME=SHOTS*(RATE+1)
-	pla
-	tax
 
 	lda Patterns_timeElapsed,x
-	cmp #MAX_TIME
-	bcs @noPattern
-
 	and #RATE
 	bne @noPattern
 
 		lda p,x
 		sta mathTemp
 		
+		clc
 		adc #FRAME_CHANGE
 
 		sta p,x
@@ -84,7 +81,7 @@ MAX_TIME=SHOTS*(RATE+1)
 
 	@bulletLoop:
 		
-		jsr Bullets_new; c,y() | x
+		jsr Bullets_get; c,y() | x
 		bcc @abort
 
 		clc
@@ -105,11 +102,10 @@ MAX_TIME=SHOTS*(RATE+1)
 
 		dec bulletCount
 		bne @bulletLoop
-		jmp @abort
 		
 @noPattern:
 @abort:
-	rts
+	jmp Patterns_tickReturn
 .endproc
 
 Rate_slow:
@@ -120,7 +116,7 @@ Rate_fast:
 	.byte %0
 
 Patterns_L:
-	.byte NULL, <(pattern01-1)
+	.byte NULL, <(pattern01)
 Patterns_H:
-	.byte NULL, >(pattern01-1)
+	.byte NULL, >(pattern01)
 

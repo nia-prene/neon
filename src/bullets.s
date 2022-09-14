@@ -8,44 +8,36 @@
 .include "enemies.h"
 
 BULLETS_VARIETIES=8
-MAX_ENEMY_BULLETS=128
+MAX_ENEMY_BULLETS=129
 
 .zeropage
+isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 ;arguments
-quickBulletX: .res 1
-quickBulletY: .res 1
-numberOfBullets: .res 1
 Bullets_fastForwardFrames:.res 1
-Charms_framesElapsed: .res 1
 
 ;pointers
 Bullets_move: .res 2
 
 ;locals
+b:.res 1
 octant: .res 1
 bulletAngle: .res 1
 ;Bullets_spriteBank: .res BULLETS_VARIETIES
-Bullets_willSpritesShuffle: .res 1
 
 .data
-Charms_isActive: .res 1
 
-enemyBulletBehaviorH: .res 1
-enemyBulletBehaviorL: .res 1
-
-isEnemyBulletActive: .res MAX_ENEMY_BULLETS
+Bullets_ID: .res MAX_ENEMY_BULLETS
 enemyBulletXH: .res MAX_ENEMY_BULLETS
 enemyBulletXL: .res MAX_ENEMY_BULLETS
 enemyBulletYH: .res MAX_ENEMY_BULLETS
 enemyBulletYL: .res MAX_ENEMY_BULLETS
-enemyBulletMetasprite: .res 1
-Bullets_ID: .res MAX_ENEMY_BULLETS
 
 .code
 
 	
+Bullets_new:; void(a)
 
-	jsr Enemy_Bullets_getAvailable;c,y(void) | x
+	jsr Bullets_get;c,y(void) | x
 	bcc @bulletsFull;returns clear if full
 	
 		lda enemyXH,x; copy enemy y and x
@@ -57,61 +49,44 @@ Bullets_ID: .res MAX_ENEMY_BULLETS
 		lda Bullets_fastForwardFrames; it may be fastForwarded
 		sta isEnemyBulletActive,y
 	
-		rts
 @bulletsFull:
-	pla
 	rts
 
-Bullets_newGroup:; void(a,x) |
-	sta numberOfBullets
 
-	lda enemyYH,x; copy enemy y and x
-	sta quickBulletY
-	lda enemyXH,x
-	sta quickBulletX
-	
-@bulletLoop:
-	
-	jsr Enemy_Bullets_getAvailable; y(x) | x
-	bcc @bulletsFull;returns clear if full
-
-	pla;retrieve bullet id
-	sta Bullets_ID,y
-
-	lda quickBulletY
-	sta enemyBulletYH,y
-	lda quickBulletX
-	sta enemyBulletXH,y
-
-	lda Bullets_fastForwardFrames
-	sta isEnemyBulletActive,y
-	
-	dec numberOfBullets
-	bne @bulletLoop
-
-	rts
-@bulletsFull:
-;pull id
-	pla
-	dec numberOfBullets
-	bne @bulletsFull
-	rts
-
-Enemy_Bullets_getAvailable:
-Bullets_new:; c,y() | x
+Bullets_get:; c,y() | x
 ;returns x - active offset
 ;returns carry clear if full
+	
+	inc b
+	lda b
+	ror
+	bcc @forward
 
 	ldy #MAX_ENEMY_BULLETS-1
 @bulletLoop:
 	lda isEnemyBulletActive,y
-	bne @nextBullet
-		sec ;mark success
+	beq @return
+		dey
+		bpl @bulletLoop
+		clc;mark full
 		rts
-@nextBullet:
-	dey
-	bpl @bulletLoop
-	clc;mark full
+@return:
+	sec ;mark success
+	rts
+
+
+@forward:
+	ldy #00
+@forwardLoop:
+	lda isEnemyBulletActive,y
+	beq @forwardReturn
+		iny
+		cpy #MAX_ENEMY_BULLETS
+		bcc @forwardLoop
+		clc;mark full
+		rts
+@forwardReturn:
+	sec ;mark success
 	rts
 
 Bullets_tick:; void()
@@ -160,6 +135,7 @@ Charms_spin:; (void)
 			
 			lda #FALSE; clear invisible bullets
 			sta isEnemyBulletActive,x
+			jmp @skipCharm
 
 	@visible:
 
@@ -177,13 +153,6 @@ Charms_spin:; (void)
 	
 	rts
 
-
-;used to see if charms are still on screen
-Charms_getActive:
-	lda Charms_isActive
-	rts
-
-
 aimBullet:
 ;arguments:
 ;quickBulletX
@@ -192,7 +161,7 @@ aimBullet:
 ;a - degree from 0-256 to shoot bullet. use this degree to fetch correct bullet
 	sec
 	lda Player_xPos_H
-	sbc quickBulletX
+	;sbc quickBulletX
 	bcs *+4
 	eor #$ff
 	tax
@@ -200,7 +169,7 @@ aimBullet:
 	lda Player_yPos_H
 	adc #10
 	sec
-	sbc quickBulletY
+	;sbc quickBulletY
 	bcs *+4
 	eor #$ff
 	tay

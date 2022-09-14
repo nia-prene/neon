@@ -5,7 +5,7 @@
 .include "sprites.h"
 .include "score.h"
 .include "player.h"
-.include "playerbullets.h"
+.include "shots.h"
 .include "enemies.h"
 .include "bullets.h"
 .include "bombs.h"
@@ -22,6 +22,8 @@ buildX: .res 1
 buildY: .res 1
 buildPalette: .res 1
 spritePointer: .res 2
+limit: .res 1
+
 
 OAM_index:.res 1
 
@@ -108,165 +110,116 @@ PLAYER_HITBOX_X_OFFSET=2
 .proc OAM_buildBullets
 LIMIT=48
 
+	lda #LIMIT; set sprite limit for layer
+	sta limit
+
+	lda bulletShuffle; shuffle bullets
+	adc #(MAX_ENEMY_BULLETS/5) * 3; 3/5ths item collection
+	cmp #MAX_ENEMY_BULLETS-1
+	bcc @storeShuffle
+		sbc #MAX_ENEMY_BULLETS-1; make sure no wrap
+@storeShuffle:
+	sta bulletShuffle
+
+	tax; set as initial iterator
+	jsr firstPass; y(x) |
+
 	ldx #MAX_ENEMY_BULLETS-1
-	ldy #LIMIT
-	jsr firstPass; y(y) |
-	jsr secondPass; void(y) |
+	jsr secondPass; void(y,x) |
 	rts
 
 .align 64
 firstPass:
+	ldy OAM_index
 @bulletLoop:
 
 	lda isEnemyBulletActive,x; if active
 	cmp #1
 	bne @skipBullet
 		
-		dey; if limit has been met
-		bmi @full
+	lda limit
+	beq @full
 
-			stx xReg
-			sty yReg
+		lda #$24
 
-			lda enemyBulletYH,x
-			sta buildY
-			lda enemyBulletXH,x
-			sta buildX	
-
-			ldx #SPRITE02
-
-			lda spritesL,x
-			sta spritePointer
-			lda spritesH,x
-			sta spritePointer+1
-	
-			ldy #0; sprite 0
-	
-			ldx OAM_index; get the index
-
-		@spriteLoop:
-
-			lda (spritePointer),y
-			beq @finished; NULL 
-
-
-				sta OAM+OFFSET_TILE,x
-				iny
+		sta OAM+OFFSET_TILE,y
 		
-				clc
-				lda buildY
-				adc (spritePointer),y
-				sta OAM+OFFSET_Y,x
-				iny
+		sec
+		lda enemyBulletYH,x
+		sbc #4
+		sta OAM+OFFSET_Y,y
 
-				clc
-				lda buildX
-				adc (spritePointer),y
-				sta OAM+OFFSET_X,x
-				iny
+		lda enemyBulletXH,x
+		sbc #4
+		sta OAM+OFFSET_X,y
 
-				lda (spritePointer),y
-				sta OAM+OFFSET_ATTRIBUTE,x
-				iny
+		lda #%11
+		sta OAM+OFFSET_ATTRIBUTE,y
+		
+		dec limit
 
-				inx
-				inx
-				inx
-				inx
-
-				jmp @spriteLoop
-		@finished:
-
-			stx OAM_index
-			ldx xReg
-			ldy yReg
+		iny
+		iny
+		iny
+		iny
 
 @skipBullet:
 	dex
 	bpl @bulletLoop
 
 @full:	
+	sty OAM_index
 	rts
 
 
 secondPass:
+
+	ldy OAM_index
+	
 @bulletLoop:
 
-	lda isEnemyBulletActive,x; if active
-	cmp #1
+	lda isEnemyBulletActive,x
+	cmp #1; if active and visible
 	bne @skipBullet
 		
-		dey; if limit has been met
-		bmi @full
-
-			stx xReg
-			sty yReg
-
-			lda enemyBulletYH,x
-			sta buildY
-			lda enemyBulletXH,x
-			sta buildX	
-
-			ldx #SPRITE02
-
-			lda spritesL,x
-			sta spritePointer
-			lda spritesH,x
-			sta spritePointer+1
-	
-			ldy #0; sprite 0
-	
-			ldx OAM_index; get the index
-
-		@spriteLoop:
-
-			lda (spritePointer),y
-			beq @finished; NULL 
+	lda limit; and not full
+	beq @full
 
 
-				sta OAM+OFFSET_TILE,x
-				iny
+		lda #$24
+
+		sta OAM+OFFSET_TILE,y
 		
-				clc
-				lda buildY
-				adc (spritePointer),y
-				sta OAM+OFFSET_Y,x
-				iny
+		sec
+		lda enemyBulletYH,x
+		sbc #4
+		sta OAM+OFFSET_Y,y
 
-				clc
-				lda buildX
-				adc (spritePointer),y
-				sta OAM+OFFSET_X,x
-				iny
+		lda enemyBulletXH,x
+		sbc #4
+		sta OAM+OFFSET_X,y
 
-				lda (spritePointer),y
-				sta OAM+OFFSET_ATTRIBUTE,x
-				iny
+		lda #%11
+		sta OAM+OFFSET_ATTRIBUTE,y
 
-				inx
-				inx
-				inx
-				inx
+		dec limit
 
-				jmp @spriteLoop
-		@finished:
-
-			stx OAM_index
-			ldx xReg
-			ldy yReg
+		iny
+		iny
+		iny
+		iny
 
 @skipBullet:
 	dex
-	bpl @bulletLoop
+	cpx bulletShuffle
+	bne @bulletLoop
 
 @full:	
+	sty OAM_index
 	rts
 
-
-
-
-
 .endproc
+
 
 OAM_buildPlayer:; void()
 

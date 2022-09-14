@@ -4,25 +4,26 @@
 
 SCORE_DIGITS=7
 .zeropage
-Score_ones: .res 2
-Score_tens: .res 2
-Score_hundreds: .res 2
-Score_thousands: .res 2
-Score_tenThousands: .res 2
-Score_hundredThousands: .res 2
-Score_millions: .res 2
-Score_multiplier: .res 2
 Score_frameTotal_L: .res 1
 Score_frameTotal_H: .res 1
-Score_hasChanged: .res 1
 ;locals
 ;these convert bin to dec
+.data
+Score_ones: .res 1
+Score_tens: .res 1
+Score_hundreds: .res 1
+Score_thousands: .res 1
+Score_tenThousands: .res 1
+Score_hundredThousands: .res 1
+Score_millions: .res 1
+Score_multiplier: .res 1
+Score_hasChanged: .res 1
+
 DecOnes: .res 1
 DecTens: .res 1
 DecHundreds: .res 1
 DecThousands: .res 1
 DecTenThousands: .res 1
-.data
 
 .code
 Score_clear:

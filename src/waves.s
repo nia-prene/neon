@@ -68,10 +68,10 @@ Waves_dispense:; void()
 	iny
 	sty enemyIndex	
 
-	jsr initializeEnemy; x(a) |
+	jsr Enemies_new; x(a) |
 	
-	ldy enemyIndex
 	bcc @enemiesFull
+	ldy enemyIndex
 	
 		lda (wavePointer),y; get position on screen
 	
@@ -201,19 +201,17 @@ waveStrings_H:
 waveStrings_L:
 	.byte <waveString00
 waveString00:
-	.byte WAVE02
+	.byte WAVE01
 	.byte NULL
-	.byte WAVE01
-	.byte WAVE01
 ;pointers to individual enemy waves (below)
 
-WAVE01=$01;ligh drones moving left
-WAVE02=$02;ligh drones moving right
-WAVE03=$03;medium drones moving left
-WAVE04=$04;left baloon with light right moving drones
-WAVE05=$05
-WAVE06=$06
-WAVE07=$07;piper boss fight
+WAVE01=$01; piper boss fight
+WAVE02=$02; unused
+WAVE03=$03; unused
+WAVE04=$04; unused
+WAVE05=$05; unused
+WAVE06=$06; unused
+WAVE07=$07; unused
 
 
 TOP=%00
@@ -222,26 +220,19 @@ BOTTOM=%10
 LEFT=%11
 
 Wave_palette00:
-	.byte NULL,PALETTE06,PALETTE08
+	.byte NULL,PALETTE08
 Wave_palette01:
-	.byte NULL,PALETTE06,PALETTE09
+	.byte NULL,PALETTE09
 
 ;individual enemy waves
 ;	.byte enemy, position, hold, etc, NULL
 
 wave01:
 	
-	.byte ENEMY01, TOP|32, 10
-	.byte ENEMY01, TOP|30, 10
-	.byte ENEMY01, TOP|28, 10
-	.byte ENEMY01, TOP|26, 10
-	.byte ENEMY01, TOP|24, 10
-	.byte ENEMY01, TOP|22, 255
+	.byte ENEMY01, TOP|22, 1
 	.byte NULL
 
 wave02:
-	.byte ENEMY08, TOP|22, 1
-	.byte NULL
 
 wave03:
 wave04:

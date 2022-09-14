@@ -55,8 +55,9 @@ sprite01:
 	.byte NULL
 
 sprite02:
-	.lobytes $24, -4, -4, %00000011
+	.lobytes $24, %00000011
 	.byte NULL
+
 sprite03:
 	.byte 0, $26, %00000011, 0
 	.byte 0, $26, %01000011, 8

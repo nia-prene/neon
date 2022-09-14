@@ -1,15 +1,16 @@
+;constants
 .globalzp MAX_ENEMIES
 
+; locals
+.globalzp Enemies_ptr
+
+; attributes
 .global enemyXH
 .global enemyXL
 .global enemyYH
 .global enemyYL
 .global enemyHPH
 .global enemyHPL
-.global i
-.global j
-.global enemyBehaviorH
-.global enemyBehaviorL
 .global enemyMetasprite
 .global enemyHitboxX1
 .global enemyHitboxX2
@@ -19,8 +20,8 @@
 .global isEnemyActive
 .global Enemies_pattern
 
-.global initializeEnemy
-.global updateEnemies
+.global Enemies_new
+.global Enemies_tick
 
 ; objects
 .globalzp ENEMY01

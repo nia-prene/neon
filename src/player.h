@@ -1,5 +1,6 @@
 .globalzp Player_xPos_H
 .globalzp Player_yPos_H
+.globalzp Player_ptr
 
 .global playerIFrames
 .global Player_sprite

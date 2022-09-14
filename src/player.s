@@ -1,7 +1,7 @@
 .include "lib.h"
 .include "player.h"
 
-.include "playerbullets.h"
+.include "shots.h"
 .include "sprites.h"
 .include "palettes.h"
 .include "enemies.h"
@@ -10,6 +10,7 @@
 
 PLAYERS_MAX=2
 .zeropage
+Player_ptr:.res 2
 Player_xPos_H: .res 1
 Player_yPos_H: .res 1
 .data
@@ -47,7 +48,7 @@ Player_init:
 	lda #3
 	sta Player_bombs
 
-	lda #0
+	lda #1
 	sta Player_powerLevel
 	sta Player_speedIndex
 
@@ -447,7 +448,9 @@ Player_collectCharms:
 		lda enemyBulletXH,x
 		sbc Player_xPos_H
 		bcs @bulletGreaterX
+			;clc
 			eor #%11111111 ;if negative
+			adc #1
 	@bulletGreaterX:
 		cmp #MAX_BULLET_DIAMETER; if x distance < width
 		bcs @nextBullet ;else
@@ -455,69 +458,18 @@ Player_collectCharms:
 		lda enemyBulletYH,x
 		sbc Player_yPos_H
 		bcs @bulletGreaterY
+			;clc
 			eor #%11111111 ;if negative
+			adc #1; two's compliment
 	@bulletGreaterY:
 		cmp #MAX_BULLET_DIAMETER;if y distance < height
 		bcs @nextBullet
-		;copy player x bounded box
-		lda Player_xPos_H
-		sta sprite1LeftOrTop
-		adc #16
-		sta sprite1RightOrBottom
-		;copy bullet x bounded box
-		lda enemyBulletXH,x
-		sta sprite2LeftOrTop
-		adc #08
-		sta sprite2RightOrBottom
-		jsr checkCollision
-		bcc @nextBullet;if outside box
-		;copy player y bounded box
-		lda Player_yPos_H
-		sta sprite1LeftOrTop
-		adc #16
-		sta sprite1RightOrBottom
-		;copy bullet y bounded box
-		lda enemyBulletYH,x
-		sta sprite2LeftOrTop
-		adc #8
-		sta sprite2RightOrBottom
-		jsr checkCollision
-		bcc @nextBullet
-			lda #FALSE
-			sta isEnemyBulletActive,x
+		lda #FALSE
+		sta isEnemyBulletActive,x
 
 @nextBullet:
 	dex
 	bpl @bulletLoop
 	rts
 
-
-
-Player_toConvo:;void()
-;moves the player to the appropriate spot to have a conversation
-CONVO_Y=128
-CONVO_X=120
-	lda Player_xPos_H
-	and #%11111110
-	cmp #CONVO_X
-	beq @doY;where we want it
-	bcs @playerRight
-		adc #2
-		jmp @doY
-@playerRight:
-	sbc #2
-@doY:
-	sta Player_xPos_H
-	lda Player_yPos_H
-	and #%11111110
-	cmp #CONVO_Y
-	beq @return
-	bcs @playerDown
-		adc #2
-		jmp @return
-@playerDown:
-	sbc #2
-@return:
-	sta Player_yPos_H
-	rts
 

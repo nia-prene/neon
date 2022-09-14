@@ -11,7 +11,7 @@
 .globalzp Bullets_fastForwardFrames
 
 ;attributes
-.global isEnemyBulletActive
+.globalzp isEnemyBulletActive
 .global enemyBulletHitbox1
 .global enemyBulletHitbox2
 .global enemyBulletBehaviorH
@@ -30,9 +30,8 @@
 
 ;functions
 .global Bullets_new
-.global Bullets_newGroup
-.global Enemy_Bullets
-.global aimBullet
+.global Bullets_get
+
 .global Bullets_tick
 .global Bullets_clockwise
 .global Bullets_toCharm

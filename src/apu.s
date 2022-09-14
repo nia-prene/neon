@@ -32,29 +32,29 @@ hasHiPeriodChanged:.res 1
 
 
 MAX_TRACKS=4
-tracks: .res MAX_TRACKS+1
-trackIndex: .res MAX_TRACKS+1
-trackPtr: .res 2
-loops: .res MAX_TRACKS+1
-loopIndex: .res MAX_TRACKS+1
-loopPtr: .res 2
 
-instrument: .res MAX_TRACKS
+APU_ptr:.res 2
+
+
+trackIndex: .res MAX_TRACKS+1
+loopIndex: .res MAX_TRACKS+1
+SFX_loopIndex: .res MAX_TRACKS
+;locals
+.data
+Song_isOn:.res 1
+SFX_isOn: .res 1
+
 note:.res MAX_TRACKS+1
+instrument: .res MAX_TRACKS
+tracks: .res MAX_TRACKS+1
+loops: .res MAX_TRACKS+1
+SFX_effect:.res MAX_TRACKS
+SFX_priority: .res MAX_TRACKS
 maxVolume: .res MAX_TRACKS
 targetVolume: .res MAX_TRACKS
 currentVolume_L: .res MAX_TRACKS
 currentVolume_H: .res MAX_TRACKS
 
-SFX_effect:.res MAX_TRACKS
-SFX_priority: .res MAX_TRACKS
-SFX_loopPtr: .res 2
-SFX_loopIndex: .res MAX_TRACKS
-;locals
-.data
-
-Song_isOn:.res 1
-SFX_isOn: .res 1
 length:.res MAX_TRACKS
 rest:.res MAX_TRACKS+1
 mute:.res MAX_TRACKS
@@ -129,18 +129,18 @@ APU_setSong:;void(x)
 	lda tracks,x
 	tay
 	lda tracks_L,y
-	sta trackPtr
+	sta APU_ptr
 	lda tracks_H,y
-	sta trackPtr+1
+	sta APU_ptr+1
 	ldy #0
-	lda (trackPtr),y
+	lda (APU_ptr),y
 	sta loops,x
 	iny
-	lda (trackPtr),y;get new instrument
+	lda (APU_ptr),y;get new instrument
 	sta instrument,x
 	sta Music_savedInstrument,x
 	iny
-	lda (trackPtr),y;get new volume
+	lda (APU_ptr),y;get new volume
 	sta maxVolume,x
 	sta Music_savedVolume,x
 	iny
@@ -153,11 +153,11 @@ APU_setSong:;void(x)
 	lda tracks,x
 	tay
 	lda tracks_L,y
-	sta trackPtr
+	sta APU_ptr
 	lda tracks_H,y
-	sta trackPtr+1
+	sta APU_ptr+1
 	ldy #0
-	lda (trackPtr),y
+	lda (APU_ptr),y
 	sta loops,x
 	iny
 	sty trackIndex,x
@@ -336,30 +336,30 @@ SFX_newEffect:;(a)
 getNewNote:
 	ldy loops,x;get the channel loop
 	lda loops_L,y;setup pointer
-	sta loopPtr
+	sta APU_ptr
 	lda loops_H,y
-	sta loopPtr+1
+	sta APU_ptr+1
 	ldy loopIndex,x;get the index
-	lda (loopPtr),y;get note
+	lda (APU_ptr),y;get note
 	bne @loopContinues;loops are null terminated
 		ldy tracks,x
 		lda tracks_L,y
-		sta trackPtr
+		sta APU_ptr 
 		lda tracks_H,y
-		sta trackPtr+1
+		sta APU_ptr+1
 		ldy trackIndex,x;get place in song
-		lda (trackPtr),y;get new loop
+		lda (APU_ptr),y;get new loop
 		bne @trackContinues;tracks are null terminated
 			ldy Music_repeatAt,x
-			lda (trackPtr),y;get first loop
+			lda (APU_ptr),y;get first loop
 	@trackContinues:
 		sta loops,x
 		iny
-		lda (trackPtr),y;get new instrument
+		lda (APU_ptr),y;get new instrument
 		sta instrument,x
 		sta Music_savedInstrument,x
 		iny
-		lda (trackPtr),y;get new volume
+		lda (APU_ptr),y;get new volume
 		sta maxVolume,x
 		sta Music_savedVolume,x
 		iny
@@ -367,19 +367,19 @@ getNewNote:
 	@getFirstNote:
 		ldy loops,x;get the channel loop
 		lda loops_L,y;setup pointer
-		sta loopPtr
+		sta APU_ptr
 		lda loops_H,y
-		sta loopPtr+1
+		sta APU_ptr+1
 		ldy #0;start at beginning of loop
-		lda (loopPtr),y;get note
+		lda (APU_ptr),y;get note
 @loopContinues:
 	pha;save note
 	iny
-	lda (loopPtr),y;get play duration
+	lda (APU_ptr),y;get play duration
 	sta length,x
 	dec length,x;this frame counts
 	iny
-	lda (loopPtr),y;get rest duration
+	lda (APU_ptr),y;get rest duration
 	sta rest,x
 	iny
 	sty loopIndex,x;save the index
@@ -434,12 +434,12 @@ SFX_getNewNote:
 	
 	ldy SFX_effect,x;get the channel loop
 	lda SFX_loops_L,y;setup pointer
-	sta SFX_loopPtr
+	sta APU_ptr
 	lda SFX_loops_H,y
-	sta SFX_loopPtr+1
+	sta APU_ptr+1
 
 	ldy SFX_loopIndex,x;get the index
-	lda (SFX_loopPtr),y;get note
+	lda (APU_ptr),y;get note
 	bne @loopContinues;loops are null terminated
 
 		ldy SFX_instrument,x;silence channel
@@ -460,12 +460,12 @@ SFX_getNewNote:
 	sta note,x
 
 	iny
-	lda (SFX_loopPtr),y;get play duration
+	lda (APU_ptr),y;get play duration
 	sta SFX_length,x
 	dec SFX_length,x;this frame counts
 
 	iny
-	lda (SFX_loopPtr),y;get rest duration
+	lda (APU_ptr),y;get rest duration
 	sta SFX_rest,x
 
 	iny
@@ -504,37 +504,37 @@ SFX_getNewNote:
 getNewSample:
 	ldy loops+4;get the channel loop
 	lda loops_L,y;setup pointer
-	sta loopPtr
+	sta APU_ptr
 	lda loops_H,y
-	sta loopPtr+1
+	sta APU_ptr+1
 	ldy loopIndex+4;get the index
-	lda (loopPtr),y;get note
+	lda (APU_ptr),y;get note
 	bne @loopContinues;loops are null terminated
 		ldy tracks+4
 		lda tracks_L,y
-		sta trackPtr
+		sta APU_ptr
 		lda tracks_H,y
-		sta trackPtr+1
+		sta APU_ptr+1
 		ldy trackIndex+4;get place in song
-		lda (trackPtr),y;get new loop
+		lda (APU_ptr),y;get new loop
 		bne @trackContinues;tracks are null terminated
 			ldy Music_repeatAt+4
-			lda (trackPtr),y;get first loop
+			lda (APU_ptr),y;get first loop
 	@trackContinues:
 		sta loops+4
 		iny
 		sty trackIndex+4;save place in song
 		ldy loops+4;get the channel loop
 		lda loops_L,y;setup pointer
-		sta loopPtr
+		sta APU_ptr
 		lda loops_H,y
-		sta loopPtr+1
+		sta APU_ptr+1
 		ldy #0;start at beginning of loop
-		lda (loopPtr),y;get sample
+		lda (APU_ptr),y;get sample
 @loopContinues:
 	sta note+4
 	iny
-	lda (loopPtr),y;get rest duration
+	lda (APU_ptr),y;get rest duration
 	sta rest+4
 	dec rest+4;this note counts
 	iny

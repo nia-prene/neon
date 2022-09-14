@@ -3,7 +3,7 @@
 
 .include "main.h"
 .include "scenes.h"
-.include "playerbullets.h"
+.include "shots.h"
 .include "sprites.h"
 .include "header.s"
 .include "tiles.h"
@@ -97,7 +97,7 @@ gamestate00:
 	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense
-	jsr updateEnemies
+	jsr Enemies_tick
 
 	jsr Bullets_tick
 	jsr Patterns_tick
@@ -216,7 +216,6 @@ gamestate04:
 ;hide HUD and move player into boss dialogue position
 	jsr PPU_updateScroll
 	jsr PPU_waitForSprite0Reset;()
-	jsr Player_toConvo
 	jsr HUD_easeOut;a()
 	jsr Sprite0_setSplit;(a)
 	
@@ -242,7 +241,6 @@ TEXTBOX_OFFSET=30
 	jsr setPalette
 	jsr PPU_waitForSprite0Reset;()
 	jsr PPU_updateScroll
-	jsr Player_toConvo
 	lda #TEXTBOX_OFFSET
 	jsr Sprite0_setDestination;(a)
 	jsr Textbox_easeIn;a()
@@ -356,7 +354,7 @@ gamestate09:; Level - charms spinning
 	jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense 
-	jsr updateEnemies
+	jsr Enemies_tick
 	
 	jsr Charms_spin
 	jsr Player_collectCharms
@@ -397,7 +395,7 @@ gamestate0A:; falling off broom
 	jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense 
-	jsr updateEnemies
+	jsr Enemies_tick
 	jsr Bullets_tick
 
 	ldx Main_currentPlayer
@@ -440,7 +438,7 @@ gamestate0B:; recovering from fall
 	jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense
-	jsr updateEnemies
+	jsr Enemies_tick
 	jsr Bullets_tick
 
 	ldx Main_currentPlayer
@@ -475,7 +473,7 @@ gamestate0C:; a moment of no shooting
 	jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense 
-	jsr updateEnemies
+	jsr Enemies_tick
 	jsr Bullets_tick
 
 	ldx Main_currentPlayer
@@ -519,7 +517,7 @@ gamestate0D:; charms spinning, main game loop
 	jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense 
-	jsr updateEnemies
+	jsr Enemies_tick
 	
 	jsr Charms_suck
 	jsr Player_collectCharms

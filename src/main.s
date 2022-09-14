@@ -2,7 +2,7 @@
 .include "main.h"
 
 .include "scenes.h"
-.include "playerbullets.h"
+.include "shots.h"
 .include "gamestates.h"
 .include "sprites.h"
 .include "header.s"
