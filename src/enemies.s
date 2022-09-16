@@ -159,7 +159,7 @@ Enemies_isAlive:
 	lda #0
 	sta totalDamage
 	sta enemyPalette,x
-	ldy #MAX_PLAYER_BULLETS-1
+	ldy #SHOTS_MAX-1
 @bulletLoop:
 ;find an active bullet
 	lda isActive,y

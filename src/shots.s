@@ -13,8 +13,7 @@ Shots_remaining: .res 1
 
 
 .data
-MAX_PLAYER_BULLETS = 10	
-SHOTS_MAX=10
+SHOTS_MAX=15
 bulletX: .res SHOTS_MAX
 bulletY: .res SHOTS_MAX
 PlayerBullet_width: .res SHOTS_MAX
@@ -76,9 +75,10 @@ PlayerBullets_shoot:;void(a)
 
 Shots_get:; cy(y) | x
 ;returns
-;x - available bullet
+;y - available bullet
 ;returns clear carry if fail
 ;find empty bullet starting with slot 0
+	ldy #SHOTS_MAX-1
 
 @findEmptyBullet:
 	lda isActive,y
@@ -97,7 +97,7 @@ PlayerBullets_move:;void (void)
 ;moves player bullets up screen
 BULLET_SPEED = 18
 ;start with last bullet
-	ldx #MAX_PLAYER_BULLETS-1
+	ldx #SHOTS_MAX-1
 @bulletLoop:
 	lda isActive,x;if inactive, skip
 	beq @skipBullet
@@ -130,9 +130,7 @@ WIDTH=16
 	bne @return
 		
 		ldx #1
-		ldy #SHOTS_MAX
 	@loop:
-
 		jsr Shots_get; c,y(y) | x
 		bcc @return
 		
@@ -185,74 +183,56 @@ WIDTH=16
 			adc @offset_y,x
 			sta bulletY,y
 
-			lda #SPRITE09
+			lda @sprites,x
 			sta bulletSprite,y
 
 			lda #TRUE
 			sta isActive,y
 
+@return:
+	rts
+
+@offset_x:
+	.lobytes -4, 12, 4, -12
+@offset_y:
+	.lobytes -12, -6, -12, -6
+@sprites:
+	.byte SPRITE09,SPRITE08,SPRITE09,SPRITE08
+.endproc
+
+.proc shotType02
+
+	lda Shots_hold
+	and #%111
+	tax 
+
+	jsr Shots_get; c,y() | x
+	bcc @return
+		
+		clc
+		lda Player_xPos_H
+		adc @offset_x,x
+		sta bulletX,y
+		
+		clc
+		lda Player_yPos_H
+		adc @offset_y,x
+		sta bulletY,y
+
+		lda @sprites,x
+		sta bulletSprite,y
+
+		lda #TRUE
+		sta isActive,y
 
 @return:
 	rts
 
 @offset_x:
-	.lobytes -6, 18, 6, -18
+	.lobytes  -4,  10, -16, 22,   4, -10, 16, -22
 @offset_y:
-	.lobytes -12, -6, -12, -6
-
-
-.endproc
-
-.proc shotType02
-X_OFFSET_1=11
-X_OFFSET_2=17
-Y_OFFSET=04
-DAMAGE=1
-WIDTH=8
-;start with left bullet
-	jsr Shots_get
-	bcc @return
-	lda Player_xPos_H
-	sbc #X_OFFSET_1
-	bcc @bullet1Offscreen
-	sta bulletX,x;x offset
-	lda Player_yPos_H
-	sbc #Y_OFFSET
-	bcc @bullet1Offscreen
-	sta bulletY,x;y offset
-	lda #SPRITE08
-	sta bulletSprite,x;sprite
-	lda #DAMAGE
-	sta PlayerBullet_damage,x
-	lda #WIDTH
-	sta PlayerBullet_width,x
-@bullet2:	
-	jsr Shots_get
-	bcc @return
-	lda Player_yPos_H
-	sbc #Y_OFFSET
-	bcc @bullet2Offscreen
-	sta bulletY,x;y offset
-	clc
-	lda Player_xPos_H
-	adc #X_OFFSET_2
-	bcs @bullet2Offscreen
-	sta bulletX,x;x offset
-	lda #SPRITE08
-	sta bulletSprite,x;sprite
-	lda #DAMAGE
-	sta PlayerBullet_damage,x
-	lda #WIDTH
-	sta PlayerBullet_width,x
-@return:
-	rts
-@bullet1Offscreen:
-	lda #FALSE
-	sta isActive,x
-	jmp @bullet2
-@bullet2Offscreen:
-	lda #FALSE
-	sta isActive,x
-	rts
+	.lobytes -12,  -6,   0,  6, -12,  -6,  0,   6
+@sprites:
+	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE08,SPRITE09,SPRITE09,SPRITE09,SPRITE08
 .endproc
 

@@ -96,7 +96,7 @@ gamestate00:
 	
 	;jsr PPU_waitForSprite0Reset;()
 
-	jsr Waves_dispense
+	;jsr Waves_dispense
 	jsr Enemies_tick
 
 	jsr Bullets_tick

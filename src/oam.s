@@ -234,7 +234,7 @@ OAM_buildPlayer:; void()
 
 buildPlayerBullets:
 
-	ldy #MAX_PLAYER_BULLETS-1
+	ldy #SHOTS_MAX-1
 
 @loop:
 	lda isActive,y

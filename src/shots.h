@@ -1,5 +1,5 @@
 ;constants
-.globalzp MAX_PLAYER_BULLETS
+.globalzp SHOTS_MAX
 
 ;attributes
 .global bulletX
