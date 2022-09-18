@@ -155,10 +155,10 @@ Enemies_isAlive:
 ;arguments
 ;x - enemy to check'
 ;y - player bullet
-;clear out total damage
+
 	lda #0
-	sta totalDamage
-	sta enemyPalette,x
+	sta totalDamage;clear out damage
+	sta enemyPalette,x; set palette to default
 	ldy #SHOTS_MAX-1
 @bulletLoop:
 ;find an active bullet
@@ -168,64 +168,43 @@ Enemies_isAlive:
 	sec
 	lda bulletX,y
 	sbc enemyXH,x
-	bcs @playerGreaterX
-;twos compliment if negative number
-	eor #%11111111
-@playerGreaterX:
-;continue if closer than enemy width
-	cmp enemyWidth,x
+	bcs :+
+		
+		;clc
+		eor #%11111111; if negative
+		adc #1; twos compliment
+	:
+
+	cmp enemyWidth,x; if distance < width
 	bcs @nextBullet
-;find the Y distance between bullet and enemy
+	
 	sec
 	lda bulletY,y
 	sbc enemyYH,x
-	bcs @playerGreaterY
-;twos compliment if negative number
-	eor #%11111111
-@playerGreaterY:
-;continue if closer than height
-	;cmp enemyHitboxY2,x
+	bcs :+
+		
+		;clc
+		eor #%11111111
+		adc #1
+
+	:
+
+	cmp enemyWidth,x
 	bcs @nextBullet
-;calculate left and right side of player bullet
-	lda bulletX,y
-	sta sprite1LeftOrTop
-	adc PlayerBullet_width,y
-	sta sprite1RightOrBottom
-;calculate left and right side of enemy
-	lda enemyXH,x
-	;adc enemyHitboxX1,x
-	sta sprite2LeftOrTop
-	;adc enemyHitboxX2,x
-	sta sprite2RightOrBottom
-;check for overlap, continue if true
-	jsr checkCollision
-	bcc @nextBullet
-;calculate top and bottom of player bullet
-	lda bulletY,y
-	sta sprite1LeftOrTop
-	adc #16;height of all player bullets
-	sta sprite1RightOrBottom
-;calculate top and bottom of enemy
-	lda enemyYH,x
-	sta sprite2LeftOrTop
-	;adc enemyHitboxY2,x
-	sta sprite2RightOrBottom
-;check for overlap
-	jsr checkCollision
-	bcc @nextBullet
-;mark bit 1 so bullet is cleared next frame
-	lda #%11
-	sta isActive,y
-	sta enemyPalette,x
-;get a running total of the damage sustained
-	clc
-	lda PlayerBullet_damage,y
-	adc totalDamage
-	sta totalDamage
+
+		lda #%11
+		sta isActive,y
+		sta enemyPalette,x
+
+		;clc; total damage
+		lda PlayerBullet_damage,y
+		adc totalDamage
+		sta totalDamage
+
 @nextBullet:
 	dey
 	bpl @bulletLoop
-;if the result is negative, enemy is dead, carry is cleared
+
 	sec
 	lda enemyHPL,x
 	sbc totalDamage
@@ -233,7 +212,9 @@ Enemies_isAlive:
 	lda enemyHPH,x
 	sbc #0
 	sta enemyHPH,x
-	bcs :+
+
+	rts
+
 ;if enemy died, add their points to the total
 		;lda Enemies_pointValue_L,x
 		;adc Score_frameTotal_L
@@ -242,12 +223,6 @@ Enemies_isAlive:
 		;adc Score_frameTotal_H
 		;sta Score_frameTotal_H
 		;bcs @error
-:	rts
-@error:
-	lda #1
-	sta Lib_errorCode
-	clc
-	rts
 
 Enemies_explodeSmall:
 	pla

@@ -6,12 +6,12 @@
 SPRITE01=1; Player 1 neutral sprite
 SPRITE02=2; Small bullet
 SPRITE03=3
-SPRITE04=4; Player bullet large star
-SPRITE05=5; unused
+SPRITE04=4; Shot large star
+SPRITE05=5; Shot charged beam
 SPRITE06=6; unused
 SPRITE07=7; unused
-SPRITE08=8; Player small star bullet
-SPRITE09=9; Player beam bullet
+SPRITE08=8; Shot small star bullet
+SPRITE09=9; Shot beam bullet
 SPRITE0A=$0a;small explosion frame 0
 SPRITE0B=$0b;small explosion frame 1
 SPRITE0C=$0c;small explosion frame 2
@@ -67,8 +67,9 @@ sprite04:
 	.lobytes $20, -8,  0, %01000000
 	.byte NULL
 sprite05:
-	.byte 0, $0a, %0, 0
-	.byte TERMINATE
+	.lobytes $2E, -8, -8, %00000000
+	.lobytes $2E, -8, 00, %01000000
+	.byte NULL
 sprite06:
 	.lobytes $08,-4,-4,%0
 	.byte NULL

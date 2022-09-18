@@ -32,7 +32,6 @@ Players_hearts: .res PLAYERS_MAX
 Players_bombs: .res PLAYERS_MAX
 
 Player_sprite: .res 1
-Player_iFrames: .res 1
 Player_willRender: .res 1
 
 Hitbox_state:.res 1
@@ -105,48 +104,46 @@ MAX_RIGHT = 253
 MAX_LEFT = 03
 MAX_UP = 8
 MAX_DOWN = 221
-SLOWDOWN_TIME=16
-DEPLOY_TIME=2
-RETRACT_TIME=8
+SPEED_MAX=16
+
 	pha;save controller
 
 	and #BUTTON_B
 	bne @goingSlow
 
 	@goingFast:
-		sec 
-		lda Player_speedIndex
-		sbc #1
-		bcs :+
-			lda Hitbox_state
-			beq @hitboxHidden
-				cmp #HITBOXSTATE03
-				beq @hitboxHidden
-					lda #RETRACT_TIME;lasts 8 frames 
-					sta h
-					lda #HITBOXSTATE03
-					sta Hitbox_state
-		@hitboxHidden:
-			lda #0
+		clc 
+		lda Player_speedIndex; move index 
+		adc #1
+		cmp #SPEED_MAX
+		bcc :+
+
+			lda #SPEED_MAX;don't overflow
+
 		:sta Player_speedIndex
-		jmp @endIf
+		jmp @direction
 
 	@goingSlow:
-		lda Player_speedIndex
-		clc
-		adc #1
-		cmp #SLOWDOWN_TIME
-		bcc :+
-			lda Hitbox_state
-			bne @hitboxDeployed
-				lda #HITBOXSTATE01
-				sta Hitbox_state
-				lda #DEPLOY_TIME;lasts 4 frames 
-				sta h
-		@hitboxDeployed:
-			lda #SLOWDOWN_TIME
-		:sta Player_speedIndex
-@endIf:
+		
+		sec
+		lda Player_speedIndex; move the index
+		sbc #1
+
+		bcs @slowingDown
+
+			lda Hitbox_state; and not already deployed
+			bne @deployed
+
+				lda #HITBOXSTATE01; deploy hitbox
+				jsr Hitbox_new
+
+		@deployed:
+
+			lda #0;no underflow
+	@slowingDown:
+
+		sta Player_speedIndex
+@direction:
 
 	lda Player_speedIndex
 	lsr
@@ -233,12 +230,20 @@ RETRACT_TIME=8
 	rts
 
 @playerSpeeds_H:
-	.byte  1,  1,  1,  1,  1,  1,  1,  1,  0 
+	.byte   0, 1,   1,   1,   1,   1,   1,   1,   1
 @playerSpeeds_L:
-	.byte 128, 128, 128, 128, 128, 128, 128, 0, 128
+	.byte 128, 0, 128, 128, 128, 128, 128, 128, 128
 HITBOXSTATE01=1
 HITBOXSTATE02=2
 HITBOXSTATE03=3
+
+Hitbox_new:; void(a)
+	
+	sta Hitbox_state
+	lda #0
+	sta h
+	rts
+
 Hitbox_states_L:
 	.byte NULL 
 	.byte <(Hitbox_state01-1)
@@ -250,14 +255,16 @@ Hitbox_states_H:
 	.byte >(Hitbox_state02-1)
 	.byte >(Hitbox_state03-1)
 Hitbox_state01:
-	dec h
-	bpl @statePersists
+DEPLOY_FRAMES=4
+	lda h
+	adc #1
+	cmp #DEPLOY_FRAMES
+	bcc @statePersists
 		lda #HITBOXSTATE02
-		sta Hitbox_state
-		lda #0
-		sta h
-		rts
+		jmp Hitbox_new
 @statePersists:
+	sta h
+
 	lda #SPRITE1D
 	sta Hitbox_sprite
 	rts
@@ -272,18 +279,35 @@ Hitbox_state02:
 	tax
 	lda @hitboxAnimation,x
 	sta Hitbox_sprite
+
+	lda Player_speedIndex
+	cmp #SPEED_MAX
+	bne @statePersists
+		
+		lda #HITBOXSTATE03
+		jmp Hitbox_new
+
+@statePersists:
+
 	rts
+
 @hitboxAnimation:
 	.byte SPRITE19,SPRITE1A,SPRITE1B,SPRITE1C
 
 Hitbox_state03:
-	dec h
-	bpl @statePersists
+RECALL_FRAMES=4
+	clc
+	lda h
+	adc #1
+	cmp #RECALL_FRAMES
+	bcc @statePersists
 		lda #NULL
 		sta Hitbox_state
 		sta Hitbox_sprite
 		rts
 @statePersists:
+
+	sta h
 
 	lda #SPRITE1D
 	sta Hitbox_sprite
@@ -447,25 +471,32 @@ Player_collectCharms:
 		sec ;find x distance
 		lda enemyBulletXH,x
 		sbc Player_xPos_H
-		bcs @bulletGreaterX
+		bcs :+
 			;clc
 			eor #%11111111 ;if negative
 			adc #1
-	@bulletGreaterX:
-		cmp #MAX_BULLET_DIAMETER; if x distance < width
+		
+		:cmp #MAX_BULLET_DIAMETER; if x distance < width
 		bcs @nextBullet ;else
 		sec ;find y distance
 		lda enemyBulletYH,x
 		sbc Player_yPos_H
-		bcs @bulletGreaterY
+		bcs :+
 			;clc
 			eor #%11111111 ;if negative
 			adc #1; two's compliment
-	@bulletGreaterY:
-		cmp #MAX_BULLET_DIAMETER;if y distance < height
+		
+		:cmp #MAX_BULLET_DIAMETER;if y distance < height
 		bcs @nextBullet
-		lda #FALSE
-		sta isEnemyBulletActive,x
+			
+			;clc
+			lda Shots_charge
+			adc #4
+			bcc :+
+				lda #255
+			:sta Shots_charge
+			lda #FALSE
+			sta isEnemyBulletActive,x
 
 @nextBullet:
 	dex

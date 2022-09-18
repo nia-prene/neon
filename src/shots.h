@@ -2,6 +2,7 @@
 .globalzp SHOTS_MAX
 
 ;attributes
+.globalzp Shots_charge
 .global bulletX
 .global bulletY
 .global isActive
@@ -12,3 +13,4 @@
 ;functions
 .global PlayerBullets_shoot
 .global PlayerBullets_move
+.global Shots_discharge

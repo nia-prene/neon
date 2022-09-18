@@ -50,6 +50,7 @@ GAMESTATE0A=$0A; Level - player falling
 GAMESTATE0B=$0B; Level - player recovering
 GAMESTATE0C=$0C; Level - no enemies shooting
 GAMESTATE0D=$0D; Level - Charms sucking
+GAMESTATE0E=$0E; Level - Shots discharging
 
 Gamestates_new:; void(a) |
 	
@@ -94,9 +95,8 @@ gamestate00:
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
 	
-	;jsr PPU_waitForSprite0Reset;()
 
-	;jsr Waves_dispense
+;	jsr Waves_dispense
 	jsr Enemies_tick
 
 	jsr Bullets_tick
@@ -104,7 +104,7 @@ gamestate00:
 
 	ldy Gamepads_state
 	ldx Gamepads_last
-	jsr	Bombs_toss ;c(a,x)
+	jsr Bombs_toss ;c(a,x)
 	bcc @noBomb
 
 		lda #GAMESTATE09
@@ -124,7 +124,7 @@ gamestate00:
 	jsr OAM_build00; void()
 	
 	
-	jsr PPU_dimScreen; see how much frame is left over
+	;jsr PPU_dimScreen; see how much frame is left over
 	jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00; void() |
@@ -519,7 +519,19 @@ gamestate0D:; charms spinning, main game loop
 	jsr Waves_dispense 
 	jsr Enemies_tick
 	
-	jsr Charms_suck
+	jsr Charms_suck; a,x(void)
+	bne @charmsRemain
+		lda Shots_charge; if accumulated a charge
+		beq :+
+
+			lda #GAMESTATE0E
+			jsr Gamestates_new
+			jmp @charmsRemain
+		
+		:lda #GAMESTATE00
+		jsr Gamestates_new
+
+@charmsRemain:
 	jsr Player_collectCharms
 	
 	ldx Main_currentPlayer
@@ -531,14 +543,60 @@ gamestate0D:; charms spinning, main game loop
 	jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
 
-	lda g
-	cmp #255
-	bne @statePersists
-		lda GAMESTATE00
-		jsr	Gamestates_new
-@statePersists:
 
 	rts
+
+
+Gamestate0E:
+;player discharging beam
+	jsr PPU_updateScroll;void()
+	jsr Score_clearFrameTally;void()
+	
+	lda Gamepads_state
+	ldx Gamepads_last
+	jsr Gamestates_pause; void(a,x) |
+
+	lda Gamepads_state
+	jsr Player_move;(a)
+
+	jsr PlayerBullets_move;void()
+
+	lda Gamepads_state
+	jsr Shots_discharge;c(a)
+	bne :+
+		lda #GAMESTATE00
+		jsr Gamestates_new
+	:
+	
+	jsr Waves_dispense
+	jsr Enemies_tick
+
+	jsr Bullets_tick
+	jsr Patterns_tick
+
+	ldy Gamepads_state
+	ldx Gamepads_last
+	
+	jsr Player_isHit
+	bcc @playerUnharmed
+		
+		jsr Player_hit
+		lda #GAMESTATE0A
+		jsr Gamestates_new; void(a)
+
+@playerUnharmed:
+
+	jsr OAM_build00; void()
+	
+	
+	jsr PPU_dimScreen; see how much frame is left over
+	jsr PPU_waitForSprite0Hit
+	
+	jsr PPU_NMIPlan00; void() |
+	
+	rts
+
+
 
 
 Gamestates_pause:;c(a,x) |
@@ -558,6 +616,6 @@ Gamestates_pause:;c(a,x) |
 
 
 Gamestates_H:
-	.byte >(gamestate00-1),>(gamestate01-1),>(gamestate02-1),>(gamestate03-1),>(gamestate04-1),>(gamestate05-1),>(gamestate06-1),>(gamestate07-1),>(gamestate08-1),>(gamestate09-1),>(gamestate0A-1),>(gamestate0B-1),>(gamestate0C-1),>(gamestate0D-1)
+	.byte >(gamestate00-1),>(gamestate01-1),>(gamestate02-1),>(gamestate03-1),>(gamestate04-1),>(gamestate05-1),>(gamestate06-1),>(gamestate07-1),>(gamestate08-1),>(gamestate09-1),>(gamestate0A-1),>(gamestate0B-1),>(gamestate0C-1),>(gamestate0D-1),>(Gamestate0E-1)
 Gamestates_L:
-	.byte <(gamestate00-1),<(gamestate01-1),<(gamestate02-1),<(gamestate03-1),<(gamestate04-1),<(gamestate05-1),<(gamestate06-1),<(gamestate07-1),<(gamestate08-1),<(gamestate09-1),<(gamestate0A-1),<(gamestate0B-1),<(gamestate0C-1),<(gamestate0D-1)
+	.byte <(gamestate00-1),<(gamestate01-1),<(gamestate02-1),<(gamestate03-1),<(gamestate04-1),<(gamestate05-1),<(gamestate06-1),<(gamestate07-1),<(gamestate08-1),<(gamestate09-1),<(gamestate0A-1),<(gamestate0B-1),<(gamestate0C-1),<(gamestate0D-1),<(Gamestate0E-1)

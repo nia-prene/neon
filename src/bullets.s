@@ -22,6 +22,7 @@ Bullets_move: .res 2
 b:.res 1
 octant: .res 1
 bulletAngle: .res 1
+Charms_active: .res 1
 ;Bullets_spriteBank: .res BULLETS_VARIETIES
 
 .data
@@ -211,6 +212,8 @@ Bullets_clockwise:;void()
 	rts
 
 Charms_suck:
+	lda #FALSE
+	sta Charms_active
 
 	ldx #MAX_ENEMY_BULLETS-1
 
@@ -219,6 +222,7 @@ Charms_suck:
 	lda isEnemyBulletActive,x
 	beq @nextCharm
 		
+		sta Charms_active
 		sec
 		lda Player_xPos_H
 		sbc enemyBulletXH,x
@@ -253,7 +257,9 @@ Charms_suck:
 	
 	dex
 	bpl @charmLoop
-	rts
+
+	lda Charms_active
+	rts; a
 
 @moveLeft:
 

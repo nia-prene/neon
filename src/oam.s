@@ -323,13 +323,19 @@ OAM_build:;void (x)
 		
 		clc
 		lda buildY
+		eor #$80
 		adc (spritePointer),y
+		eor #$80
+		bvs @nextAtY
 		sta OAM+OFFSET_Y,x
 		iny
 
 		clc
 		lda buildX
+		eor #$80
 		adc (spritePointer),y
+		eor #$80
+		bvs @nextAtX
 		sta OAM+OFFSET_X,x
 		iny
 
@@ -345,6 +351,12 @@ OAM_build:;void (x)
 
 		beq @finished
 		
+		jmp @spriteLoop
+	@nextAtY:
+		iny
+	@nextAtX:
+		iny
+		iny
 		jmp @spriteLoop
 @finished:
 
