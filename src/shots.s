@@ -20,9 +20,11 @@ bulletY: .res SHOTS_MAX
 bulletSprite: .res SHOTS_MAX
 PlayerBullet_damage: .res SHOTS_MAX
 
+Missiles_velocity: .res 1
+
 .code
 
-AUTO=24;amount of shoots after release
+AUTO=32;amount of shoots after release
 	
 PlayerBullets_shoot:;void(a)
 ;a - current controller state
@@ -32,6 +34,12 @@ PlayerBullets_shoot:;void(a)
 	beq @notPressingB
 		lda #AUTO;shoots for x frames after released
 		sta Shots_remaining
+		txa
+		and #BUTTON_B
+		bne @notPressingB
+			
+			jsr Shot03
+			
 @notPressingB:
 	
 	lda Shots_remaining;if timer > 0
@@ -79,7 +87,7 @@ Shots_get:; cy() | x
 ;y - available bullet
 ;c - success / fail
 	
-	ldy #SHOTS_MAX-1
+	ldy #SHOTS_MAX-2
 
 @shotLoop:
 	lda isActive,y
@@ -162,29 +170,50 @@ Shots_discharge:; a (a)
 PlayerBullets_move:;void (void)
 ;moves player bullets up screen
 BULLET_SPEED = 18
-;start with last bullet
-	ldx #SHOTS_MAX-1
+
+	ldx #SHOTS_MAX-2
 @bulletLoop:
+
 	lda isActive,x;if inactive, skip
 	beq @skipBullet
-	ror
-	ror ;bit 2 set means enemy hit
-	bcs @clearBullet
-	sec ;y = y + speed
-	lda bulletY,x
-	sbc #BULLET_SPEED
-	bcc @clearBullet ;if off screen
-	sta bulletY,x
+
+		sec ;y = y + speed
+		lda bulletY,x
+		sbc #BULLET_SPEED
+		bcs :+
+
+			lda #FALSE
+			sta isActive,x
+
+		:sta bulletY,x
 @skipBullet:
 	dex ;x--
 	bpl @bulletLoop;while x>=0
+
+
+@missile:
+	
+	sec
+	
+	lda bulletY+(SHOTS_MAX-1)
+	sbc Missiles_velocity
+	sta bulletY+(SHOTS_MAX-1)
+	bcs :+
+		lda #FALSE
+		sta isActive+(SHOTS_MAX-1)
+	:
+
+	lda Missiles_velocity
+	lsr
+	sta Missiles_velocity
+	bne :+
+		lda #FALSE
+		sta isActive+(SHOTS_MAX-1)
+
+	:
+
 	rts
-@clearBullet:
-	lda #FALSE
-	sta isActive,x
-	dex ;x-- continue loop
-	bpl @bulletLoop;while x >=0
-	rts
+
 	
 .proc Shot00
 
@@ -199,13 +228,30 @@ BULLET_SPEED = 18
 	jsr Shots_get; c,y() | x
 	bcc @return
 		
-		clc
-		lda Player_xPos_H
-		eor #$80
-		adc @offset_x,x
-		eor #$80
-		sta bulletX,y
-		bvs @return
+		lda Player_speedIndex
+		bne @fast
+		
+		@slow:
+			clc
+			lda Player_xPos_H
+			eor #$80
+			adc @offset_focus,x
+			eor #$80
+			sta bulletX,y
+			bvs @return
+			jmp @doY
+	
+		@fast:
+
+			clc
+			lda Player_xPos_H
+			eor #$80
+			adc @offset_x,x
+			eor #$80
+			sta bulletX,y
+			bvs @return
+	
+	@doY:
 		
 		clc
 		lda Player_yPos_H
@@ -227,11 +273,13 @@ BULLET_SPEED = 18
 @status:
 	.byte TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE
 @offset_x:
-	.lobytes -6,  16,  6, -16
+	.lobytes  -4, 12,   4, -12
+@offset_focus:
+	.lobytes  04, 04, -04, -04
 @offset_y:
-	.lobytes -12, -6, -12, -6
+	.lobytes -12,  -8, -12, -8
 @sprites:
-	.byte SPRITE09,SPRITE08,SPRITE09,SPRITE08
+	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE09
 .endproc
 
 
@@ -247,13 +295,30 @@ BULLET_SPEED = 18
 	jsr Shots_get; c,y() | x
 	bcc @return
 		
-		clc
-		lda Player_xPos_H
-		eor #$80
-		adc @offset_x,x
-		eor #$80
-		sta bulletX,y
-		bvs @return; wrapped around
+		lda Player_speedIndex; if fully slow
+		bne @fast
+
+		@slow:
+			clc
+			lda Player_xPos_H
+			eor #$80
+			adc @offset_focus,x
+			eor #$80
+			sta bulletX,y
+			bvs @return; wrapped around
+			jmp @doY
+
+		@fast:
+
+			clc
+			lda Player_xPos_H
+			eor #$80
+			adc @offset_x,x
+			eor #$80
+			sta bulletX,y
+			bvs @return; wrapped around
+
+	@doY:	
 		
 		clc
 		lda Player_yPos_H
@@ -276,10 +341,12 @@ BULLET_SPEED = 18
 	.byte TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE
 @offset_x:
 	.lobytes  -4,  12, -20,   4, -12, 20
+@offset_focus:
+	.lobytes  12, -04, -04, -12,  04, 04
 @offset_y:
-	.lobytes -12,  -6,   0, -12,  -6,  0
+	.lobytes -12,  -8, -04, -12,  -8, -4
 @sprites:
-	.byte SPRITE09,SPRITE09,SPRITE08,SPRITE09,SPRITE09,SPRITE08
+	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09
 
 .endproc
 
@@ -294,8 +361,10 @@ BULLET_SPEED = 18
 	bcc @return
 		
 
-		lda Player_speedIndex
+		lda Player_speedIndex; if fully slow
 		bne @fast
+
+		@slow:
 			clc
 			lda Player_xPos_H
 			eor #$80
@@ -305,14 +374,14 @@ BULLET_SPEED = 18
 			bvs @return
 			jmp @doY
 
-	@fast:
-		clc
-		lda Player_xPos_H
-		eor #$80
-		adc @offset_x,x
-		eor #$80
-		sta bulletX,y
-		bvs @return
+		@fast:
+			clc
+			lda Player_xPos_H
+			eor #$80
+			adc @offset_x,x
+			eor #$80
+			sta bulletX,y
+			bvs @return
 	@doY:	
 		clc
 		lda Player_yPos_H
@@ -334,10 +403,42 @@ BULLET_SPEED = 18
 @offset_x:
 	.lobytes  -4,  12, -20, 28,   4, -12, 20, -28
 @offset_focus:
-	.lobytes  -2,  06, -10, 14,   2, -06, 10, -14
+	.lobytes  12, -04, -04, 12, -12,  04, 04, -12
 @offset_y:
-	.lobytes -12,  -6,   0,  6, -12,  -6,  0,   6
+	.lobytes -12,  -8,  -4,  0, -12,  -8, -4,   0
 @sprites:
-	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE08,SPRITE09,SPRITE09,SPRITE09,SPRITE08
+	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09
 
 .endproc
+
+.proc Shot03
+OFFSET_Y= (256-12)
+		
+		lda Player_xPos_H
+		sta bulletX+(SHOTS_MAX-1)
+		
+		clc
+		lda Player_yPos_H
+		eor #$80
+		adc #OFFSET_Y
+		eor #$80
+		sta bulletY+(SHOTS_MAX-1)
+		bvs @return
+
+		lda #SPRITE04
+		sta bulletSprite+(SHOTS_MAX-1)
+
+		lda #TRUE
+		sta isActive+(SHOTS_MAX-1)
+
+		lda #32
+		sta Missiles_velocity
+
+@return:
+	rts
+
+.endproc
+
+
+
+

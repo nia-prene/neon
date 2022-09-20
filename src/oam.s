@@ -16,7 +16,7 @@ OAMDATA = $2004;(dddd dddd)	OAM data read/write
 OAMDMA = $4014;(aaaa aaaa)OAM DMA high address
 MAX_OVERFLOW_FRAMES=8;
 .zeropage
-o: .res 1 	;general purpose iterator, increased once a frame
+
 bulletShuffle: .res 1
 buildX: .res 1
 buildY: .res 1
@@ -65,7 +65,6 @@ OAM_build00:;c()
 ;call with carry set to exclude player
 ;a - gamepad
 ;returns carry clear if oam overflow
-	dec o ;module iterator
 
 	lda #4;skip sprite 0
 	sta OAM_index

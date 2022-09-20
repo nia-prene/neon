@@ -93,7 +93,8 @@ gamestate00:
 	jsr PlayerBullets_move;void()
 
 	lda Gamepads_state
-	jsr PlayerBullets_shoot;(a)
+	ldx Gamepads_last
+	jsr PlayerBullets_shoot; void(a,x) |
 	
 
 ;	jsr Waves_dispense
@@ -124,10 +125,10 @@ gamestate00:
 	jsr OAM_build00; void()
 	
 	
-	;jsr PPU_dimScreen; see how much frame is left over
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00; void() |
+	jsr PPU_dimScreen; see how much frame is left over
 	
 	rts
 
@@ -192,7 +193,7 @@ gamestate02:
 gamestate03:
 SCORE_OFFSET=7
 ;move player into place, show status, ready? Go!
-	jsr PPU_waitForSprite0Reset;()
+	;jsr PPU_waitForSprite0Reset;()
 	jsr PPU_updateScroll
 	lda #SCORE_OFFSET
 	jsr Sprite0_setDestination;(a)
@@ -201,11 +202,10 @@ SCORE_OFFSET=7
 	jsr Sprite0_setSplit;(a)
 	
 	jsr PPU_NMIPlan00
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	clc
 	lda g
-	adc #2;this state lasts 256/4 frames
-	sta g
+	cmp #64
 	bne :+
 		lda #GAMESTATE00 
 		jsr Gamestates_new
@@ -215,11 +215,11 @@ SCORE_OFFSET=7
 gamestate04:
 ;hide HUD and move player into boss dialogue position
 	jsr PPU_updateScroll
-	jsr PPU_waitForSprite0Reset;()
+	;jsr PPU_waitForSprite0Reset;()
 	jsr HUD_easeOut;a()
 	jsr Sprite0_setSplit;(a)
 	
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	clc
 	lda g
 	adc #8
@@ -239,14 +239,14 @@ TEXTBOX_OFFSET=30
 	ldy #3
 	ldx #PALETTE0A
 	jsr setPalette
-	jsr PPU_waitForSprite0Reset;()
+	;jsr PPU_waitForSprite0Reset;()
 	jsr PPU_updateScroll
 	lda #TEXTBOX_OFFSET
 	jsr Sprite0_setDestination;(a)
 	jsr Textbox_easeIn;a()
 	jsr Sprite0_setSplit;(a)
 	jsr PPU_NMIPlan02
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	rts
 
 gamestate06:
@@ -270,7 +270,7 @@ gamestate06:
 
 gamestate07:
 	jsr PPU_updateScroll;void()
-	jsr PPU_waitForSprite0Reset;void()
+	;jsr PPU_waitForSprite0Reset;void()
 	
 	lda Gamepads_state
 	and #BUTTON_START; if pressing start
@@ -312,7 +312,7 @@ gamestate07:
 gamestate08:; void()
 
 	jsr PPU_dimScreen
-	jsr PPU_waitForSprite0Reset;void()
+	;jsr PPU_waitForSprite0Reset;void()
 
 	lda Gamepads_state
 	and #BUTTON_START;if start button pressed
@@ -329,7 +329,7 @@ gamestate08:; void()
 			jsr APU_resumeSFX
 @stayPaused:
 
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	
 	rts
 
@@ -351,7 +351,7 @@ gamestate09:; Level - charms spinning
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
 	
-	jsr PPU_waitForSprite0Reset;()
+	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense 
 	jsr Enemies_tick
@@ -366,7 +366,7 @@ gamestate09:; Level - charms spinning
 	jsr OAM_build00; (a)
 	
 	jsr PPU_dimScreen
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
 
 	lda g
@@ -392,7 +392,7 @@ gamestate0A:; falling off broom
 
 	jsr PlayerBullets_move;void()
 
-	jsr PPU_waitForSprite0Reset;()
+	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense 
 	jsr Enemies_tick
@@ -403,7 +403,7 @@ gamestate0A:; falling off broom
 
 	jsr OAM_build00; (a)
 
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
 
 	lda g
@@ -435,7 +435,7 @@ gamestate0B:; recovering from fall
 
 	jsr PlayerBullets_move;void()
 
-	jsr PPU_waitForSprite0Reset;()
+	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense
 	jsr Enemies_tick
@@ -446,7 +446,7 @@ gamestate0B:; recovering from fall
 	
 	jsr OAM_build00;(c,a)
 	
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00
 	
@@ -470,7 +470,7 @@ gamestate0C:; a moment of no shooting
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
 
-	jsr PPU_waitForSprite0Reset;()
+	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense 
 	jsr Enemies_tick
@@ -482,7 +482,7 @@ gamestate0C:; a moment of no shooting
 	jsr OAM_build00;(c,a)
 	jsr PPU_dimScreen
 
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00
 
@@ -514,7 +514,7 @@ gamestate0D:; charms spinning, main game loop
 	lda Gamepads_state
 	jsr PlayerBullets_shoot;(a)
 	
-	jsr PPU_waitForSprite0Reset;()
+	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense 
 	jsr Enemies_tick
@@ -540,7 +540,7 @@ gamestate0D:; charms spinning, main game loop
 	jsr OAM_build00; (a)
 	
 	jsr PPU_dimScreen
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
 
 
@@ -590,7 +590,7 @@ Gamestate0E:
 	
 	
 	jsr PPU_dimScreen; see how much frame is left over
-	jsr PPU_waitForSprite0Hit
+	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00; void() |
 	
