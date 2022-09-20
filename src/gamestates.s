@@ -128,7 +128,7 @@ gamestate00:
 	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00; void() |
-	jsr PPU_dimScreen; see how much frame is left over
+	;jsr PPU_dimScreen; see how much frame is left over
 	
 	rts
 

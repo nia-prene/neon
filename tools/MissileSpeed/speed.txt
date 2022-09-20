@@ -1,0 +1,4 @@
+@playerSpeeds_H:
+	.byte 18, 18, 17, 16, 14, 10,  6,  0, 
+@playerSpeeds_L:
+	.byte 0, 0, 0, 128, 0, 0, 128, 0, 0, 

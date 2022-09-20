@@ -20,6 +20,7 @@ Player_yPos_L: .res 1
 Player_speed_H: .res 1
 Player_speed_L: .res 1
 Player_speedIndex:.res 1
+Player_focused: .res 1
 
 Player_powerLevel: .res 1
 Player_hearts: .res 1
@@ -59,6 +60,9 @@ Player_init:
 	lda #SPRITE01
 	sta Player_sprite
 	
+	lda #FALSE
+	sta Player_focused
+
 	rts
 
 Player_prepare:;(x)
@@ -118,6 +122,9 @@ SPEED_MAX=16
 		cmp #SPEED_MAX
 		bcc :+
 
+			lda #FALSE
+			sta Player_focused
+
 			lda #SPEED_MAX;don't overflow
 
 		:sta Player_speedIndex
@@ -130,6 +137,9 @@ SPEED_MAX=16
 		sbc #1
 
 		bcs @slowingDown
+			
+			lda #TRUE
+			sta Player_focused
 
 			lda Hitbox_state; and not already deployed
 			bne @deployed

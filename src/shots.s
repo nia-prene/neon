@@ -192,29 +192,39 @@ BULLET_SPEED = 18
 
 
 @missile:
+
+	lda isActive+(SHOTS_MAX-1)
+	beq @return
+
+@missile_tick:
+
+	ldy Missiles_velocity
+	dey
+	bpl :+
+
+		lda #FALSE
+		sta isActive+(SHOTS_MAX-1)
+
+	:
 	
 	sec
-	
 	lda bulletY+(SHOTS_MAX-1)
-	sbc Missiles_velocity
+	sbc @delta,y
 	sta bulletY+(SHOTS_MAX-1)
 	bcs :+
 		lda #FALSE
 		sta isActive+(SHOTS_MAX-1)
 	:
+	
+	sty Missiles_velocity
 
-	lda Missiles_velocity
-	lsr
-	sta Missiles_velocity
-	bne :+
-		lda #FALSE
-		sta isActive+(SHOTS_MAX-1)
-
-	:
-
+@return:
 	rts
 
-	
+@delta:
+	.byte 0, 6, 10, 14, 16, 17, 18, 18
+
+
 .proc Shot00
 
 
@@ -228,8 +238,8 @@ BULLET_SPEED = 18
 	jsr Shots_get; c,y() | x
 	bcc @return
 		
-		lda Player_speedIndex
-		bne @fast
+		lda Player_focused
+		beq @fast
 		
 		@slow:
 			clc
@@ -295,8 +305,8 @@ BULLET_SPEED = 18
 	jsr Shots_get; c,y() | x
 	bcc @return
 		
-		lda Player_speedIndex; if fully slow
-		bne @fast
+		lda Player_focused; if fully slow
+		beq @fast
 
 		@slow:
 			clc
@@ -361,8 +371,8 @@ BULLET_SPEED = 18
 	bcc @return
 		
 
-		lda Player_speedIndex; if fully slow
-		bne @fast
+		lda Player_focused; if fully slow
+		beq @fast
 
 		@slow:
 			clc
@@ -412,8 +422,11 @@ BULLET_SPEED = 18
 .endproc
 
 .proc Shot03
-OFFSET_Y= (256-12)
+OFFSET_Y= (256-16)
 		
+	lda isActive+(SHOTS_MAX-1)
+	bne @return
+
 		lda Player_xPos_H
 		sta bulletX+(SHOTS_MAX-1)
 		
@@ -431,7 +444,7 @@ OFFSET_Y= (256-12)
 		lda #TRUE
 		sta isActive+(SHOTS_MAX-1)
 
-		lda #32
+		lda #8
 		sta Missiles_velocity
 
 @return:

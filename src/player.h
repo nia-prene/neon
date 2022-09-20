@@ -2,7 +2,7 @@
 .globalzp Player_yPos_H
 .globalzp Player_ptr
 
-.global Player_speedIndex
+.global Player_focused
 .global Player_sprite
 .global Player_powerLevel
 .global Player_haveHeartsChanged
