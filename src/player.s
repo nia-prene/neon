@@ -200,14 +200,8 @@ Player_move:
 
 @right:
 
-	lda isCardinal
-	bne :+
-		lda #true
-		sta isCardinal
-		lda #00
-		sta Player_yPos_L
-		sta Player_xPos_L
-	:
+	lda #true
+	sta isCardinal
 	
 	ldx Player_speedIndex
 
@@ -226,14 +220,8 @@ Player_move:
 
 @left:
 	
-	lda isCardinal
-	bne :+
-		lda #true
-		sta isCardinal
-		lda #00
-		sta Player_yPos_L
-		sta Player_xPos_L
-	:
+	lda #true
+	sta isCardinal
 
 	ldx Player_speedIndex
 	sec
@@ -250,14 +238,8 @@ Player_move:
 
 
 @down:
-	lda isCardinal
-	bne :+
-		lda #true
-		sta isCardinal
-		lda #00
-		sta Player_yPos_L
-		sta Player_xPos_L
-	:
+	lda #true
+	sta isCardinal
 	
 	ldx Player_speedIndex
 	clc
@@ -274,14 +256,8 @@ Player_move:
 
 
 @up:
-	lda isCardinal
-	bne :+
-		lda #true
-		sta isCardinal
-		lda #00
-		sta Player_yPos_L
-		sta Player_xPos_L
-	:
+	lda #true
+	sta isCardinal
 	
 	ldx Player_speedIndex
 	sec
@@ -303,6 +279,7 @@ Player_move:
 		lda #false
 		sta isCardinal
 		sta Player_xPos_L
+		lda #$ff
 		sta Player_yPos_L
 
 	:
@@ -405,8 +382,9 @@ Player_move:
 	beq :+
 		lda #false
 		sta isCardinal
-		sta Player_xPos_L
 		sta Player_yPos_L
+		lda #$ff
+		sta Player_xPos_L
 
 	:
 	
@@ -438,20 +416,20 @@ Player_move:
 
 
 @cardinal_l:
-	.byte 128,   0,   0,   0, 128, 128, 128, 128
-	.byte 128, 128, 128, 128, 128, 128, 128, 128 
+	.byte 128, 192, 192, 0, 0, 64, 64, 64
+	.byte 128, 128, 128, 128, 128, 128, 128, 128
 
 @cardinal_h:
-	.byte  0,  1,  1,  1,  1,  1,  1,  1
+	.byte  0,  0,  0,  1,  1,  1,  1,  1
 	.byte  1,  1,  1,  1,  1,  1,  1,  1
 
 
 @ordinal_h:
-	.byte  0,  0,  0,  0,  0,  1,  1,  1
+	.byte  0,  0,  0,  0,  0,  0,  0,  1
 	.byte  1,  1,  1,  1,  1,  1,  1,  1
 @ordinal_l:
-	.byte 64, 128, 128, 192, 192,   0,   0,   0
-	.byte  0,   0,   0,   0,   0,   0,   0,   0 
+	.byte 64, 96, 128, 160, 192, 224, 224, 0
+	.byte  0, 32, 32, 32, 32, 32, 32 , 32 
 	
 
 HITBOXSTATE01=1
