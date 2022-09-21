@@ -14,8 +14,8 @@
 
 .global Player_init
 .global Player_prepare
+.global Player_setSpeed
 .global Player_move
-.global Player_shoot
 .global Player_isHit
 .global Player_hit
 .global Player_fall

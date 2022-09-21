@@ -21,6 +21,7 @@ Player_speed_H: .res 1
 Player_speed_L: .res 1
 Player_speedIndex:.res 1
 Player_focused: .res 1
+isCardinal: .res 1
 
 Player_powerLevel: .res 1
 Player_hearts: .res 1
@@ -38,6 +39,7 @@ Player_willRender: .res 1
 Hitbox_state:.res 1
 Hitbox_sprite: .res 1
 h:.res 1;hitbox variable
+
 
 .code
 Player_init:
@@ -98,7 +100,7 @@ MAX_Y=128
 	rts
 .endproc
 
-Player_move:;(controller) returns void
+Player_setSpeed:;(controller) returns void
 ;controller bits are | a b sel st u d l r |
 ;pixel per frame when moving fast
 FAST_MOVEMENT_H = 2	
@@ -110,12 +112,11 @@ MAX_UP = 8
 MAX_DOWN = 230
 SPEED_MAX=16
 
-	pha;save controller
-
 	and #BUTTON_B
 	bne @goingSlow
 
 	@goingFast:
+
 		clc 
 		lda Player_speedIndex; move index 
 		adc #1
@@ -124,11 +125,11 @@ SPEED_MAX=16
 
 			lda #FALSE
 			sta Player_focused
-
-			lda #SPEED_MAX;don't overflow
+			rts
 
 		:sta Player_speedIndex
-		jmp @direction
+		
+		rts
 
 	@goingSlow:
 		
@@ -153,96 +154,306 @@ SPEED_MAX=16
 	@slowingDown:
 
 		sta Player_speedIndex
-@direction:
-
-	lda Player_speedIndex
-	lsr
-	tax
-	lda @playerSpeeds_L,x
-	sta Player_speed_L
-	lda @playerSpeeds_H,x
-	sta Player_speed_H
-
-@testRight:
-	pla;retrieve controller input
-	ror
-	bcc @testLeft;if bit 0 set then move right
-		pha
-		clc
-		lda Player_xPos_L
-		adc Player_speed_L
-		sta Player_xPos_L
-		lda Player_xPos_H
-		adc Player_speed_H
-		cmp #MAX_RIGHT
-		bcc :+
-			lda #MAX_RIGHT
-		:sta Player_xPos_H
-		pla
-@testLeft:
-	ror;if bit 1 set then move left 
-	bcc @testDown
-		pha
-		sec
-		lda Player_xPos_L
-		sbc Player_speed_L
-		sta Player_xPos_L
-		lda Player_xPos_H
-		sbc Player_speed_H
-		cmp #MAX_LEFT
-		bcs :+
-			lda #MAX_LEFT
-		:sta Player_xPos_H
-		pla
-	@testDown:
-	ror;if bit 2 set then move down
-	bcc @testUp
-		pha
-		clc
-		lda Player_yPos_L
-		adc Player_speed_L
-		sta Player_yPos_L
-		lda Player_yPos_H
-		adc Player_speed_H
-		cmp #MAX_DOWN
-		bcc :+
-			lda #MAX_DOWN
-		:sta Player_yPos_H
-		pla
-@testUp:
-	ror;if bit 3 set then move down
-	bcc @doHitbox
-		pha
-		sec
-		lda Player_yPos_L
-		sbc Player_speed_L
-		sta Player_yPos_L
-		lda Player_yPos_H
-		sbc Player_speed_H
-		cmp #MAX_UP
-		bcs :+
-			lda #MAX_UP
-		:sta Player_yPos_H
-		pla
-@doHitbox:
-
-	ldx Hitbox_state
-	beq @noHitbox
-		lda Hitbox_states_H,x
-		pha
-		lda Hitbox_states_L,x
-		pha
+	
 		rts
 
-@noHitbox:
-	lda #NULL
-	sta Hitbox_sprite
+Player_move:
+
+	and #BUTTON_RIGHT | BUTTON_LEFT | BUTTON_DOWN | BUTTON_UP
+	tax
+
+	lda @valid,x; test if valid direction
+	beq @return
+		
+		lda @move_l,x
+		sta Player_ptr+0
+		lda @move_h,x
+		sta Player_ptr+1
+		jmp (Player_ptr)
+
+@return:
 	rts
 
-@playerSpeeds_H:
-	.byte   0, 1,   1,   1,   1,   1,   1,   1,   1
-@playerSpeeds_L:
-	.byte 128, 0, 128, 128, 128, 128, 128, 128, 128
+
+@move_l:
+	.byte null, <@right, <@left, null
+	.byte <@down, <@downRight, <@downLeft, null
+	.byte <@up, <@upRight, <@upLeft, null
+	.byte null, null, null, null
+@move_h:
+	.byte null, >@right, >@left, null
+	.byte >@down, >@downRight, >@downLeft, null
+	.byte >@up, >@upRight, >@upLeft, null
+	.byte null, null, null, null
+
+; in order - still, right, left, right-left
+; down, down-right, down-left, down-right-left
+; up, up-right, up-left, up-right-left
+; up-down, up-down-right, up-down-left, up-down-right-left
+
+@valid:
+	.byte FALSE,TRUE,TRUE,FALSE
+	.byte TRUE,TRUE,TRUE,FALSE
+	.byte TRUE,TRUE,TRUE,FALSE
+	.byte FALSE,FALSE,FALSE,FALSE
+
+
+@right:
+
+	lda isCardinal
+	bne :+
+		lda #true
+		sta isCardinal
+		lda #00
+		sta Player_yPos_L
+		sta Player_xPos_L
+	:
+	
+	ldx Player_speedIndex
+
+	clc
+	lda Player_xPos_L
+	adc @cardinal_l,x
+	sta Player_xPos_L
+
+	lda Player_xPos_H
+	adc @cardinal_h,x
+	cmp #MAX_RIGHT
+	bcs :+
+		sta Player_xPos_H
+	:rts
+
+
+@left:
+	
+	lda isCardinal
+	bne :+
+		lda #true
+		sta isCardinal
+		lda #00
+		sta Player_yPos_L
+		sta Player_xPos_L
+	:
+
+	ldx Player_speedIndex
+	sec
+	lda Player_xPos_L
+	sbc @cardinal_l,x
+	sta Player_xPos_L
+	lda Player_xPos_H
+	sbc @cardinal_h,x
+	cmp #MAX_LEFT
+	bcc :+
+		sta Player_xPos_H
+	:
+	rts
+
+
+@down:
+	lda isCardinal
+	bne :+
+		lda #true
+		sta isCardinal
+		lda #00
+		sta Player_yPos_L
+		sta Player_xPos_L
+	:
+	
+	ldx Player_speedIndex
+	clc
+	lda Player_yPos_L
+	adc @cardinal_l,x
+	sta Player_yPos_L
+
+	lda Player_yPos_H
+	adc @cardinal_h,x
+	cmp #MAX_DOWN
+	bcs :+
+		sta Player_yPos_H
+	:rts
+
+
+@up:
+	lda isCardinal
+	bne :+
+		lda #true
+		sta isCardinal
+		lda #00
+		sta Player_yPos_L
+		sta Player_xPos_L
+	:
+	
+	ldx Player_speedIndex
+	sec
+	lda Player_yPos_L
+	sbc @cardinal_l,x
+	sta Player_yPos_L
+	lda Player_yPos_H
+	sbc @cardinal_h,x
+	cmp #MAX_UP
+	bcc :+
+		sta Player_yPos_H
+	:rts
+
+
+@upRight:
+	
+	lda isCardinal
+	beq :+
+		lda #false
+		sta isCardinal
+		sta Player_xPos_L
+		sta Player_yPos_L
+
+	:
+	ldx Player_speedIndex
+
+	clc
+	lda Player_xPos_L
+	adc @ordinal_l,x
+	sta Player_xPos_L
+
+	lda Player_xPos_H
+	adc @ordinal_h,x
+	cmp #MAX_RIGHT
+	bcs :+
+
+		sta Player_xPos_H
+		sec
+
+	:;sec
+	lda Player_yPos_L
+	sbc @ordinal_l,x
+	sta Player_yPos_L
+	lda Player_yPos_H
+	sbc @ordinal_h,x
+	cmp #MAX_UP
+	bcc :+
+		sta Player_yPos_H
+	:rts
+
+
+@upLeft:
+	
+	lda isCardinal
+	beq :+
+		lda #false
+		sta isCardinal
+		sta Player_xPos_L
+		sta Player_yPos_L
+
+	:
+	ldx Player_speedIndex
+	sec
+	lda Player_xPos_L
+	sbc @ordinal_l,x
+	sta Player_xPos_L
+	lda Player_xPos_H
+	sbc @ordinal_h,x
+	cmp #MAX_LEFT
+	bcc :+
+		sta Player_xPos_H
+	:sec
+	lda Player_yPos_L
+	sbc @ordinal_l,x
+	sta Player_yPos_L
+	lda Player_yPos_H
+	sbc @ordinal_h,x
+	cmp #MAX_UP
+	bcc :+
+		sta Player_yPos_H
+	:rts
+
+
+@downRight:
+	
+	lda isCardinal
+	beq :+
+		lda #false
+		sta isCardinal
+		sta Player_xPos_L
+		sta Player_yPos_L
+
+	:
+	ldx Player_speedIndex
+	clc
+	lda Player_yPos_L
+	adc @ordinal_l,x
+	sta Player_yPos_L
+
+	lda Player_yPos_H
+	adc @ordinal_h,x
+	cmp #MAX_DOWN
+	bcs :+
+		sta Player_yPos_H
+	:clc
+	lda Player_xPos_L
+	adc @ordinal_l,x
+	sta Player_xPos_L
+
+	lda Player_xPos_H
+	adc @ordinal_h,x
+	cmp #MAX_RIGHT
+	bcs :+
+		sta Player_xPos_H
+	:rts
+
+
+@downLeft:
+	
+	lda isCardinal
+	beq :+
+		lda #false
+		sta isCardinal
+		sta Player_xPos_L
+		sta Player_yPos_L
+
+	:
+	
+	ldx Player_speedIndex
+	clc
+	lda Player_yPos_L
+	adc @ordinal_l,x
+	sta Player_yPos_L
+
+	lda Player_yPos_H
+	adc @ordinal_h,x
+	cmp #MAX_DOWN
+	bcs :+
+	
+		sec
+		sta Player_yPos_H
+	
+	:;sec
+	lda Player_xPos_L
+	sbc @ordinal_l,x
+	sta Player_xPos_L
+	lda Player_xPos_H
+	sbc @ordinal_h,x
+	cmp #MAX_LEFT
+	bcc :+
+		sta Player_xPos_H
+	:
+	rts
+
+
+@cardinal_l:
+	.byte 128,   0,   0,   0, 128, 128, 128, 128
+	.byte 128, 128, 128, 128, 128, 128, 128, 128 
+
+@cardinal_h:
+	.byte  0,  1,  1,  1,  1,  1,  1,  1
+	.byte  1,  1,  1,  1,  1,  1,  1,  1
+
+
+@ordinal_h:
+	.byte  0,  0,  0,  0,  0,  1,  1,  1
+	.byte  1,  1,  1,  1,  1,  1,  1,  1
+@ordinal_l:
+	.byte 64, 128, 128, 192, 192,   0,   0,   0
+	.byte  0,   0,   0,   0,   0,   0,   0,   0 
+	
+
 HITBOXSTATE01=1
 HITBOXSTATE02=2
 HITBOXSTATE03=3

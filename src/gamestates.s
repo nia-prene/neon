@@ -86,7 +86,9 @@ gamestate00:
 	lda Gamepads_state
 	ldx Gamepads_last
 	jsr Gamestates_pause; void(a,x) |
-
+	
+	lda Gamepads_state
+	jsr Player_setSpeed;(a)
 	lda Gamepads_state
 	jsr Player_move;(a)
 

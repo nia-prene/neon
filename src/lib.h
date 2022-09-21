@@ -3,6 +3,9 @@
 .globalzp TRUE
 .globalzp FALSE
 .globalzp NULL
+.globalzp null
+.globalzp true
+.globalzp false
 .globalzp BUTTON_A
 .globalzp BUTTON_B
 .globalzp BUTTON_SELECT

@@ -1,9 +1,12 @@
 .include "lib.h"
 
 TRUE = 01 
+true = 01 
 FALSE = 00
+false = 00
 TERMINATE = $ff
 NULL = $00
+null = $00
 BUTTON_A = %10000000
 BUTTON_B = %1000000
 BUTTON_SELECT = %100000
