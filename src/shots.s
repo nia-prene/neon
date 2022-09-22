@@ -14,7 +14,7 @@ Shots_charge: .res 1
 
 .data
 SHOTS_MAX=15
-isActive: .res SHOTS_MAX
+Shots_isActive: .res SHOTS_MAX
 bulletX: .res SHOTS_MAX
 bulletY: .res SHOTS_MAX
 bulletSprite: .res SHOTS_MAX
@@ -90,7 +90,7 @@ Shots_get:; cy() | x
 	ldy #SHOTS_MAX-2
 
 @shotLoop:
-	lda isActive,y
+	lda Shots_isActive,y
 	beq @inactive
 		dey
 		bpl @shotLoop
@@ -150,7 +150,7 @@ Shots_discharge:; a (a)
 			sta bulletSprite,y
 
 			lda #TRUE
-			sta isActive,y
+			sta Shots_isActive,y
 		
 			sec
 			lda Shots_charge
@@ -174,7 +174,7 @@ BULLET_SPEED = 18
 	ldx #SHOTS_MAX-2
 @bulletLoop:
 
-	lda isActive,x;if inactive, skip
+	lda Shots_isActive,x;if inactive, skip
 	beq @skipBullet
 
 		sec ;y = y + speed
@@ -183,7 +183,7 @@ BULLET_SPEED = 18
 		bcs :+
 
 			lda #FALSE
-			sta isActive,x
+			sta Shots_isActive,x
 
 		:sta bulletY,x
 @skipBullet:
@@ -193,7 +193,7 @@ BULLET_SPEED = 18
 
 @missile:
 
-	lda isActive+(SHOTS_MAX-1)
+	lda Shots_isActive+(SHOTS_MAX-1)
 	beq @return
 
 @missile_tick:
@@ -203,7 +203,7 @@ BULLET_SPEED = 18
 	bpl :+
 
 		lda #FALSE
-		sta isActive+(SHOTS_MAX-1)
+		sta Shots_isActive+(SHOTS_MAX-1)
 
 	:
 	
@@ -213,7 +213,7 @@ BULLET_SPEED = 18
 	sta bulletY+(SHOTS_MAX-1)
 	bcs :+
 		lda #FALSE
-		sta isActive+(SHOTS_MAX-1)
+		sta Shots_isActive+(SHOTS_MAX-1)
 	:
 	
 	sty Missiles_velocity
@@ -275,7 +275,7 @@ BULLET_SPEED = 18
 		sta bulletSprite,y
 
 		lda #TRUE
-		sta isActive,y
+		sta Shots_isActive,y
 
 @return:
 	rts
@@ -342,7 +342,7 @@ BULLET_SPEED = 18
 		sta bulletSprite,y
 
 		lda #TRUE
-		sta isActive,y
+		sta Shots_isActive,y
 
 @return:
 	rts
@@ -405,7 +405,7 @@ BULLET_SPEED = 18
 		sta bulletSprite,y
 
 		lda #TRUE
-		sta isActive,y
+		sta Shots_isActive,y
 
 @return:
 	rts
@@ -424,7 +424,7 @@ BULLET_SPEED = 18
 .proc Shot03
 OFFSET_Y= (256-16)
 		
-	lda isActive+(SHOTS_MAX-1)
+	lda Shots_isActive+(SHOTS_MAX-1)
 	bne @return
 
 		lda Player_xPos_H
@@ -442,7 +442,7 @@ OFFSET_Y= (256-16)
 		sta bulletSprite+(SHOTS_MAX-1)
 
 		lda #TRUE
-		sta isActive+(SHOTS_MAX-1)
+		sta Shots_isActive+(SHOTS_MAX-1)
 
 		lda #8
 		sta Missiles_velocity

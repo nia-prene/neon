@@ -27,7 +27,7 @@ enemyYL: .res MAX_ENEMIES
 enemyHPH: .res MAX_ENEMIES
 enemyHPL: .res MAX_ENEMIES
 enemyMetasprite: .res MAX_ENEMIES
-enemyWidth: .res MAX_ENEMIES
+Enemies_diameter: .res MAX_ENEMIES
 enemyPalette: .res MAX_ENEMIES
 Enemies_pattern:.res MAX_ENEMIES
 Enemies_index:.res MAX_ENEMIES
@@ -53,6 +53,9 @@ Enemies_new:; void(a)
 		sta enemyHPH,x
 		lda romEnemyHPL,y
 		sta enemyHPL,x
+
+		lda diameter,y
+		sta Enemies_diameter,x
 		
 		lda #TRUE
 		sta isEnemyActive,x
@@ -90,67 +93,73 @@ Enemies_tick:
 ;returns - none
 
 	ldx #MAX_ENEMIES-1; for each enemy
-enemyUpdateLoop:
+@loop:
 
 	lda isEnemyActive,x;update active enemies
-	beq nextEnemy
+	beq @nextEnemy
 
 		sec
 		sbc #1
 		;sta isEnemyActive,x
 		bne @statePersists
-			
-			ldy Enemies_ID,x; get format string
-			lda Enemies_string_L,y
-			sta Enemies_ptr+0
-			lda Enemies_string_H,y
-			sta Enemies_ptr+1
 
-			ldy Enemies_index,x; retrieve index
-
-			lda (Enemies_ptr),y; get metasprite
-			sta enemyMetasprite,x
-			iny
-
-			lda (Enemies_ptr),y; get movement
-			sta Enemies_movement,x
-			iny
-			
-			lda (Enemies_ptr),y; get pattern
-			jsr Patterns_new; void(a) | x,y
-			iny
-
-			lda (Enemies_ptr),y; get vulnerability
-			sta Enemies_vulnerability,x
-			iny
-
-			lda (Enemies_ptr),y; get vulnerability
-			sta isEnemyActive,x
-			tya
-
-			sta Enemies_index,x
+			jsr Enemies_tickState		
 
 	@statePersists:
 
-		ldy Enemies_movement,x
+		jsr Enemies_move; void(x) |
 
-		lda Movement_L,y
-		sta Enemies_ptr+0
-		lda Movement_H,y
-		sta Enemies_ptr+1
+		lda Enemies_vulnerability,x
+		beq @alive
 
-		jmp (Enemies_ptr); void Enemies_move(x) | x
-	Enemies_returnFromMove:
+			jsr Enemies_isAlive; a(x) |
+			bcs @alive
+			
+	@alive:
+		
 
+@nextEnemy:
 
-nextEnemy:
 	dex
-	bpl enemyUpdateLoop; while x
+	bpl @loop; while x
 	
 	rts
 
 
-Enemies_isAlive:
+Enemies_tickState:
+			
+	ldy Enemies_ID,x; get format string
+	lda Enemies_string_L,y
+	sta Enemies_ptr+0
+	lda Enemies_string_H,y
+	sta Enemies_ptr+1
+
+	ldy Enemies_index,x; retrieve index
+
+	lda (Enemies_ptr),y; get metasprite
+	sta enemyMetasprite,x
+	iny
+
+	lda (Enemies_ptr),y; get movement
+	sta Enemies_movement,x
+	iny
+	
+	lda (Enemies_ptr),y; get pattern
+	jsr Patterns_new; void(a) | x,y
+	iny
+
+	lda (Enemies_ptr),y; get vulnerability
+	sta Enemies_vulnerability,x
+	iny
+
+	lda (Enemies_ptr),y; get vulnerability
+	sta isEnemyActive,x
+	tya
+	sta Enemies_index,x
+
+	rts
+
+Enemies_isAlive:; c(x) |
 ;compares enemies to the player bullets and determines if they overlap
 ;arguments
 ;x - enemy to check'
@@ -162,50 +171,45 @@ Enemies_isAlive:
 	ldy #SHOTS_MAX-1
 @bulletLoop:
 ;find an active bullet
-	lda isActive,y
+	lda Shots_isActive,y
 	beq @nextBullet
-;find the X distance between bullet and enemy
-	sec
-	lda bulletX,y
-	sbc enemyXH,x
-	bcs :+
-		
-		;clc
-		eor #%11111111; if negative
-		adc #1; twos compliment
-	:
 
-	cmp enemyWidth,x; if distance < width
-	bcs @nextBullet
+		sec; find x distance
+		lda bulletY,y
+		sbc enemyYH,x
+		bcs :+
+		
+			eor #%11111111; if negative
+		
+		:cmp Enemies_diameter,x; if distance < diameter
+		bcs @nextBullet
 	
-	sec
-	lda bulletY,y
-	sbc enemyYH,x
-	bcs :+
+		sec; find y distance
+		lda bulletX,y
+		sbc enemyXH,x
+		bcs :+
+	
+			eor #%11111111
 		
-		;clc
-		eor #%11111111
-		adc #1
+		:cmp Enemies_diameter,x
+		bcs @nextBullet
 
-	:
+			;clc; total damage
+			lda PlayerBullet_damage,y
+			adc totalDamage
+			sta totalDamage
 
-	cmp enemyWidth,x
-	bcs @nextBullet
+			lda #%11
+			sta enemyPalette,x
 
-		lda #%11
-		sta isActive,y
-		sta enemyPalette,x
-
-		;clc; total damage
-		lda PlayerBullet_damage,y
-		adc totalDamage
-		sta totalDamage
+			lda #FALSE
+			sta Shots_isActive,y
 
 @nextBullet:
 	dey
 	bpl @bulletLoop
-
-	sec
+	
+	clc
 	lda enemyHPL,x
 	sbc totalDamage
 	sta enemyHPL,x
@@ -213,16 +217,17 @@ Enemies_isAlive:
 	sbc #0
 	sta enemyHPH,x
 
-	rts
+	rts; c
 
-;if enemy died, add their points to the total
-		;lda Enemies_pointValue_L,x
-		;adc Score_frameTotal_L
-		;sta Score_frameTotal_L
-		;lda Enemies_pointValue_H,x
-		;adc Score_frameTotal_H
-		;sta Score_frameTotal_H
-		;bcs @error
+Enemies_transferPoints:	
+
+	;lda Enemies_pointValue_L,x
+	;adc Score_frameTotal_L
+	;sta Score_frameTotal_L
+	;lda Enemies_pointValue_H,x
+	;adc Score_frameTotal_H
+	;sta Score_frameTotal_H
+	;bcs @error
 
 Enemies_explodeSmall:
 	pla
@@ -294,17 +299,8 @@ pointValue_L:
 pointValue_H:
 	.byte NULL, 00
 
-romEnemyWidth:
+diameter:
 	.byte NULL, 16
-
-romEnemyHitboxX1:
-	.byte NULL, 02
-
-romEnemyHitboxX2:
-	.byte NULL, 12
-
-romEnemyHitboxY2:
-	.byte NULL, 14
 
 Enemies_string_L:
 	.byte NULL, <String01
@@ -320,6 +316,19 @@ String01:
 	.byte PATTERN01
 	.byte VULNERABLE
 	.byte 255; frames
+
+
+Enemies_move:
+
+	ldy Enemies_movement,x
+
+	lda Movement_L,y
+	sta Enemies_ptr+0
+	lda Movement_H,y
+	sta Enemies_ptr+1
+
+	jmp (Enemies_ptr); void Enemies_move(x) | x
+
 
 MOVEMENT01=$01
 Movement_L:
@@ -338,5 +347,5 @@ Y_OFFSET=32
 	lda #Y_OFFSET; set x
 	sta enemyYH,x
 	
-	jmp Enemies_returnFromMove
+	rts
 .endproc

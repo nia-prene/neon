@@ -228,15 +228,22 @@ OAM_buildPlayer:; void()
 	lda Player_xPos_H
 	sta buildX
 
+	lda #0
+	sta buildPalette
+
 	ldx Player_sprite
 	jmp OAM_build; void(x) |
 
+
 buildPlayerBullets:
+
+	lda #0
+	sta buildPalette
 
 	ldy #SHOTS_MAX-1
 
 @loop:
-	lda isActive,y
+	lda Shots_isActive,y
 	beq @skipEnemy
 
 		lda bulletY,y
@@ -360,6 +367,8 @@ OAM_build:;void (x)
 @finished:
 
 	stx OAM_index
+
+
 	rts
 
 

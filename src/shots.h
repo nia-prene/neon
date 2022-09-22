@@ -5,7 +5,7 @@
 .globalzp Shots_charge
 .global bulletX
 .global bulletY
-.global isActive
+.global Shots_isActive
 .global bulletSprite
 .global PlayerBullet_damage
 .global PlayerBullet_width
