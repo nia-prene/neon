@@ -91,6 +91,7 @@ gamestate00:
 	jsr Player_setSpeed;(a)
 	lda Gamepads_state
 	jsr Player_move;(a)
+	jsr Hitbox_tick
 
 	jsr PlayerBullets_move;void()
 
@@ -99,7 +100,7 @@ gamestate00:
 	jsr PlayerBullets_shoot; void(a,x) |
 	
 
-	jsr Waves_dispense
+	;jsr Waves_dispense
 	jsr Enemies_tick
 
 	jsr Bullets_tick

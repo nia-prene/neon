@@ -21,7 +21,7 @@ Player_speed_H: .res 1
 Player_speed_L: .res 1
 Player_speedIndex:.res 1
 Player_focused: .res 1
-isCardinal: .res 1
+lastDirection: .res 1
 
 Player_powerLevel: .res 1
 Player_hearts: .res 1
@@ -124,11 +124,10 @@ SPEED_MAX=16
 		bcc :+
 
 			lda #FALSE
-			sta Player_focused
+			sta Player_focused; all the way slow
 			rts
-
-		:sta Player_speedIndex
-		
+		:
+		sta Player_speedIndex
 		rts
 
 	@goingSlow:
@@ -136,28 +135,17 @@ SPEED_MAX=16
 		sec
 		lda Player_speedIndex; move the index
 		sbc #1
-
-		bcs @slowingDown
+		bcs :+
 			
 			lda #TRUE
-			sta Player_focused
-
-			lda Hitbox_state; and not already deployed
-			bne @deployed
-
-				lda #HITBOXSTATE01; deploy hitbox
-				jsr Hitbox_new
-
-		@deployed:
-
-			lda #0;no underflow
-	@slowingDown:
-
+			sta Player_focused; all the way fast
+			rts
+		:
 		sta Player_speedIndex
-	
 		rts
 
-Player_move:
+
+Player_move:; void(a)
 
 	and #BUTTON_RIGHT | BUTTON_LEFT | BUTTON_DOWN | BUTTON_UP
 	tax
@@ -174,35 +162,37 @@ Player_move:
 @return:
 	rts
 
-
-@move_l:
-	.byte null, <@right, <@left, null
-	.byte <@down, <@downRight, <@downLeft, null
-	.byte <@up, <@upRight, <@upLeft, null
-	.byte null, null, null, null
-@move_h:
-	.byte null, >@right, >@left, null
-	.byte >@down, >@downRight, >@downLeft, null
-	.byte >@up, >@upRight, >@upLeft, null
-	.byte null, null, null, null
-
 ; in order - still, right, left, right-left
 ; down, down-right, down-left, down-right-left
 ; up, up-right, up-left, up-right-left
 ; up-down, up-down-right, up-down-left, up-down-right-left
-
 @valid:
 	.byte FALSE,TRUE,TRUE,FALSE
 	.byte TRUE,TRUE,TRUE,FALSE
 	.byte TRUE,TRUE,TRUE,FALSE
 	.byte FALSE,FALSE,FALSE,FALSE
 
+@move_l:
+	.byte null, <@right, <@left, null
+	.byte <@down, <@downRight, <@downLeft, null
+	.byte <@up, <@upRight, <@upLeft, null
+	.byte null, null, null, null
+
+@move_h:
+	.byte null, >@right, >@left, null
+	.byte >@down, >@downRight, >@downLeft, null
+	.byte >@up, >@upRight, >@upLeft, null
+	.byte null, null, null, null
 
 @right:
-
-	lda #true
-	sta isCardinal
 	
+	cpx lastDirection
+	beq :+
+		lda #00; direction changed
+		sta Player_xPos_L
+		stx lastDirection
+	:
+
 	ldx Player_speedIndex
 
 	clc
@@ -220,8 +210,12 @@ Player_move:
 
 @left:
 	
-	lda #true
-	sta isCardinal
+	cpx lastDirection
+	beq :+
+		lda #$ff; direction changed
+		sta Player_xPos_L
+		stx lastDirection
+	:
 
 	ldx Player_speedIndex
 	sec
@@ -238,9 +232,13 @@ Player_move:
 
 
 @down:
-	lda #true
-	sta isCardinal
 	
+	cpx lastDirection
+	beq :+
+		lda #$00; direction changed
+		sta Player_yPos_L
+		stx lastDirection
+	:
 	ldx Player_speedIndex
 	clc
 	lda Player_yPos_L
@@ -256,8 +254,12 @@ Player_move:
 
 
 @up:
-	lda #true
-	sta isCardinal
+	cpx lastDirection
+	beq :+
+		lda #$ff; direction changed
+		sta Player_yPos_L
+		stx lastDirection
+	:
 	
 	ldx Player_speedIndex
 	sec
@@ -274,14 +276,13 @@ Player_move:
 
 @upRight:
 	
-	lda isCardinal
-	beq :+
-		lda #false
-		sta isCardinal
-		sta Player_xPos_L
-		lda #$ff
+	cpx lastDirection
+	beq :+	
+		lda #$ff; direction changed
 		sta Player_yPos_L
-
+		lda #00
+		sta Player_xPos_L
+		stx lastDirection
 	:
 	ldx Player_speedIndex
 
@@ -297,8 +298,8 @@ Player_move:
 
 		sta Player_xPos_H
 		sec
-
-	:;sec
+	:
+	;sec
 	lda Player_yPos_L
 	sbc @ordinal_l,x
 	sta Player_yPos_L
@@ -312,13 +313,12 @@ Player_move:
 
 @upLeft:
 	
-	lda isCardinal
+	cpx lastDirection
 	beq :+
-		lda #false
-		sta isCardinal
-		sta Player_xPos_L
+		lda #$ff; direction changed
 		sta Player_yPos_L
-
+		sta Player_xPos_L
+		stx lastDirection
 	:
 	ldx Player_speedIndex
 	sec
@@ -344,13 +344,12 @@ Player_move:
 
 @downRight:
 	
-	lda isCardinal
+	cpx lastDirection
 	beq :+
-		lda #false
-		sta isCardinal
-		sta Player_xPos_L
+		lda #00; direction changed
 		sta Player_yPos_L
-
+		sta Player_xPos_L
+		stx lastDirection
 	:
 	ldx Player_speedIndex
 	clc
@@ -376,16 +375,15 @@ Player_move:
 	:rts
 
 
-@downLeft:
+@downLeft:; void(x)
 	
-	lda isCardinal
+	cpx lastDirection
 	beq :+
-		lda #false
-		sta isCardinal
+		lda #00; direction changed
 		sta Player_yPos_L
 		lda #$ff
 		sta Player_xPos_L
-
+		stx lastDirection
 	:
 	
 	ldx Player_speedIndex
@@ -416,25 +414,47 @@ Player_move:
 
 
 @cardinal_l:
-	.byte 128, 192, 192, 0, 0, 64, 64, 64
-	.byte 128, 128, 128, 128, 128, 128, 128, 128
+	.byte 128, 176, 224, 0, 32, 48, 80, 96
+	.byte 96, 112, 112, 128, 128, 128, 128, 128
 
 @cardinal_h:
 	.byte  0,  0,  0,  1,  1,  1,  1,  1
 	.byte  1,  1,  1,  1,  1,  1,  1,  1
 
+@ordinal_l:
+	.byte 96, 128, 144, 176, 192, 208, 224
+	.byte 224, 240, 240, 0, 0, 0, 0, 0, 0
 
 @ordinal_h:
-	.byte  0,  0,  0,  0,  0,  0,  0,  1
-	.byte  1,  1,  1,  1,  1,  1,  1,  1
-@ordinal_l:
-	.byte 64, 96, 128, 160, 192, 224, 224, 0
-	.byte  0, 32, 32, 32, 32, 32, 32 , 32 
+	.byte  0,  0,  0,  0,  0,  0,  0,  0
+	.byte  0,  0,  1,  1,  1,  1,  1,  1
 	
 
-HITBOXSTATE01=1
-HITBOXSTATE02=2
-HITBOXSTATE03=3
+HITBOX01=1
+HITBOX02=2
+HITBOX03=3
+
+Hitbox_tick:; void()
+
+	ldx Hitbox_state; if hitbox active
+	beq :+
+
+		lda Hitbox_L,x; update it
+		sta Player_ptr+0
+		lda Hitbox_H,x
+		sta Player_ptr+1
+		jmp (Player_ptr); void()
+
+	:
+	lda Player_focused; if focused
+	beq :+
+	lda Hitbox_state; and hitbox isn't deployed
+	bne :+
+		lda #HITBOX01; deploy the hitbox
+		jsr Hitbox_new
+	:
+
+	rts
 
 Hitbox_new:; void(a)
 	
@@ -443,23 +463,23 @@ Hitbox_new:; void(a)
 	sta h
 	rts
 
-Hitbox_states_L:
+Hitbox_L:
 	.byte NULL 
-	.byte <(Hitbox_state01-1)
-	.byte <(Hitbox_state02-1)
-	.byte <(Hitbox_state03-1)
-Hitbox_states_H:
+	.byte <(Hitbox_01)
+	.byte <(Hitbox_02)
+	.byte <(Hitbox_03)
+Hitbox_H:
 	.byte NULL 
-	.byte >(Hitbox_state01-1)
-	.byte >(Hitbox_state02-1)
-	.byte >(Hitbox_state03-1)
-Hitbox_state01:
+	.byte >(Hitbox_01)
+	.byte >(Hitbox_02)
+	.byte >(Hitbox_03)
+Hitbox_01:
 DEPLOY_FRAMES=4
 	lda h
 	adc #1
 	cmp #DEPLOY_FRAMES
 	bcc @statePersists
-		lda #HITBOXSTATE02
+		lda #HITBOX02
 		jmp Hitbox_new
 @statePersists:
 	sta h
@@ -468,7 +488,7 @@ DEPLOY_FRAMES=4
 	sta Hitbox_sprite
 	rts
 
-Hitbox_state02:
+Hitbox_02:
 	inc h
 	lda h
 	lsr
@@ -479,33 +499,30 @@ Hitbox_state02:
 	lda @hitboxAnimation,x
 	sta Hitbox_sprite
 
-	lda Player_speedIndex
-	cmp #SPEED_MAX
-	bne @statePersists
+	lda Player_focused
+	bne :+
 		
-		lda #HITBOXSTATE03
+		lda #HITBOX03
 		jmp Hitbox_new
-
-@statePersists:
-
+	:
 	rts
 
 @hitboxAnimation:
 	.byte SPRITE19,SPRITE1A,SPRITE1B,SPRITE1C
 
-Hitbox_state03:
+
+Hitbox_03:
 RECALL_FRAMES=4
 	clc
 	lda h
 	adc #1
 	cmp #RECALL_FRAMES
-	bcc @statePersists
-		lda #NULL
-		sta Hitbox_state
-		sta Hitbox_sprite
-		rts
-@statePersists:
+	bcc :+
 
+		lda #NULL; disable
+		sta Hitbox_sprite
+		jmp Hitbox_new
+	:
 	sta h
 
 	lda #SPRITE1D
@@ -513,8 +530,6 @@ RECALL_FRAMES=4
 
 	rts
 
-@hitboxRecallAnimation:
-	.byte SPRITE1A,SPRITE1B
 
 Player_isHit:;c()
 MAX_BULLET_DIAMETER=16

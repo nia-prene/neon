@@ -11,6 +11,7 @@
 .global Player_bombs
 .global Player_willRender
 .global Hitbox_sprite
+.global Hitbox_tick
 
 .global Player_init
 .global Player_prepare
