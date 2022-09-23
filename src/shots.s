@@ -222,7 +222,8 @@ BULLET_SPEED = 18
 	rts
 
 @delta:
-	.byte 0, 6, 10, 14, 16, 17, 18, 18
+	.byte  0,  6, 10, 13, 14, 15, 16, 16 
+	.byte 0, 6, 11, 14, 16, 17, 18, 18
 
 
 .proc Shot00
@@ -274,6 +275,9 @@ BULLET_SPEED = 18
 		lda @sprites,x
 		sta bulletSprite,y
 
+		lda @damage,x
+		sta PlayerBullet_damage,y
+
 		lda #TRUE
 		sta Shots_isActive,y
 
@@ -290,6 +294,8 @@ BULLET_SPEED = 18
 	.lobytes -12,  -8, -12, -8
 @sprites:
 	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE09
+@damage:
+	.byte 2, 1, 2, 1
 .endproc
 
 
@@ -340,6 +346,9 @@ BULLET_SPEED = 18
 
 		lda @sprites,x
 		sta bulletSprite,y
+		
+		lda @damage,x
+		sta PlayerBullet_damage,y
 
 		lda #TRUE
 		sta Shots_isActive,y
@@ -357,6 +366,8 @@ BULLET_SPEED = 18
 	.lobytes -12,  -8, -04, -12,  -8, -4
 @sprites:
 	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09
+@damage:
+	.byte 3, 2, 1, 3, 2, 1
 
 .endproc
 
@@ -403,6 +414,9 @@ BULLET_SPEED = 18
 
 		lda @sprites,x
 		sta bulletSprite,y
+		
+		lda @damage,x
+		sta PlayerBullet_damage,y
 
 		lda #TRUE
 		sta Shots_isActive,y
@@ -418,11 +432,14 @@ BULLET_SPEED = 18
 	.lobytes -12,  -8,  -4,  0, -12,  -8, -4,   0
 @sprites:
 	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09
+@damage:
+	.byte 4,3, 2, 1, 4, 3, 2, 1
 
 .endproc
 
 .proc Shot03
 OFFSET_Y= (256-16)
+DAMAGE = 5
 		
 	lda Shots_isActive+(SHOTS_MAX-1)
 	bne @return
@@ -440,6 +457,9 @@ OFFSET_Y= (256-16)
 
 		lda #SPRITE04
 		sta bulletSprite+(SHOTS_MAX-1)
+		
+		lda #DAMAGE
+		sta PlayerBullet_damage+(SHOTS_MAX-1)
 
 		lda #TRUE
 		sta Shots_isActive+(SHOTS_MAX-1)

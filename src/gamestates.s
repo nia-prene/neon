@@ -100,11 +100,11 @@ gamestate00:
 	jsr PlayerBullets_shoot; void(a,x) |
 	
 
-	;jsr Waves_dispense
+	jsr Waves_dispense
 	jsr Enemies_tick
 
 	jsr Bullets_tick
-	jsr Patterns_tick
+	;jsr Patterns_tick
 
 	ldy Gamepads_state
 	ldx Gamepads_last
