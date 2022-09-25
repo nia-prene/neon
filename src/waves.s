@@ -201,7 +201,7 @@ waveStrings_H:
 waveStrings_L:
 	.byte <waveString00
 waveString00:
-	.byte WAVE01
+	.byte WAVE02
 	.byte NULL
 ;pointers to individual enemy waves (below)
 
@@ -220,9 +220,9 @@ BOTTOM=%10
 LEFT=%11
 
 Wave_palette00:
-	.byte NULL,PALETTE08
+	.byte NULL,PALETTE08,PALETTE06
 Wave_palette01:
-	.byte NULL,PALETTE09
+	.byte NULL,PALETTE09,PALETTE06
 
 ;individual enemy waves
 ;	.byte enemy, position, hold, etc, NULL
@@ -233,8 +233,27 @@ wave01:
 	.byte NULL
 
 wave02:
+	.byte ENEMY02, TOP|28, 32
+	.byte NULL
+	.byte ENEMY02, TOP|23, 32
+	.byte ENEMY02, TOP|25, 32
+	.byte ENEMY02, TOP|20, 32
+	.byte ENEMY02, TOP|26, 32
+	.byte ENEMY02, TOP|21, 32
+	.byte ENEMY02, TOP|24, 32
+	.byte ENEMY02, TOP|20, 32
+	.byte NULL
+
 
 wave03:
+	.byte ENEMY02, TOP|10, 16
+	.byte ENEMY02, TOP|12, 16
+	.byte ENEMY02, TOP|15, 16
+	.byte ENEMY02, TOP|11, 16
+	.byte ENEMY02, TOP|08, 16
+	.byte ENEMY02, TOP|05, 64
+	.byte NULL
+
 wave04:
 wave05:
 wave06:

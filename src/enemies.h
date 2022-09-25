@@ -19,6 +19,7 @@
 .global enemyPalette
 .global isEnemyActive
 .global Enemies_pattern
+.global Enemies_clock
 
 .global Enemies_new
 .global Enemies_tick

@@ -812,9 +812,9 @@ renderAllTiles:
 	rts
 	
 PPU_resetScroll:
-	lda #3
+	lda #1
 	sta scrollSpeed_H
-	lda #128
+	lda #00
 	sta scrollSpeed_L
 	sta xScroll
 	sta yScroll_H
@@ -830,8 +830,9 @@ PPU_updateScroll:
 	sbc scrollSpeed_H
 	cmp #240
 	bcc @storeY
+		;clc
 		eor #%11111111
-		adc #0
+		adc #0;+c
 		sta mathTemp
 		sec
 		lda #240

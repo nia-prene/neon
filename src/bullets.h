@@ -25,14 +25,12 @@
 .global enemyBulletBehaviorL
 .global Bullets_ID
 
-.global Charms_getActive
-
 
 ;functions
 .global Bullets_new
 .global Bullets_get
-
 .global Bullets_tick
+.global Bullets_aim
 .global Bullets_clockwise
 .global Bullets_toCharm
 .global Charms_spin

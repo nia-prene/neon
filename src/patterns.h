@@ -3,9 +3,8 @@
 .global Patterns_tick
 
 
-
-
 ; Objects
 .globalzp PATTERN01
+.globalzp PATTERN02
 
 

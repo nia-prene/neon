@@ -23,7 +23,9 @@ b:.res 1
 octant: .res 1
 bulletAngle: .res 1
 Charms_active: .res 1
-;Bullets_spriteBank: .res BULLETS_VARIETIES
+quickBulletX: .res 1
+quickBulletY: .res 1
+
 
 .data
 
@@ -36,18 +38,20 @@ enemyBulletYL: .res MAX_ENEMY_BULLETS
 .code
 
 	
-Bullets_new:; void(a)
-
-	jsr Bullets_get;c,y(void) | x
-	bcc @bulletsFull;returns clear if full
+Bullets_new:; c(x,y) | x
 	
-		lda enemyXH,x; copy enemy y and x
+	pha; save ID
+	jsr Bullets_get;c,y(void) | x
+	pla; restore ID
+	bcc @bulletsFull;returns clear if full
+		sta Bullets_ID,y
+		
+		lda enemyXH,x; coordinate copy
 		sta enemyBulletXH,y
 		lda enemyYH,x
 		sta enemyBulletYH,y;
 	
-	
-		lda Bullets_fastForwardFrames; it may be fastForwarded
+		lda Bullets_fastForwardFrames; invisibility frames
 		sta isEnemyBulletActive,y
 	
 @bulletsFull:
@@ -154,41 +158,53 @@ Charms_spin:; (void)
 	
 	rts
 
-aimBullet:
-;arguments:
-;quickBulletX
-;quickBulletY
-;returns:
-;a - degree from 0-256 to shoot bullet. use this degree to fetch correct bullet
+
+; returns Bullet aimed at player
+Bullets_aim:; a(x) | x
+
+	lda enemyXH,x
+	sta quickBulletX
+	lda enemyYH,x
+	sta quickBulletY
+
+	stx xReg
+
 	sec
 	lda Player_xPos_H
-	;sbc quickBulletX
+	sbc quickBulletX
 	bcs *+4
 	eor #$ff
 	tax
+
 	rol octant
+
 	lda Player_yPos_H
-	adc #10
 	sec
-	;sbc quickBulletY
+	sbc quickBulletY
 	bcs *+4
 	eor #$ff
 	tay
+
 	rol octant
+
 	sec
 	lda log2_tab,x
 	sbc log2_tab,y
 	bcc *+4
 	eor #$ff
 	tax
+
 	lda octant
 	rol
 	and #%111
 	tay
+
 	lda atan_tab,x
 	eor octant_adjust,y
-	sta bulletAngle
-	rts
+
+	ldx xReg
+
+	rts; a
 
 Bullets_clockwise:;void()
 

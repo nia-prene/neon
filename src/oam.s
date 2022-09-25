@@ -107,7 +107,7 @@ PLAYER_HITBOX_X_OFFSET=2
 	jmp OAM_build; void(a)
 
 .proc OAM_buildBullets
-LIMIT=48
+LIMIT=32
 
 	lda #LIMIT; set sprite limit for layer
 	sta limit

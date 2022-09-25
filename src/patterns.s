@@ -7,55 +7,48 @@
 PATTERNS_MAX = 16
 SPEEDS=4
 
+.zeropage
+bulletCount: .res 1
 
 .data
-Patterns_timeElapsed: .res PATTERNS_MAX
 p:.res PATTERNS_MAX
 q:.res PATTERNS_MAX
 
-bulletCount: .res 1
 
 .code
 
 Patterns_new:; void(a,x) | x,y
 
 	sta Enemies_pattern,x; save the pattern
-	
-	lda #$ff
-	sta Patterns_timeElapsed,x
 
-	lda #0
+	lda #0; todo something with difficulty
 	sta p,x
 	sta q,x
 
 	rts
 
 
-Patterns_tick:
-	ldx #PATTERNS_MAX-1
-Patterns_loop:
+Patterns_tick:; void(x)
 	ldy Enemies_pattern,x
-	beq Patterns_tickDown
+	beq @return
 		
 		lda Patterns_L,y
 		sta Enemies_ptr+0
 		lda Patterns_H,y
 		sta Enemies_ptr+1
-		
-		txa; save offset
 		jmp (Enemies_ptr)
-	Patterns_tickReturn:
 
-		inc Patterns_timeElapsed,x; tick forward
-		
-Patterns_tickDown:
-	dex
-	bpl Patterns_loop
+@return:
 	rts
 
-PATTERN01=$01
+BITS_QUADRANT=%11000000
+BITS_ANGLE=%11111000
 
-.proc pattern01
+PATTERN01=$01
+PATTERN02=$02
+
+
+.proc Pattern01
 SHOTS=4
 RATE=%11
 BULLET_COUNT=4
@@ -64,9 +57,9 @@ FRAME_CHANGE=8*15
 PATTERN_CHANGE=256/BULLET_COUNT
 MAX_TIME=SHOTS*(RATE+1)
 
-	lda Patterns_timeElapsed,x
+	lda Enemies_clock,x
 	and #RATE
-	bne @noPattern
+	bne @return
 
 		lda p,x
 		sta mathTemp
@@ -82,7 +75,7 @@ MAX_TIME=SHOTS*(RATE+1)
 	@bulletLoop:
 		
 		jsr Bullets_get; c,y() | x
-		bcc @abort
+		bcc @return
 
 		clc
 		lda mathTemp
@@ -103,20 +96,45 @@ MAX_TIME=SHOTS*(RATE+1)
 		dec bulletCount
 		bne @bulletLoop
 		
-@noPattern:
-@abort:
-	jmp Patterns_tickReturn
+@return:
+
+	rts
+
 .endproc
 
-Rate_slow:
-	.byte %1111
-Rate_medium:
-	.byte %11
-Rate_fast:
-	.byte %0
+.proc Pattern02
+INVISIBILITY = 8
+RATE = %11111111
+SPEED = (BITS_ANGLE | 0)
+
+	lda #INVISIBILITY
+	sta Bullets_fastForwardFrames
+
+	lda Enemies_clock,x
+	and #%00010011
+	bne @return
+		lda Enemies_clock,x
+		and #%00011111
+		bne @shoot
+			jsr Bullets_aim; a(x) | x
+			bit ROUND_8
+			beq :+
+				clc
+				adc #8
+			:and #SPEED
+			sta p,x
+		
+	@shoot:
+		lda p,x
+		jmp Bullets_new; cax) | x
+@return:	
+	rts
+
+.endproc
+
 
 Patterns_L:
-	.byte NULL, <(pattern01)
+	.byte NULL,<Pattern01,<Pattern02
 Patterns_H:
-	.byte NULL, >(pattern01)
+	.byte NULL,>Pattern01,>Pattern02
 

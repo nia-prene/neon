@@ -100,11 +100,10 @@ gamestate00:
 	jsr PlayerBullets_shoot; void(a,x) |
 	
 
-	jsr Waves_dispense
-	jsr Enemies_tick
-
 	jsr Bullets_tick
-	;jsr Patterns_tick
+	jsr Enemies_tick
+	jsr Waves_dispense
+
 
 	ldy Gamepads_state
 	ldx Gamepads_last
@@ -397,9 +396,9 @@ gamestate0A:; falling off broom
 
 	;jsr PPU_waitForSprite0Reset;()
 
-	jsr Waves_dispense 
-	jsr Enemies_tick
 	jsr Bullets_tick
+	jsr Enemies_tick
+	jsr Waves_dispense 
 
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame; (x)
@@ -440,9 +439,9 @@ gamestate0B:; recovering from fall
 
 	;jsr PPU_waitForSprite0Reset;()
 
-	jsr Waves_dispense
-	jsr Enemies_tick
 	jsr Bullets_tick
+	jsr Enemies_tick
+	jsr Waves_dispense
 
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame;(x)
@@ -475,9 +474,9 @@ gamestate0C:; a moment of no shooting
 
 	;jsr PPU_waitForSprite0Reset;()
 
-	jsr Waves_dispense 
-	jsr Enemies_tick
 	jsr Bullets_tick
+	jsr Enemies_tick
+	jsr Waves_dispense 
 
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame;(x)
@@ -571,11 +570,9 @@ Gamestate0E:
 		jsr Gamestates_new
 	:
 	
-	jsr Waves_dispense
-	jsr Enemies_tick
-
 	jsr Bullets_tick
-	jsr Patterns_tick
+	jsr Enemies_tick
+	jsr Waves_dispense
 
 	ldy Gamepads_state
 	ldx Gamepads_last

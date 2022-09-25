@@ -17,7 +17,7 @@ SPRITE0B=$0b;small explosion frame 1
 SPRITE0C=$0c;small explosion frame 2
 SPRITE0D=$0d;small explosion frame 3
 SPRITE0E=$0e;powerup frame 0
-SPRITE0F=$0f;beach drone frame 0
+SPRITE0F=$0f;drone frame 0 palette 0
 SPRITE10=$10;balloon cannon frame 0
 SPRITE11=$11;balloon cannon frame 1
 SPRITE12=$12;submarine above water
@@ -103,9 +103,9 @@ sprite0E:
 	.byte 0, $2c, %0, 8
 	.byte TERMINATE
 sprite0F:
-	.byte 0, $62, %00000001, 0
-	.byte 0, $62, %01000001, 8
-	.byte TERMINATE
+	.lobytes $62, -8, -8, %00000001
+	.lobytes $62, -8,  0, %01000001
+	.byte NULL
 sprite10:
 	.byte 0, $64, %00000000, 0
 	.byte 0, $64, %01000000, 8

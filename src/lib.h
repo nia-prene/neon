@@ -14,6 +14,14 @@
 .globalzp BUTTON_DOWN
 .globalzp BUTTON_LEFT
 .globalzp BUTTON_RIGHT
+.global ROUND_2
+.global ROUND_4
+.global ROUND_8
+.global ROUND_16
+.global ROUND_32
+.global ROUND_64
+.global ROUND_128
+.global ROUND_256
 
 ;labels
 .globalzp sprite1LeftOrTop

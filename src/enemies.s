@@ -33,7 +33,10 @@ Enemies_pattern:.res MAX_ENEMIES
 Enemies_index:.res MAX_ENEMIES
 Enemies_movement:.res MAX_ENEMIES
 Enemies_vulnerability:.res MAX_ENEMIES
+Enemies_clock:.res MAX_ENEMIES
 
+i:.res MAX_ENEMIES
+j:.res MAX_ENEMIES
 
 .code
 Enemies_new:; void(a)
@@ -57,12 +60,16 @@ Enemies_new:; void(a)
 		lda diameter,y
 		sta Enemies_diameter,x
 		
-		lda #TRUE
-		sta isEnemyActive,x
 		lda #00
 		sta Enemies_index,x
+		sta Enemies_clock,x
+		sta i,x
+		sta j,x
+
+		lda #TRUE
+
+		sta isEnemyActive,x
 		;sec; return true
-		rts
 
 @enemiesFull:
 	;clc; return false
@@ -100,26 +107,33 @@ Enemies_tick:
 
 		sec
 		sbc #1
-		;sta isEnemyActive,x
+		sta isEnemyActive,x
 		bne @statePersists
 
 			jsr Enemies_tickState		
 
 	@statePersists:
 
-		jsr Enemies_move; void(x) |
+		jsr Enemies_move; void(x) |  if cleared
+		bcc :+
+			lda #FALSE; remove from collection
+			sta isEnemyActive,x
+			jmp @nextEnemy
+		:
 
-		lda Enemies_vulnerability,x
-		beq @alive
+		lda Enemies_vulnerability,x; if vulnerable
+		beq :+
+		jsr Enemies_isAlive; a(x) |  and defeated
+		bcs :+
 
-			jsr Enemies_isAlive; a(x) |
-			bcs @alive
-			
-	@alive:
-		
+			lda #FALSE; remove from collection
+			sta isEnemyActive,x
+			jmp @nextEnemy
+		:
+		jsr Patterns_tick; void(x)
+		inc Enemies_clock,x
 
 @nextEnemy:
-
 	dex
 	bpl @loop; while x
 	
@@ -129,13 +143,18 @@ Enemies_tick:
 Enemies_tickState:
 			
 	ldy Enemies_ID,x; get format string
-	lda Enemies_string_L,y
+	lda Enemies_L,y
 	sta Enemies_ptr+0
-	lda Enemies_string_H,y
+	lda Enemies_H,y
 	sta Enemies_ptr+1
 
-	ldy Enemies_index,x; retrieve index
+	lda Enemies_index,x; retrieve index
+	cmp Enemies_duration,y
+	bne :+
 
+		lda Enemies_repeatAt,y
+	:
+	tay
 	lda (Enemies_ptr),y; get metasprite
 	sta enemyMetasprite,x
 	iny
@@ -154,10 +173,33 @@ Enemies_tickState:
 
 	lda (Enemies_ptr),y; get vulnerability
 	sta isEnemyActive,x
+	iny
+
 	tya
 	sta Enemies_index,x
 
+	lda #0
+	sta Enemies_clock,x
+
 	rts
+
+
+Enemies_move:
+
+	ldy Enemies_movement,x; if null
+	beq @return
+
+		lda Movement_L,y
+		sta Enemies_ptr+0
+		lda Movement_H,y
+		sta Enemies_ptr+1
+
+		jmp (Enemies_ptr); void Enemies_move  c(x) | x
+
+@return:
+	clc	
+	rts
+
 
 Enemies_isAlive:; c(x) |
 ;compares enemies to the player bullets and determines if they overlap
@@ -209,7 +251,7 @@ Enemies_isAlive:; c(x) |
 	dey
 	bpl @bulletLoop
 	
-	clc
+	sec
 	lda enemyHPL,x
 	sbc totalDamage
 	sta enemyHPL,x
@@ -229,116 +271,90 @@ Enemies_transferPoints:
 	;sta Score_frameTotal_H
 	;bcs @error
 
-Enemies_explodeSmall:
-	pla
-	tax
-;lasts for 16 frames
-	;lda i,x
-	cmp #16
-	bcs @clear
-;divide by 4 to find animation frame
-	lsr
-	lsr
-	tay
-	lda @animationFrames,y
-	sta enemyMetasprite,x
-	;inc i,x
-	rts
-@clear:
-	;lda j,x
-	bne @dropPowerup
-	lda #FALSE
-	sta isEnemyActive,x
-;pickup algo here
-	rts
-@dropPowerup:
-	lda #<(Pickups_movePowerup-1)
-	;sta enemyBehaviorL,x
-	lda #>Pickups_movePowerup
-	;sta enemyBehaviorH,x
-	rts
-@animationFrames:
-	.byte SPRITE0A, SPRITE0B ,SPRITE0C ,SPRITE0D
-
-
-.macro explode	size, powerUp
-	lda #0
-	sta enemyPalette,x
-	sta i,x
-	lda powerUp
-	sta j,x
-.if (.xmatch ({size}, 0))
-	lda #<(Enemies_explodeSmall-1)
-	sta enemyBehaviorL,x
-	lda #>Enemies_explodeSmall
-	sta enemyBehaviorH,x
-.else 
-	.error "explosion needs size"
-.endif
-	lda #1
-	jsr SFX_newEffect
-	rts
-.endmacro
 ENEMY01=1; Reese Boss
-ENEMY02=2
+ENEMY02=2; Blue Drone down light right
 ENEMY03=3
 ENEMY04=4
 ENEMY05=5
-ENEMY06=6;Ready?
-ENEMY07=7;Go!
-ENEMY08=$8;reese boss
+ENEMY06=6
+ENEMY07=7
+ENEMY08=$8
 .rodata
 ;first byte is a burner byte so we can use zero flag to denote empty slot
 
 romEnemyHPL: 
-	.byte NULL, 02
+	.byte 	NULL,	100,	10,	10
 romEnemyHPH:
-	.byte NULL, 00
+	.byte 	NULL,	00,	00,	10
 pointValue_L:
-	.byte NULL, $19
+	.byte 	NULL,	19,	10,	10
 pointValue_H:
-	.byte NULL, 00
+	.byte 	NULL,	00,	00,	00
 
 diameter:
-	.byte NULL, 16
+	.byte 	NULL,	16,	12,	08
 
-Enemies_string_L:
-	.byte NULL, <String01
-Enemies_string_H:
-	.byte NULL, >String01
+Enemies_duration:
+	.byte 	NULL,	SIZE*1,	SIZE*3,	SIZE*3
 
-VULNERABLE=TRUE
-INVULNERABLE=FALSE
+Enemies_repeatAt:
 
-String01:
+	.byte 	NULL,  	SIZE*0, SIZE*0, SIZE*0
+
+
+SIZE		= 5; bytes
+VULNERABLE	= TRUE
+INVULNERABLE	= FALSE
+
+Enemy01:
 	.byte SPRITE18
 	.byte MOVEMENT01
-	.byte PATTERN01
+	.byte PATTERN02
 	.byte VULNERABLE
 	.byte 255; frames
 
 
-Enemies_move:
+Enemy02:
+	.byte SPRITE0F; move onscreen
+	.byte MOVEMENT04
+	.byte NULL
+	.byte VULNERABLE
+	.byte 16; frames
 
-	ldy Enemies_movement,x
+	.byte SPRITE0F; stop and shoot
+	.byte NULL
+	.byte PATTERN02
+	.byte VULNERABLE
+	.byte 64; frames
 
-	lda Movement_L,y
-	sta Enemies_ptr+0
-	lda Movement_H,y
-	sta Enemies_ptr+1
+	.byte SPRITE0F; move off
+	.byte MOVEMENT03
+	.byte NULL
+	.byte VULNERABLE
+	.byte 255; frames
 
-	jmp (Enemies_ptr); void Enemies_move(x) | x
+Enemy03:
+	.byte SPRITE0F
+	.byte MOVEMENT03
+	.byte PATTERN02
+	.byte VULNERABLE
+	.byte 255; frames
 
 
-MOVEMENT01=$01
-Movement_L:
-	.byte NULL, <Movement01
+Enemies_L:
+	.byte NULL,<Enemy01,<Enemy02,<Enemy03
+Enemies_H:
+	.byte NULL,>Enemy01,>Enemy02,>Enemy03
 
 
-Movement_H:
-	.byte NULL, >Movement01
+MOVEMENT01=$01; reese boss not moving
+MOVEMENT02=$02; down to soft right
+MOVEMENT03=$03; down to medium right
+MOVEMENT04=$04; ease down
 
-.proc Movement01
+
+
+.proc Movement01; c(x) |
 X_OFFSET=116
 Y_OFFSET=32
 	
@@ -347,5 +363,91 @@ Y_OFFSET=32
 	lda #Y_OFFSET; set x
 	sta enemyYH,x
 	
+	clc
 	rts
 .endproc
+
+;moves enemy down and slightly to the right
+.proc Movement02; c(x) |
+SPEED_Y=2
+MUTATOR=4
+	
+	clc
+	lda i,x
+	adc #MUTATOR
+	sta i,x
+	lda j,x
+	adc #0
+	sta j,x
+
+	lda enemyXL,x
+	adc i,x
+	sta enemyXL,x
+	lda enemyXH,x
+	adc j,x
+	sta enemyXH,x
+	bcs @return
+	
+	lda enemyYH,x
+	adc #SPEED_Y
+	sta enemyYH,x
+@return:
+	rts; c
+	
+
+.endproc
+
+.proc Movement03; c(x) |
+SPEED_Y=2
+MUTATOR=16
+	
+	clc
+	lda i,x
+	adc #MUTATOR
+	sta i,x
+	lda j,x
+	adc #0
+	sta j,x
+
+	lda enemyXL,x
+	adc i,x
+	sta enemyXL,x
+	lda enemyXH,x
+	adc j,x
+	sta enemyXH,x
+	bcs @return
+	
+	lda enemyYH,x
+	adc #SPEED_Y
+	sta enemyYH,x
+@return:
+	rts; c
+	
+
+.endproc
+
+.proc Movement04
+	
+	lda Enemies_clock,x
+	asl
+	asl
+	and #%011
+	tay
+	clc
+	lda enemyYH,x
+	adc Ease00,y
+	sta enemyYH,x
+
+	rts; c
+
+.endproc
+
+
+Ease00:
+	.byte 2, 2, 2, 1
+	
+
+Movement_L:
+	.byte NULL,<Movement01,<Movement02,<Movement03,<Movement04
+Movement_H:
+	.byte NULL,>Movement01,>Movement02,>Movement03,>Movement04

@@ -1,20 +1,20 @@
 .include "lib.h"
 
-TRUE = 01 
-true = 01 
-FALSE = 00
-false = 00
-TERMINATE = $ff
-NULL = $00
-null = $00
-BUTTON_A = %10000000
-BUTTON_B = %1000000
-BUTTON_SELECT = %100000
-BUTTON_START = %10000
-BUTTON_UP = %1000
-BUTTON_DOWN = %100
-BUTTON_LEFT = %10
-BUTTON_RIGHT = %1
+TRUE 		= 01 
+true 		= 01 
+FALSE		= 00
+false		= 00
+TERMINATE 	= $ff
+NULL 		= $00
+null 		= $00
+BUTTON_A 	= %10000000
+BUTTON_B 	= %1000000
+BUTTON_SELECT 	= %100000
+BUTTON_START 	= %10000
+BUTTON_UP 	= %1000
+BUTTON_DOWN 	= %100
+BUTTON_LEFT 	= %10
+BUTTON_RIGHT 	= %1
 .zeropage
 
 mathTemp: .res 2
@@ -51,6 +51,26 @@ INES_SRAM   = 0 ; 1 = battery backed SRAM at $6000-7FFF
 
 
 .code
+
+
+ROUND_2:
+	.byte %1
+ROUND_4:
+	.byte %10
+ROUND_8:
+	.byte %100
+ROUND_16:
+	.byte %1000
+ROUND_32:
+	.byte %10000
+ROUND_64:
+	.byte %100000
+ROUND_128:	
+	.byte %1000000
+ROUND_256:
+	.byte %10000000
+
+
 checkCollision:
 ;checks if two bound boxes intersect
 ;returns

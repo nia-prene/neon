@@ -13,13 +13,13 @@ color3: .res NUMBER_OF_PALETTES
 Palettes_hasChanged: .res NUMBER_OF_PALETTES
 
 .rodata
-PALETTE00=0;player palette
+PALETTE00=0; player palette
 PALETTE01=1; bg lvl 1
 PALETTE02=2; bg lvl 1
 PALETTE03=3; bg lvl 1
 PURPLE_BULLET=5
-PALETTE06=6;blue drone palette
-PALETTE07=7;blue drone palette
+PALETTE06=6; blue drone palette
+PALETTE07=7; unused
 PALETTE08=$08;orange piper palette
 PALETTE09=$09;green piper palette palette
 PALETTE0A=$0a;player 1 portrait
