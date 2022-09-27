@@ -24,6 +24,7 @@ buildPalette: .res 1
 spritePointer: .res 2
 limit: .res 1
 bulletShuffle: .res 1
+enemyShuffle: .res 1
 
 .segment "DATA"
 Sprite0_destination: .res 1
@@ -129,14 +130,15 @@ LIMIT=32
 	jsr secondPass; void(y,x) |
 	rts
 
-.align 64
+.align 32
 firstPass:
 	ldy OAM_index
 @bulletLoop:
 
 	lda isEnemyBulletActive,x; if active
+	beq @skipBullet
 	cmp #1
-	bne @skipBullet
+	bne @invisible
 		
 	lda limit
 	beq @full
@@ -172,20 +174,27 @@ firstPass:
 	sty OAM_index
 	rts
 
+@invisible:
+	sbc #1
+	sta isEnemyBulletActive,x
+	dex
+	bpl @bulletLoop
+	sty OAM_index
+	rts
 
+
+.align 32
 secondPass:
-
 	ldy OAM_index
 	
 @bulletLoop:
-
 	lda isEnemyBulletActive,x
+	beq @skipBullet
 	cmp #1; if active and visible
-	bne @skipBullet
+	bne @invisible
 		
 	lda limit; and not full
 	beq @full
-
 
 		lda #$24
 
@@ -218,6 +227,15 @@ secondPass:
 @full:	
 	sty OAM_index
 	rts
+
+@invisible:
+	sbc #1
+	sta isEnemyBulletActive,x
+	dex
+	bpl @bulletLoop
+	sty OAM_index
+	rts
+
 
 .endproc
 
@@ -271,14 +289,29 @@ buildPlayerBullets:
 	rts
 
 
-buildEnemies:
+.proc buildEnemies
+LIMIT = 8
 	
-	ldy #MAX_ENEMIES-1
+	lda #LIMIT; set sprite limit for layer
+	sta limit
+	
+	lda enemyShuffle; shuffle bullets
+	adc #(MAX_ENEMIES/7) * 5; 3/5ths item collection
+	cmp #MAX_ENEMIES-1; use carry instead of -2
+	bcc @storeShuffle
+		sbc #MAX_ENEMIES-1; make sure no wrap
+@storeShuffle:
+	sta enemyShuffle
 
-@enemyLoop:
+	tay; set as initial iterator
+	
+@firstPass:
 	lda isEnemyActive,y
 	beq @skipEnemy
 		
+		dec limit
+		bmi @full
+
 		lda enemyYH,y
 		sta buildY
 		lda enemyXH,y
@@ -286,17 +319,52 @@ buildEnemies:
 		lda enemyPalette,y
 		sta buildPalette
 		
-		ldx enemyMetasprite,y
-
 		sty yReg
+
+		ldx enemyMetasprite,y
 		jsr OAM_build; void(x)
+		
 		ldy yReg
 
 @skipEnemy:
 
 	dey
-	bpl @enemyLoop
+	bpl @firstPass
+
+
+	ldy #MAX_ENEMIES-1
+
+@secondPass:
+	lda isEnemyActive,y
+	beq @skip
+		
+		dec limit
+		bmi @full
+
+		lda enemyYH,y
+		sta buildY
+		lda enemyXH,y
+		sta buildX
+		lda enemyPalette,y
+		sta buildPalette
+		
+		sty yReg
+
+		ldx enemyMetasprite,y
+		jsr OAM_build; void(x)
+		
+		ldy yReg
+
+@skip:
+
+	dey
+	cpy enemyShuffle
+	bne @secondPass
+
+@full:
 	rts
+
+.endproc
 
 
 .proc OAM_buildPause

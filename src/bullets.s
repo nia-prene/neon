@@ -19,7 +19,7 @@ Bullets_fastForwardFrames:.res 1
 Bullets_move: .res 2
 
 ;locals
-b:.res 1
+getAt:.res 1
 octant: .res 1
 bulletAngle: .res 1
 Charms_active: .res 1
@@ -37,6 +37,7 @@ enemyBulletYL: .res MAX_ENEMY_BULLETS
 
 .code
 
+Bullets_init:
 	
 Bullets_new:; c(x,y) | x
 	
@@ -55,60 +56,38 @@ Bullets_new:; c(x,y) | x
 		sta isEnemyBulletActive,y
 	
 @bulletsFull:
-	rts
+	rts; c
 
-
+.align 16
 Bullets_get:; c,y() | x
 ;returns x - active offset
 ;returns carry clear if full
 	
-	inc b
-	lda b
-	ror
-	bcc @forward
-
-	ldy #MAX_ENEMY_BULLETS-1
+	ldy getAt
 @bulletLoop:
 	lda isEnemyBulletActive,y
 	beq @return
 		dey
 		bpl @bulletLoop
 		clc;mark full
+		iny
+		sty getAt
 		rts
 @return:
 	sec ;mark success
+	sty getAt
 	rts
 
-
-@forward:
-	ldy #00
-@forwardLoop:
-	lda isEnemyBulletActive,y
-	beq @forwardReturn
-		iny
-		cpy #MAX_ENEMY_BULLETS
-		bcc @forwardLoop
-		clc;mark full
-		rts
-@forwardReturn:
-	sec ;mark success
-	rts
-
+.align 32
 Bullets_tick:; void()
 
 	ldx #MAX_ENEMY_BULLETS-1; for each bullet
+	stx getAt
 
 Bullets_moveLoop:
 	lda isEnemyBulletActive,x
 	beq Bullets_tickDown;skip inactive bullets
 		
-		cmp #TRUE; if higher than true
-		beq @visible
-
-			sbc #1; decrease invisibility timer
-			sta isEnemyBulletActive,x
-	@visible:
-
 		ldy Bullets_ID,x
 
 		lda Bullets_move_L,y
