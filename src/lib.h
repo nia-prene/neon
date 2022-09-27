@@ -32,6 +32,9 @@
 .globalzp xReg
 .globalzp yReg
 .globalzp Lib_errorCode
+.globalzp Lib_ptr0
+.globalzp Lib_ptr1
+.globalzp Lib_ptr2
 
 ;functions
 .global checkCollision

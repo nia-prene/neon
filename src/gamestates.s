@@ -87,7 +87,6 @@ gamestate00:
 	ldx Gamepads_last
 	jsr Gamestates_pause; void(a,x) |
 	
-	lda Gamepads_state
 	jsr Player_setSpeed;(a)
 	lda Gamepads_state
 	jsr Player_move;(a)
@@ -130,13 +129,12 @@ gamestate00:
 	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00; void() |
-	;jsr PPU_dimScreen; see how much frame is left over
+	jsr PPU_dimScreen; see how much frame is left over
 	
 	rts
 
 gamestate01:;void(currentPlayer, currentScene)
 ;loads level with current player.
-	jsr APU_init
 
 	jsr APU_setSong
 	jsr disableRendering; ()
@@ -150,28 +148,25 @@ gamestate01:;void(currentPlayer, currentScene)
 	ldy #7
 	jsr setPalette; (x,y)
 
-	jsr Player_prepare
-	jsr Bombs_init
-
 	ldx nextScene
 	jsr setPaletteCollection; (x)
 
 	ldx nextScene
-	jsr Tiles_getScreenPointer; (x)
+	jsr PPU_renderScreen; void(x)
 
-	jsr renderAllTiles; ()
 	jsr PPU_renderRightScreen
 
 	ldx nextScene
 	jsr Waves_new; (x)
 
 	ldx nextScene
-	jsr OAM_initSprite0
+	
 	jsr PPU_resetScroll
 	jsr enableRendering;()
 
 	lda #GAMESTATE02
 	jsr Gamestates_new; void(a)
+	jsr PPU_NMIPlan00; void() |
 	rts
 
 @playerPalette:

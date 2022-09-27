@@ -2,6 +2,7 @@
 .globalzp Player_yPos_H
 .globalzp Player_ptr
 
+.global Player_current
 .global Player_focused
 .global Player_sprite
 .global Player_powerLevel
@@ -13,8 +14,7 @@
 .global Hitbox_sprite
 .global Hitbox_tick
 
-.global Player_init
-.global Player_prepare
+.global Players_init
 .global Player_setSpeed
 .global Player_move
 .global Player_isHit
@@ -22,6 +22,4 @@
 .global Player_fall
 .global Player_recover
 .global Player_toStartingPos
-.global Player_toConvo
-.global Player_setHitboxAnimation
 .global Player_collectCharms

@@ -295,7 +295,7 @@ BULLET_SPEED = 18
 @sprites:
 	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE09
 @damage:
-	.byte 2, 1, 2, 1
+	.byte 4, 3, 4, 3
 .endproc
 
 
@@ -367,7 +367,7 @@ BULLET_SPEED = 18
 @sprites:
 	.byte SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09,SPRITE09
 @damage:
-	.byte 3, 2, 1, 3, 2, 1
+	.byte 4, 3, 2, 4, 3, 2
 
 .endproc
 

@@ -9,6 +9,7 @@
 .include "pickups.h"
 .include "score.h"
 .include "apu.h"
+.include "ppu.h"
 .include "patterns.h"
 
 .zeropage
@@ -149,20 +150,22 @@ Enemies_tickState:
 	sta Enemies_ptr+1
 
 	lda Enemies_index,x; retrieve index
-	cmp Enemies_duration,y
-	bne :+
-
-		lda Enemies_repeatAt,y
-	:
 	tay
+
+	lda (Enemies_ptr),y; get movement
+	bne :+; null terminated
+		iny
+		lda (Enemies_ptr),y; next byte is repeat-at
+		tay; new index
+		lda (Enemies_ptr),y; get movement
+	:
+	sta Enemies_movement,x
+	iny
+	
 	lda (Enemies_ptr),y; get metasprite
 	sta enemyMetasprite,x
 	iny
 
-	lda (Enemies_ptr),y; get movement
-	sta Enemies_movement,x
-	iny
-	
 	lda (Enemies_ptr),y; get pattern
 	jsr Patterns_new; void(a) | x,y
 	iny
@@ -290,16 +293,8 @@ pointValue_L:
 	.byte 	NULL,	19,	10,	10
 pointValue_H:
 	.byte 	NULL,	00,	00,	00
-
 diameter:
 	.byte 	NULL,	16,	12,	08
-
-Enemies_duration:
-	.byte 	NULL,	SIZE*1,	SIZE*3,	SIZE*3
-
-Enemies_repeatAt:
-
-	.byte 	NULL,  	SIZE*0, SIZE*0, SIZE*0
 
 
 SIZE		= 5; bytes
@@ -307,38 +302,33 @@ VULNERABLE	= TRUE
 INVULNERABLE	= FALSE
 
 Enemy01:
-	.byte SPRITE18
 	.byte MOVEMENT01
+	.byte SPRITE18
 	.byte PATTERN02
 	.byte VULNERABLE
 	.byte 255; frames
 
 
 Enemy02:
-	.byte SPRITE0F; move onscreen
 	.byte MOVEMENT04
+	.byte SPRITE0F; move onscreen
 	.byte NULL
 	.byte VULNERABLE
 	.byte 16; frames
 
+	.byte MOVEMENT02
 	.byte SPRITE0F; stop and shoot
-	.byte NULL
 	.byte PATTERN02
 	.byte VULNERABLE
-	.byte 64; frames
+	.byte 128; frames
 
-	.byte SPRITE0F; move off
 	.byte MOVEMENT03
+	.byte SPRITE0F; move off
 	.byte NULL
 	.byte VULNERABLE
 	.byte 255; frames
 
 Enemy03:
-	.byte SPRITE0F
-	.byte MOVEMENT03
-	.byte PATTERN02
-	.byte VULNERABLE
-	.byte 255; frames
 
 
 Enemies_L:
@@ -353,47 +343,23 @@ MOVEMENT03=$03; down to medium right
 MOVEMENT04=$04; ease down
 
 
-
+;Enemy stays in place
 .proc Movement01; c(x) |
-X_OFFSET=116
-Y_OFFSET=32
-	
-	lda #X_OFFSET; set x
-	sta enemyXH,x
-	lda #Y_OFFSET; set x
-	sta enemyYH,x
-	
 	clc
 	rts
 .endproc
 
-;moves enemy down and slightly to the right
+;moves enemy with y scroll
 .proc Movement02; c(x) |
-SPEED_Y=2
-MUTATOR=4
 	
 	clc
-	lda i,x
-	adc #MUTATOR
-	sta i,x
-	lda j,x
-	adc #0
-	sta j,x
-
-	lda enemyXL,x
-	adc i,x
-	sta enemyXL,x
-	lda enemyXH,x
-	adc j,x
-	sta enemyXH,x
-	bcs @return
-	
+	lda enemyYL,x
+	adc PPU_scrollSpeed_l
+	sta enemyYL,x
 	lda enemyYH,x
-	adc #SPEED_Y
+	adc PPU_scrollSpeed_h
 	sta enemyYH,x
-@return:
-	rts; c
-	
+	rts
 
 .endproc
 

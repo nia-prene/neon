@@ -17,11 +17,11 @@ Player_yPos_H: .res 1
 Player_xPos_L: .res 1
 Player_yPos_L: .res 1
 
-Player_speed_H: .res 1
-Player_speed_L: .res 1
+Player_current: .res 1
+
 Player_speedIndex:.res 1
 Player_focused: .res 1
-lastDirection: .res 1
+Player_lastDirection: .res 1
 
 Player_powerLevel: .res 1
 Player_hearts: .res 1
@@ -42,7 +42,7 @@ h:.res 1;hitbox variable
 
 
 .code
-Player_init:
+Players_init:
 ; initializes players to blank slate values to set up game
 	lda #5
 	sta Player_hearts
@@ -50,36 +50,26 @@ Player_init:
 	lda #3
 	sta Player_bombs
 
-	lda #2
+	lda #0
 	sta Player_powerLevel
 	sta Player_speedIndex
+	sta Player_current
 
 	lda #TRUE
 	sta Player_haveHeartsChanged
 	sta Player_haveBombsChanged
 	sta Player_willRender
 
-	lda #SPRITE01
-	sta Player_sprite
-	
 	lda #FALSE
 	sta Player_focused
 
+	lda #255
+	sta Player_yPos_H
+	lda #128
+	sta Player_xPos_H
+
 	rts
 
-Player_prepare:;(x)
-;prepares player for level, call in level loading code
-;x player to initialize
-X_START_COORD=120
-Y_START_COORD=255
-;TODO select between one of two players.
-	lda #X_START_COORD
-	sta Player_xPos_H
-	lda #Y_START_COORD
-	sta Player_yPos_H
-	lda #TRUE
-	sta Player_willRender
-	rts
 
 .proc Player_toStartingPos
 Y_SPEED_H=1
@@ -106,10 +96,10 @@ Player_setSpeed:;(controller) returns void
 FAST_MOVEMENT_H = 2	
 FAST_MOVEMENT_L = 0
 ;pixel per frame when moving slow
-MAX_RIGHT = 253
-MAX_LEFT = 03
-MAX_UP = 8
-MAX_DOWN = 230
+MAX_RIGHT = 256-8
+MAX_LEFT = 08
+MAX_UP = 16
+MAX_DOWN = 256-16
 SPEED_MAX=16
 
 	and #BUTTON_B
@@ -120,28 +110,24 @@ SPEED_MAX=16
 		clc 
 		lda Player_speedIndex; move index 
 		adc #1
+
 		cmp #SPEED_MAX
 		bcc :+
-
 			lda #FALSE
 			sta Player_focused; all the way slow
 			rts
-		:
-		sta Player_speedIndex
+		:sta Player_speedIndex
 		rts
 
 	@goingSlow:
-		
 		sec
 		lda Player_speedIndex; move the index
 		sbc #1
 		bcs :+
-			
 			lda #TRUE
 			sta Player_focused; all the way fast
 			rts
-		:
-		sta Player_speedIndex
+		:sta Player_speedIndex
 		rts
 
 
@@ -150,6 +136,9 @@ Player_move:; void(a)
 	and #BUTTON_RIGHT | BUTTON_LEFT | BUTTON_DOWN | BUTTON_UP
 	tax
 
+	lda #SPRITE01; todo animations
+	sta Player_sprite
+	
 	lda @valid,x; test if valid direction
 	beq @return
 		
@@ -186,11 +175,11 @@ Player_move:; void(a)
 
 @right:
 	
-	cpx lastDirection
+	cpx Player_lastDirection
 	beq :+
 		lda #00; direction changed
 		sta Player_xPos_L
-		stx lastDirection
+		stx Player_lastDirection
 	:
 
 	ldx Player_speedIndex
@@ -210,11 +199,11 @@ Player_move:; void(a)
 
 @left:
 	
-	cpx lastDirection
+	cpx Player_lastDirection
 	beq :+
 		lda #$ff; direction changed
 		sta Player_xPos_L
-		stx lastDirection
+		stx Player_lastDirection
 	:
 
 	ldx Player_speedIndex
@@ -233,11 +222,11 @@ Player_move:; void(a)
 
 @down:
 	
-	cpx lastDirection
+	cpx Player_lastDirection
 	beq :+
 		lda #$00; direction changed
 		sta Player_yPos_L
-		stx lastDirection
+		stx Player_lastDirection
 	:
 	ldx Player_speedIndex
 	clc
@@ -254,11 +243,11 @@ Player_move:; void(a)
 
 
 @up:
-	cpx lastDirection
+	cpx Player_lastDirection
 	beq :+
 		lda #$ff; direction changed
 		sta Player_yPos_L
-		stx lastDirection
+		stx Player_lastDirection
 	:
 	
 	ldx Player_speedIndex
@@ -276,13 +265,13 @@ Player_move:; void(a)
 
 @upRight:
 	
-	cpx lastDirection
+	cpx Player_lastDirection
 	beq :+	
 		lda #$ff; direction changed
 		sta Player_yPos_L
 		lda #00
 		sta Player_xPos_L
-		stx lastDirection
+		stx Player_lastDirection
 	:
 	ldx Player_speedIndex
 
@@ -313,12 +302,12 @@ Player_move:; void(a)
 
 @upLeft:
 	
-	cpx lastDirection
+	cpx Player_lastDirection
 	beq :+
 		lda #$ff; direction changed
 		sta Player_yPos_L
 		sta Player_xPos_L
-		stx lastDirection
+		stx Player_lastDirection
 	:
 	ldx Player_speedIndex
 	sec
@@ -344,12 +333,12 @@ Player_move:; void(a)
 
 @downRight:
 	
-	cpx lastDirection
+	cpx Player_lastDirection
 	beq :+
 		lda #00; direction changed
 		sta Player_yPos_L
 		sta Player_xPos_L
-		stx lastDirection
+		stx Player_lastDirection
 	:
 	ldx Player_speedIndex
 	clc
@@ -377,13 +366,13 @@ Player_move:; void(a)
 
 @downLeft:; void(x)
 	
-	cpx lastDirection
+	cpx Player_lastDirection
 	beq :+
 		lda #00; direction changed
 		sta Player_yPos_L
 		lda #$ff
 		sta Player_xPos_L
-		stx lastDirection
+		stx Player_lastDirection
 	:
 	
 	ldx Player_speedIndex

@@ -1,6 +1,15 @@
+;constants
+.global PPUMASK
+
+; attributes
+
 .globalzp PPU_stack
 .globalzp PPU_havePalettesChanged
 .globalzp PPU_willVRAMUpdate
+.globalzp PPU_scrollSpeed_h
+.globalzp PPU_scrollSpeed_l
+
+; methods
 .global PPU_init
 .global PPU_resetClock
 .global PPU_advanceClock
@@ -21,5 +30,4 @@
 .global enableRendering
 .global disableRendering
 .global renderAllPalettes
-.global renderAllTiles
-.global PPUMASK
+.global PPU_renderScreen

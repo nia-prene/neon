@@ -42,7 +42,7 @@ Patterns_tick:; void(x)
 	rts
 
 BITS_QUADRANT=%11000000
-BITS_ANGLE=%11111000
+BITS_ANGLE=%11111100
 
 PATTERN01=$01
 PATTERN02=$02
@@ -105,7 +105,7 @@ MAX_TIME=SHOTS*(RATE+1)
 .proc Pattern02
 INVISIBILITY = 8
 RATE = %11111111
-SPEED = (BITS_ANGLE | 0)
+SPEED = 0
 
 	lda #INVISIBILITY
 	sta Bullets_fastForwardFrames
@@ -117,15 +117,19 @@ SPEED = (BITS_ANGLE | 0)
 		and #%00011111
 		bne @shoot
 			jsr Bullets_aim; a(x) | x
-			bit ROUND_8
+			bit ROUND_4
 			beq :+
 				clc
-				adc #8
-			:and #SPEED
+				adc #4
+			:and #BITS_ANGLE
 			sta p,x
+			jmp Bullets_new; cax) | x
 		
 	@shoot:
+		clc
 		lda p,x
+		adc #1
+		sta p,x
 		jmp Bullets_new; cax) | x
 @return:	
 	rts

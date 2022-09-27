@@ -1,6 +1,7 @@
 .include "lib.h"
 .include "ppu.h"
 
+.include "scenes.h"
 .include "tiles.h"
 .include "score.h"
 .include "main.h"
@@ -67,27 +68,30 @@ LIGHTEN_SCREEN = %00011111		; and
 	txs
 .endmacro
 .zeropage
-PPU_willVRAMUpdate:.res 1
 currentNameTable: .res 2
 currentPPUSettings: .res 1
 currentMaskSettings: .res 1
+xScroll: .res 1
+yScroll_H: .res 1
+yScroll_L: .res 1
+PPU_scrollSpeed_h: .res 1
+PPU_scrollSpeed_l: .res 1
+PPU_stack: .res 1
+PPU_bufferBytes:.res 1
+.data 
+
+
 tile16a: .res 1
 tile16b: .res 1
 tile16c: .res 1
 tile16d: .res 1
-xScroll: .res 1
-yScroll_H: .res 1
-yScroll_L: .res 1
-scrollSpeed_H: .res 1
-scrollSpeed_L: .res 1
 tile128a: .res 1
 tile128b: .res 1
 tile64a: .res 1
 tile64b: .res 1
 tile64c: .res 1
 tile64d: .res 1
-PPU_stack: .res 1
-PPU_bufferBytes:.res 1
+
 
 .code
 
@@ -341,9 +345,8 @@ PALETTE_BYTES=5
 :	dey
 	bpl @paletteLoop
 @bufferFull:
-	lda #TRUE
-	sta PPU_willVRAMUpdate
 	rts
+
 
 PPU_NMIPlan01:; void(a) |
 ;fades in colors
@@ -405,8 +408,6 @@ PPU_NMIPlan01:; void(a) |
 	pha
 	sws PPU_stack, Main_stack
 ;do this during nmi
-	lda #TRUE
-	sta PPU_willVRAMUpdate
 	rts
 @colorMutator:
 	.byte $30, $20, $10, $00
@@ -449,8 +450,6 @@ PORTRAIT_BYTES=18
 		sta Palettes_hasChanged,y
 :
 @bufferFull:
-	lda #TRUE
-	sta PPU_willVRAMUpdate
 	rts
 
 PPU_NMIPlan03:
@@ -505,8 +504,6 @@ PPU_NMIPlan03:
 	pha
 	sws PPU_stack, Main_stack
 ;do this during nmi
-	lda #TRUE
-	sta PPU_willVRAMUpdate
 	rts
 @colorMutator:
 	.byte $00, $10, $20, $30
@@ -650,172 +647,210 @@ render32:;(a)
 ;a is tile position in tiles32
 	tay;y is tile number in array
 	tax;x is nametable reference pos
-	;all tiles ending in 111 are shorter
+
+	and #%110000; get high bits
+	lsr
+	lsr
+	lsr
+	lsr
+	ora #%00100000; set bit above
+	
+	sta currentNameTable+1
+	sta PPUADDR
+	
+	tya; make lobyte
+	and #%1000
+	asl
+	asl
+	asl
+	asl
+	sta currentNameTable
+	tya
+	and #%0111
+	asl
+	asl
+	ora currentNameTable
+	sta currentNameTable
+	sta PPUADDR
+	
+	tya
 	pha
-	and #%00000111
-	cmp #%00000111
+	
+	and #%00111000; last row is smaller
+	cmp #%00111000
 	bne @standardTile
 @shorterTile:
 	;save the 2 tiles
-	lda (Tiles_screenPointer),y
+	lda (Lib_ptr0),y
 	tay;y is now the 32x32 tile
 	lda topLeft32,y
 	sta tile16a
 	lda topRight32,y
-	sta tile16c
-	;look up nametable conversion, save them and put them in ppu
-	lda nameTableConversionH,x
-	sta currentNameTable
-	sta PPUADDR
-	lda nameTableConversionL,x
-	sta currentNameTable+1
-	sta PPUADDR
-	;now the ppu knows where to put our tile
+	sta tile16b
+	
 	ldy tile16a
+	ldx tile16b
 	lda topLeft16,y
 	sta PPUDATA
-	lda bottomLeft16,y
+	lda topRight16,y
 	sta PPUDATA
-	inc currentNameTable+1
-	lda currentNameTable
-	sta PPUADDR
+	
+	lda topLeft16,x
+	sta PPUDATA
+	lda topRight16,x
+	sta PPUDATA
+
 	lda currentNameTable+1
 	sta PPUADDR
-	lda topRight16,y
+	
+	clc
+	lda currentNameTable+0
+	adc #32
+	sta currentNameTable+0
+	sta PPUADDR
+
+	lda bottomLeft16,y
 	sta PPUDATA
 	lda bottomRight16,y
 	sta PPUDATA
-	inc currentNameTable+1
-	lda currentNameTable
-	sta PPUADDR
-	lda currentNameTable+1
-	sta PPUADDR
-	ldy tile16c
-	lda topLeft16,y
+	
+	lda bottomLeft16,x
 	sta PPUDATA
-	lda bottomLeft16,y
-	sta PPUDATA
-	inc currentNameTable+1
-	lda currentNameTable
-	sta PPUADDR
-	lda currentNameTable+1
-	sta PPUADDR
-	lda topRight16,y
-	sta PPUDATA
-	lda bottomRight16,y
+	lda bottomRight16,x
 	sta PPUDATA
 	jmp @attributeByte
 
 @standardTile:
 	;save the 4 tiles
-	lda (Tiles_screenPointer),y
+	lda (Lib_ptr0),y
 	tay;y is now the 32x32 tile
+	
 	lda topLeft32,y
 	sta tile16a
-	lda bottomLeft32,y
-	sta tile16b
 	lda topRight32,y
+	sta tile16b
+	lda bottomLeft32,y
 	sta tile16c
 	lda bottomRight32,y
 	sta tile16d
-	;look up nametable conversion, save them and put them in ppu
-	lda nameTableConversionH,x
-	sta currentNameTable
-	sta PPUADDR
-	lda nameTableConversionL,x
-	sta currentNameTable+1
-	sta PPUADDR
-	;now the ppu knows where to put our tile
+	
 	ldy tile16a
 	ldx tile16b
 	lda topLeft16,y
 	sta PPUDATA
-	lda bottomLeft16,y
+	lda topRight16,y
 	sta PPUDATA
 	lda topLeft16,x
 	sta PPUDATA
-	lda bottomLeft16,x
+	lda topRight16,x
 	sta PPUDATA
-	inc currentNameTable+1
-	lda currentNameTable
-	sta PPUADDR
+
 	lda currentNameTable+1
 	sta PPUADDR
-	lda topRight16,y
+
+	clc
+	lda currentNameTable+0
+	adc #32
+	sta currentNameTable+0
+	sta PPUADDR
+	
+	lda bottomLeft16,y
 	sta PPUDATA
 	lda bottomRight16,y
 	sta PPUDATA
-	lda topRight16,x
+	lda bottomLeft16,x
 	sta PPUDATA
 	lda bottomRight16,x
 	sta PPUDATA
-	inc currentNameTable+1
-	lda currentNameTable
-	sta PPUADDR
+	
 	lda currentNameTable+1
 	sta PPUADDR
+
+	clc
+	lda currentNameTable+0
+	adc #32
+	sta currentNameTable+0
+	sta PPUADDR
+	
 	ldy tile16c
 	ldx tile16d
 	lda topLeft16,y
 	sta PPUDATA
-	lda bottomLeft16,y
+	lda topRight16,y
 	sta PPUDATA
 	lda topLeft16,x
 	sta PPUDATA
-	lda bottomLeft16,x
+	lda topRight16,x
 	sta PPUDATA
-	inc currentNameTable+1
-	lda currentNameTable
-	sta PPUADDR
+	
 	lda currentNameTable+1
 	sta PPUADDR
-	lda topRight16,y
+
+	clc
+	lda currentNameTable+0
+	adc #32
+	sta currentNameTable+0
+	sta PPUADDR
+	
+	lda bottomLeft16,y
 	sta PPUDATA
 	lda bottomRight16,y
 	sta PPUDATA
-	lda topRight16,x
+	lda bottomLeft16,x
 	sta PPUDATA
 	lda bottomRight16,x
 	sta PPUDATA
 @attributeByte:
 ;get the tile
-	pla
-	tay;y is tile pos in tiles32 array
-	tax;x is position in conversion
 	lda #$23
 	;store address (big endian)
 	sta PPUADDR
-	lda attributeTableConversionL,x
+	pla
+	tay
+	ora #%11000000
 	sta PPUADDR
-	lda (Tiles_screenPointer),y
+	lda (Lib_ptr0),y
 	tay;y is tile itself
 	lda tileAttributeByte,y
 	sta PPUDATA
 	rts
 
-renderAllTiles:
+
+PPU_renderScreen:
 	;clear vblank bit before write
 	bit PPUSTATUS
 	lda currentPPUSettings
-	ora #INCREMENT_32
+	ora #INCREMENT_1
 	sta PPUCTRL
-	ldx #$00
-@renderScreenLoop:
+	
+	lda Scenes_screen,x
+	tax
+
+	lda Screens_l,x
+	sta Lib_ptr0+0
+	lda Screens_h,x
+	sta Lib_ptr0+1
+
+	ldx #00
+@renderLoop:
 	txa
 	pha
-	jsr render32
+	jsr render32; void(x)
 	pla
 	tax
 	inx
 	cpx #64
-	bcc	@renderScreenLoop
+	bcc @renderLoop
 	rts
-	
+
+
 PPU_resetScroll:
-	lda #1
-	sta scrollSpeed_H
+	lda #0
+	sta PPU_scrollSpeed_h
+	lda #128
+	sta PPU_scrollSpeed_l
+
 	lda #00
-	sta scrollSpeed_L
 	sta xScroll
 	sta yScroll_H
 	sta yScroll_L
@@ -824,10 +859,10 @@ PPU_resetScroll:
 PPU_updateScroll:
 	sec
 	lda yScroll_L
-	sbc scrollSpeed_L
+	sbc PPU_scrollSpeed_l
 	sta yScroll_L
 	lda yScroll_H
-	sbc scrollSpeed_H
+	sbc PPU_scrollSpeed_h
 	cmp #240
 	bcc @storeY
 		;clc
@@ -841,10 +876,12 @@ PPU_updateScroll:
 	sta yScroll_H
 	rts
 
+
 PPU_setScroll:
+	
 	lda currentMaskSettings
 	sta PPUMASK
-	lda #0
+	lda #0; scroll x is 0
 	sta PPUSCROLL
 	lda yScroll_H
 	sta PPUSCROLL
@@ -1241,16 +1278,7 @@ PORTRAIT_ADDRESS=$24c3
 	rts
 
 .rodata
-nameTableConversionH:
-	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
-	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
-	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
-	.byte $20, $20, $21, $21, $22, $22, $23, $23, $20, $20, $21, $21, $22, $22, $23, $23
-nameTableConversionL:
-	.byte $00, $80, $00, $80, $00, $80, $00, $80, $04, $84, $04, $84, $04, $84, $04, $84 
-	.byte $08, $88, $08, $88, $08, $88, $08, $88, $0c, $8c, $0c, $8c, $0c, $8c, $0c, $8c 
-	.byte $10, $90, $10, $90, $10, $90, $10, $90, $14, $94, $14, $94, $14, $94, $14, $94 
-	.byte $18, $98, $18, $98, $18, $98, $18, $98, $1c, $9c, $1c, $9c, $1c, $9c, $1c, $9c
+
 attributeTableConversionL:
 	.byte $c0, $c8, $d0, $d8, $e0, $e8, $f0, $f8, $c1, $c9, $d1, $d9, $e1, $e9, $f1, $f9
 	.byte $c2, $ca, $d2, $da, $e2, $ea, $f2, $fa, $c3, $cb, $d3, $db, $e3, $eb, $f3, $fb

@@ -26,38 +26,28 @@ Main_stack: .res 1
 hasFrameBeenRendered: .res 1
 framesDropped: .res 1
 Main_frame_L: .res 1
+Main_frameFinished: .res 1
+
 
 .code
 main:
 	NES_init
 	jsr PPU_init
-	jsr	Lib_generateSeed
-;player 0 starts
-	lda #0
-	sta Main_currentPlayer
-;there is no frame that needs renderso set to TRUE
+	jsr Players_init
+	jsr APU_init
+	
 	lda #GAMESTATE01
-	jsr	Gamestates_new
-	sec
-	rol hasFrameBeenRendered
-;reset the scores
-	ldx #0;player 1
-	jsr Score_clear;(x)
-	jsr Player_init;(x)
-	ldx #1;player 2
-	jsr Score_clear;(x)
-	jsr Player_init;(x)
-	lda #0
-	sta framesDropped
-	lda Main_frame_L;save this frame to start the hold process
-	pha
-gameLoop:
-	pla
-@hold:
-	cmp Main_frame_L;hold here until nmi updates frame
-	beq @hold
-	lda Main_frame_L;get the frame for next loop
-	pha
+	jsr Gamestates_new
+
+	lda #FALSE
+	sta Main_frameFinished
+
+@gameLoop:
+
+	
+	lda Main_frameFinished;hold here until nmi updates frame
+	bne @gameLoop
+	
 	lda #>(@endOfFrameHousekeeping-1)
 	pha
 	lda #<(@endOfFrameHousekeeping-1)
@@ -71,21 +61,11 @@ gameLoop:
 	pha
 	rts
 @endOfFrameHousekeeping:
-	pla;grab the current frame off stack
-	cmp Main_frame_L
-	beq :+;see if the frame was dropped
-		inc framesDropped
-:	pha;save frame for @hold
-	jmp gameLoop
+	lda #TRUE
+	sta Main_frameFinished
+	jmp @gameLoop
 
 
-
-
-;;;;;;;;;;;;;;;;
-;;;Interrupts;;;
-;;;;;;;;;;;;;;;
-;vblank;
-;;;;;;;;
 nmi:
 ;save registers
 	php
@@ -94,34 +74,38 @@ nmi:
 	pha
 	tya
 	pha
+	
 	inc Main_frame_L
-	lda PPU_willVRAMUpdate
-	beq :+
+
+	lda Main_frameFinished; if frame is finished
+	beq :+; else no graphic update
+
+		lda #FALSE; frame is rendered
+		sta Main_frameFinished
+
 		tsx
 		stx Main_stack
 		ldx PPU_stack
 		txs
+
 		rts
 	;run all render code, return here
 	Main_NMIReturn:
 		ldx Main_stack
 		txs
-		lda #FALSE
-		sta PPU_willVRAMUpdate
-:
-;oamdma transfer
-	jsr OAM_beginDMA
-	ldx Main_currentPlayer
-	jsr Gamepads_read;a(x)
-	jsr PPU_setScroll
-	lda #TRUE
-	sta hasFrameBeenRendered
+		jsr OAM_beginDMA
 
+:
+	
+	jsr PPU_setScroll
 	jsr SFX_advance;tick sound effects
 	jsr Song_advance;tick music
+	
 
-;restore registers
-	pla
+	ldx Player_current
+	jsr Gamepads_read
+
+	pla; restore registers
 	tay
 	pla
 	tax

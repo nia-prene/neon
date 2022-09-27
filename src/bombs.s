@@ -4,14 +4,9 @@
 .include "bullets.h"
 .include "player.h"
 .include "apu.h"
-.zeropage
-Bombs_timeElapsed:.res 1
+
+
 .code
-Bombs_init: ;void()
-	
-	lda #255; allow for immediate use of bomb
-	sta Bombs_timeElapsed
-	rts
 
 
 Bombs_toss:; c(y,x)

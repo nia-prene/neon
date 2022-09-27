@@ -16,18 +16,18 @@ OAMDATA = $2004;(dddd dddd)	OAM data read/write
 OAMDMA = $4014;(aaaa aaaa)OAM DMA high address
 MAX_OVERFLOW_FRAMES=8;
 .zeropage
+OAM_index:.res 1
 
-bulletShuffle: .res 1
 buildX: .res 1
 buildY: .res 1
 buildPalette: .res 1
 spritePointer: .res 2
 limit: .res 1
+bulletShuffle: .res 1
 
-
-OAM_index:.res 1
-
+.segment "DATA"
 Sprite0_destination: .res 1
+
 .segment "OAM"
 OAM: .res 256
 OFFSET_Y=0
@@ -65,8 +65,8 @@ OAM_build00:;c()
 ;call with carry set to exclude player
 ;a - gamepad
 ;returns carry clear if oam overflow
-
-	lda #4;skip sprite 0
+	
+	lda #0;skip sprite 0
 	sta OAM_index
 	
 
@@ -85,10 +85,12 @@ OAM_build00:;c()
 	jsr buildEnemies
 	
 	jsr buildPlayerBullets
+	bcs @oamFull
 
 	jsr OAM_clearRemaining
 
 @oamFull:
+
 	rts
 
 buildHitbox:;x(x,a)
@@ -244,7 +246,7 @@ buildPlayerBullets:
 
 @loop:
 	lda Shots_isActive,y
-	beq @skipEnemy
+	beq @skip
 
 		lda bulletY,y
 		sta buildY
@@ -254,13 +256,20 @@ buildPlayerBullets:
 
 		sty yReg
 		jsr OAM_build; void(x)
+		bcs @full
 		ldy yReg
 
-@skipEnemy:	
+@skip:	
 
 	dey
 	bpl @loop
+	clc
 	rts
+
+@full:
+	sec
+	rts
+
 
 buildEnemies:
 	
@@ -317,7 +326,6 @@ OAM_build:;void (x)
 	ldy #0; sprite 0
 	
 	ldx OAM_index; get the index
-	beq @finished; return if sprites are full
 
 @spriteLoop:
 
@@ -355,7 +363,7 @@ OAM_build:;void (x)
 		inx
 		inx
 
-		beq @finished
+		beq @full
 		
 		jmp @spriteLoop
 	@nextAtY:
@@ -367,8 +375,12 @@ OAM_build:;void (x)
 @finished:
 
 	stx OAM_index
+	
+	clc
+	rts
 
-
+@full:
+	sec
 	rts
 
 
@@ -376,23 +388,21 @@ OAM_clearRemaining:
 ;arguments
 ;x-starting point to clear
 	
-	ldx OAM_index
-	beq @done; already clear
 
-		lda #$FF; clear y with FF
+	lda #$FF; clear y with FF
 
-	@clearOAM:
+@clearOAM:
 
-		sta OAM+OFFSET_Y,x
+	sta OAM+OFFSET_Y,x
 
-		inx
-		inx
-		inx
-		inx
+	inx
+	inx
+	inx
+	inx
 
-		bne @clearOAM
-@done:
+	bne @clearOAM
 	rts
+
 
 OAM_beginDMA:
 ;reset oam address

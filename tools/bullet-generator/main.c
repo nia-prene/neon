@@ -10,7 +10,7 @@ int main(){
 	
 	FILE *outputFile;
 	/*different radii to select from, cycles through list*/
-	double radii[]={1.50,1.75,2.00,2.25,2.50,2.75,3.0,3.25,};
+	double radii[]={2.00,2.50,3.00,3.50};
 	/*64 different angles*/
 	double x;
 	double xH;
@@ -30,9 +30,9 @@ int main(){
 		/*calculate degrees per segment, 1 for each speed*/
 		degrees = (360/SEGMENTS)*(i);
 		/*y = r sin(radons) selects radius from list using 2 MSB of i*/
-		y = fabs(radii[i&0b111]*sin(degrees*PI/180));
+		y = fabs(radii[i&0b11]*sin(degrees*PI/180));
 		/*x = r cos(radons) selects radius from list using 2 MSB of i*/
-		x = fabs(radii[i&0b111]*cos(degrees*PI/180));
+		x = fabs(radii[i&0b11]*cos(degrees*PI/180));
 		/*separate whole number from decimal*/
 		xH = floor(x);
 		yH = floor(y);

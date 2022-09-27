@@ -449,10 +449,8 @@ void print16(TileCollection *tc, FILE *out16){
 	for(int i=0; i<256; i++){
 		if(tc->screens[i].isActive){
 			fprintf(out16,"screen%.2x:\n\t.byte ",i);
-			for(int j =0;j<8;j++){
-				for(int k =0;k<8;k++){
-					fprintf(out16,"$%.2x, ",tc->screens[i].metatiles[(k*8)+j]);
-				}
+			for(int j =0;j<64;j++){
+				fprintf(out16,"$%.2x, ",tc->screens[i].metatiles[j]);
 			}		
 		}
 	}

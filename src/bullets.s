@@ -392,13 +392,13 @@ Bullet_clear:
 
 
 bullet00:
-	bulletFib 3, #1, #128, #0, #0
+	bulletFib 3, #2, #128, #0, #0
 bullet01:
-	bulletFib 3, #1, #191, #0, #10
+	bulletFib 3, #2, #191, #0, #17
 bullet02:
-	bulletFib 3, #1, #255, #0, #25
+	bulletFib 3, #2, #255, #0, #37
 bullet03:
-	bulletFib 3, #2, #62, #0, #42
+	bulletFib 3, #3, #61, #0, #61
 bullet04:
 	bulletFib 3, #2, #124, #0, #62
 bullet05:
@@ -408,13 +408,13 @@ bullet06:
 bullet07:
 	bulletFib 3, #3, #51, #0, #142
 bullet08:
-	bulletFib 3, #1, #120, #0, #74
+	bulletFib 3, #2, #115, #0, #124
 bullet09:
-	bulletFib 3, #1, #181, #0, #98
+	bulletFib 3, #2, #174, #0, #154
 bullet0A:
-	bulletFib 3, #1, #240, #0, #124
+	bulletFib 3, #2, #232, #0, #186
 bullet0B:
-	bulletFib 3, #2, #43, #0, #153
+	bulletFib 3, #3, #33, #0, #221
 bullet0C:
 	bulletFib 3, #2, #100, #0, #185
 bullet0D:
@@ -424,13 +424,13 @@ bullet0E:
 bullet0F:
 	bulletFib 3, #3, #8, #1, #43
 bullet10:
-	bulletFib 3, #1, #98, #0, #146
+	bulletFib 3, #2, #79, #0, #244
 bullet11:
-	bulletFib 3, #1, #153, #0, #181
+	bulletFib 3, #2, #131, #1, #29
 bullet12:
-	bulletFib 3, #1, #206, #0, #218
+	bulletFib 3, #2, #182, #1, #72
 bullet13:
-	bulletFib 3, #2, #2, #1, #2
+	bulletFib 3, #2, #231, #1, #118
 bullet14:
 	bulletFib 3, #2, #52, #1, #45
 bullet15:
@@ -440,13 +440,13 @@ bullet16:
 bullet17:
 	bulletFib 3, #2, #190, #1, #189
 bullet18:
-	bulletFib 3, #1, #63, #0, #213
+	bulletFib 3, #2, #20, #1, #99
 bullet19:
-	bulletFib 3, #1, #110, #1, #1
+	bulletFib 3, #2, #63, #1, #149
 bullet1A:
-	bulletFib 3, #1, #155, #1, #48
+	bulletFib 3, #2, #104, #1, #201
 bullet1B:
-	bulletFib 3, #1, #198, #1, #98
+	bulletFib 3, #2, #143, #1, #255
 bullet1C:
 	bulletFib 3, #1, #238, #1, #150
 bullet1D:
@@ -456,13 +456,13 @@ bullet1E:
 bullet1F:
 	bulletFib 3, #2, #90, #2, #61
 bullet20:
-	bulletFib 3, #1, #15, #1, #15
+	bulletFib 3, #1, #196, #1, #196
 bullet21:
-	bulletFib 3, #1, #52, #1, #68
+	bulletFib 3, #1, #229, #1, #253
 bullet22:
-	bulletFib 3, #1, #87, #1, #123
+	bulletFib 3, #2, #3, #2, #57
 bullet23:
-	bulletFib 3, #1, #120, #1, #180
+	bulletFib 3, #2, #31, #2, #117
 bullet24:
 	bulletFib 3, #1, #150, #1, #238
 bullet25:
@@ -472,13 +472,13 @@ bullet26:
 bullet27:
 	bulletFib 3, #1, #223, #2, #168
 bullet28:
-	bulletFib 3, #0, #213, #1, #63
+	bulletFib 3, #1, #99, #2, #20
 bullet29:
-	bulletFib 3, #0, #239, #1, #122
+	bulletFib 3, #1, #120, #2, #82
 bullet2A:
-	bulletFib 3, #1, #7, #1, #183
+	bulletFib 3, #1, #138, #2, #146
 bullet2B:
-	bulletFib 3, #1, #27, #1, #245
+	bulletFib 3, #1, #154, #2, #211
 bullet2C:
 	bulletFib 3, #1, #45, #2, #52
 bullet2D:
@@ -488,13 +488,13 @@ bullet2E:
 bullet2F:
 	bulletFib 3, #1, #81, #2, #248
 bullet30:
-	bulletFib 3, #0, #146, #1, #98
+	bulletFib 3, #0, #244, #2, #79
 bullet31:
-	bulletFib 3, #0, #161, #1, #161
+	bulletFib 3, #0, #253, #2, #144
 bullet32:
-	bulletFib 3, #0, #172, #1, #226
+	bulletFib 3, #1, #2, #2, #211
 bullet33:
-	bulletFib 3, #0, #180, #2, #34
+	bulletFib 3, #1, #4, #3, #22
 bullet34:
 	bulletFib 3, #0, #185, #2, #100
 bullet35:
@@ -504,13 +504,13 @@ bullet36:
 bullet37:
 	bulletFib 3, #0, #182, #3, #43
 bullet38:
-	bulletFib 3, #0, #74, #1, #120
+	bulletFib 3, #0, #124, #2, #115
 bullet39:
-	bulletFib 3, #0, #76, #1, #185
+	bulletFib 3, #0, #120, #2, #181
 bullet3A:
-	bulletFib 3, #0, #75, #1, #250
+	bulletFib 3, #0, #112, #2, #247
 bullet3B:
-	bulletFib 3, #0, #70, #2, #59
+	bulletFib 3, #0, #101, #3, #57
 bullet3C:
 	bulletFib 3, #0, #62, #2, #124
 bullet3D:
@@ -520,13 +520,13 @@ bullet3E:
 bullet3F:
 	bulletFib 3, #0, #20, #3, #63
 bullet40:
-	bulletFib 4, #0, #0, #1, #128
+	bulletFib 4, #0, #0, #2, #128
 bullet41:
-	bulletFib 4, #0, #10, #1, #191
+	bulletFib 4, #0, #17, #2, #191
 bullet42:
-	bulletFib 4, #0, #25, #1, #255
+	bulletFib 4, #0, #37, #2, #255
 bullet43:
-	bulletFib 4, #0, #42, #2, #62
+	bulletFib 4, #0, #61, #3, #61
 bullet44:
 	bulletFib 4, #0, #62, #2, #124
 bullet45:
@@ -536,13 +536,13 @@ bullet46:
 bullet47:
 	bulletFib 4, #0, #142, #3, #51
 bullet48:
-	bulletFib 4, #0, #74, #1, #120
+	bulletFib 4, #0, #124, #2, #115
 bullet49:
-	bulletFib 4, #0, #98, #1, #181
+	bulletFib 4, #0, #154, #2, #174
 bullet4A:
-	bulletFib 4, #0, #124, #1, #240
+	bulletFib 4, #0, #186, #2, #232
 bullet4B:
-	bulletFib 4, #0, #153, #2, #43
+	bulletFib 4, #0, #221, #3, #33
 bullet4C:
 	bulletFib 4, #0, #185, #2, #100
 bullet4D:
@@ -552,13 +552,13 @@ bullet4E:
 bullet4F:
 	bulletFib 4, #1, #43, #3, #8
 bullet50:
-	bulletFib 4, #0, #146, #1, #98
+	bulletFib 4, #0, #244, #2, #79
 bullet51:
-	bulletFib 4, #0, #181, #1, #153
+	bulletFib 4, #1, #29, #2, #131
 bullet52:
-	bulletFib 4, #0, #218, #1, #206
+	bulletFib 4, #1, #72, #2, #182
 bullet53:
-	bulletFib 4, #1, #2, #2, #2
+	bulletFib 4, #1, #118, #2, #231
 bullet54:
 	bulletFib 4, #1, #45, #2, #52
 bullet55:
@@ -568,13 +568,13 @@ bullet56:
 bullet57:
 	bulletFib 4, #1, #189, #2, #190
 bullet58:
-	bulletFib 4, #0, #213, #1, #63
+	bulletFib 4, #1, #99, #2, #20
 bullet59:
-	bulletFib 4, #1, #1, #1, #110
+	bulletFib 4, #1, #149, #2, #63
 bullet5A:
-	bulletFib 4, #1, #48, #1, #155
+	bulletFib 4, #1, #201, #2, #104
 bullet5B:
-	bulletFib 4, #1, #98, #1, #198
+	bulletFib 4, #1, #255, #2, #143
 bullet5C:
 	bulletFib 4, #1, #150, #1, #238
 bullet5D:
@@ -584,13 +584,13 @@ bullet5E:
 bullet5F:
 	bulletFib 4, #2, #61, #2, #90
 bullet60:
-	bulletFib 4, #1, #15, #1, #15
+	bulletFib 4, #1, #196, #1, #196
 bullet61:
-	bulletFib 4, #1, #68, #1, #52
+	bulletFib 4, #1, #253, #1, #229
 bullet62:
-	bulletFib 4, #1, #123, #1, #87
+	bulletFib 4, #2, #57, #2, #3
 bullet63:
-	bulletFib 4, #1, #180, #1, #120
+	bulletFib 4, #2, #117, #2, #31
 bullet64:
 	bulletFib 4, #1, #238, #1, #150
 bullet65:
@@ -600,13 +600,13 @@ bullet66:
 bullet67:
 	bulletFib 4, #2, #168, #1, #223
 bullet68:
-	bulletFib 4, #1, #63, #0, #213
+	bulletFib 4, #2, #20, #1, #99
 bullet69:
-	bulletFib 4, #1, #122, #0, #239
+	bulletFib 4, #2, #82, #1, #120
 bullet6A:
-	bulletFib 4, #1, #183, #1, #7
+	bulletFib 4, #2, #146, #1, #138
 bullet6B:
-	bulletFib 4, #1, #245, #1, #27
+	bulletFib 4, #2, #211, #1, #154
 bullet6C:
 	bulletFib 4, #2, #52, #1, #45
 bullet6D:
@@ -616,13 +616,13 @@ bullet6E:
 bullet6F:
 	bulletFib 4, #2, #248, #1, #81
 bullet70:
-	bulletFib 4, #1, #98, #0, #146
+	bulletFib 4, #2, #79, #0, #244
 bullet71:
-	bulletFib 4, #1, #161, #0, #161
+	bulletFib 4, #2, #144, #0, #253
 bullet72:
-	bulletFib 4, #1, #226, #0, #172
+	bulletFib 4, #2, #211, #1, #2
 bullet73:
-	bulletFib 4, #2, #34, #0, #180
+	bulletFib 4, #3, #22, #1, #4
 bullet74:
 	bulletFib 4, #2, #100, #0, #185
 bullet75:
@@ -632,13 +632,13 @@ bullet76:
 bullet77:
 	bulletFib 4, #3, #43, #0, #182
 bullet78:
-	bulletFib 4, #1, #120, #0, #74
+	bulletFib 4, #2, #115, #0, #124
 bullet79:
-	bulletFib 4, #1, #185, #0, #76
+	bulletFib 4, #2, #181, #0, #120
 bullet7A:
-	bulletFib 4, #1, #250, #0, #75
+	bulletFib 4, #2, #247, #0, #112
 bullet7B:
-	bulletFib 4, #2, #59, #0, #70
+	bulletFib 4, #3, #57, #0, #101
 bullet7C:
 	bulletFib 4, #2, #124, #0, #62
 bullet7D:
@@ -648,13 +648,13 @@ bullet7E:
 bullet7F:
 	bulletFib 4, #3, #63, #0, #20
 bullet80:
-	bulletFib 1, #1, #128, #0, #0
+	bulletFib 1, #2, #128, #0, #0
 bullet81:
-	bulletFib 1, #1, #191, #0, #10
+	bulletFib 1, #2, #191, #0, #17
 bullet82:
-	bulletFib 1, #1, #255, #0, #25
+	bulletFib 1, #2, #255, #0, #37
 bullet83:
-	bulletFib 1, #2, #62, #0, #42
+	bulletFib 1, #3, #61, #0, #61
 bullet84:
 	bulletFib 1, #2, #124, #0, #62
 bullet85:
@@ -664,13 +664,13 @@ bullet86:
 bullet87:
 	bulletFib 1, #3, #51, #0, #142
 bullet88:
-	bulletFib 1, #1, #120, #0, #74
+	bulletFib 1, #2, #115, #0, #124
 bullet89:
-	bulletFib 1, #1, #181, #0, #98
+	bulletFib 1, #2, #174, #0, #154
 bullet8A:
-	bulletFib 1, #1, #240, #0, #124
+	bulletFib 1, #2, #232, #0, #186
 bullet8B:
-	bulletFib 1, #2, #43, #0, #153
+	bulletFib 1, #3, #33, #0, #221
 bullet8C:
 	bulletFib 1, #2, #100, #0, #185
 bullet8D:
@@ -680,13 +680,13 @@ bullet8E:
 bullet8F:
 	bulletFib 1, #3, #8, #1, #43
 bullet90:
-	bulletFib 1, #1, #98, #0, #146
+	bulletFib 1, #2, #79, #0, #244
 bullet91:
-	bulletFib 1, #1, #153, #0, #181
+	bulletFib 1, #2, #131, #1, #29
 bullet92:
-	bulletFib 1, #1, #206, #0, #218
+	bulletFib 1, #2, #182, #1, #72
 bullet93:
-	bulletFib 1, #2, #2, #1, #2
+	bulletFib 1, #2, #231, #1, #118
 bullet94:
 	bulletFib 1, #2, #52, #1, #45
 bullet95:
@@ -696,13 +696,13 @@ bullet96:
 bullet97:
 	bulletFib 1, #2, #190, #1, #189
 bullet98:
-	bulletFib 1, #1, #63, #0, #213
+	bulletFib 1, #2, #20, #1, #99
 bullet99:
-	bulletFib 1, #1, #110, #1, #1
+	bulletFib 1, #2, #63, #1, #149
 bullet9A:
-	bulletFib 1, #1, #155, #1, #48
+	bulletFib 1, #2, #104, #1, #201
 bullet9B:
-	bulletFib 1, #1, #198, #1, #98
+	bulletFib 1, #2, #143, #1, #255
 bullet9C:
 	bulletFib 1, #1, #238, #1, #150
 bullet9D:
@@ -712,13 +712,13 @@ bullet9E:
 bullet9F:
 	bulletFib 1, #2, #90, #2, #61
 bulletA0:
-	bulletFib 1, #1, #15, #1, #15
+	bulletFib 1, #1, #196, #1, #196
 bulletA1:
-	bulletFib 1, #1, #52, #1, #68
+	bulletFib 1, #1, #229, #1, #253
 bulletA2:
-	bulletFib 1, #1, #87, #1, #123
+	bulletFib 1, #2, #3, #2, #57
 bulletA3:
-	bulletFib 1, #1, #120, #1, #180
+	bulletFib 1, #2, #31, #2, #117
 bulletA4:
 	bulletFib 1, #1, #150, #1, #238
 bulletA5:
@@ -728,13 +728,13 @@ bulletA6:
 bulletA7:
 	bulletFib 1, #1, #223, #2, #168
 bulletA8:
-	bulletFib 1, #0, #213, #1, #63
+	bulletFib 1, #1, #99, #2, #20
 bulletA9:
-	bulletFib 1, #0, #239, #1, #122
+	bulletFib 1, #1, #120, #2, #82
 bulletAA:
-	bulletFib 1, #1, #7, #1, #183
+	bulletFib 1, #1, #138, #2, #146
 bulletAB:
-	bulletFib 1, #1, #27, #1, #245
+	bulletFib 1, #1, #154, #2, #211
 bulletAC:
 	bulletFib 1, #1, #45, #2, #52
 bulletAD:
@@ -744,13 +744,13 @@ bulletAE:
 bulletAF:
 	bulletFib 1, #1, #81, #2, #248
 bulletB0:
-	bulletFib 1, #0, #146, #1, #98
+	bulletFib 1, #0, #244, #2, #79
 bulletB1:
-	bulletFib 1, #0, #161, #1, #161
+	bulletFib 1, #0, #253, #2, #144
 bulletB2:
-	bulletFib 1, #0, #172, #1, #226
+	bulletFib 1, #1, #2, #2, #211
 bulletB3:
-	bulletFib 1, #0, #180, #2, #34
+	bulletFib 1, #1, #4, #3, #22
 bulletB4:
 	bulletFib 1, #0, #185, #2, #100
 bulletB5:
@@ -760,13 +760,13 @@ bulletB6:
 bulletB7:
 	bulletFib 1, #0, #182, #3, #43
 bulletB8:
-	bulletFib 1, #0, #74, #1, #120
+	bulletFib 1, #0, #124, #2, #115
 bulletB9:
-	bulletFib 1, #0, #76, #1, #185
+	bulletFib 1, #0, #120, #2, #181
 bulletBA:
-	bulletFib 1, #0, #75, #1, #250
+	bulletFib 1, #0, #112, #2, #247
 bulletBB:
-	bulletFib 1, #0, #70, #2, #59
+	bulletFib 1, #0, #101, #3, #57
 bulletBC:
 	bulletFib 1, #0, #62, #2, #124
 bulletBD:
@@ -776,13 +776,13 @@ bulletBE:
 bulletBF:
 	bulletFib 1, #0, #20, #3, #63
 bulletC0:
-	bulletFib 2, #0, #0, #1, #128
+	bulletFib 2, #0, #0, #2, #128
 bulletC1:
-	bulletFib 2, #0, #10, #1, #191
+	bulletFib 2, #0, #17, #2, #191
 bulletC2:
-	bulletFib 2, #0, #25, #1, #255
+	bulletFib 2, #0, #37, #2, #255
 bulletC3:
-	bulletFib 2, #0, #42, #2, #62
+	bulletFib 2, #0, #61, #3, #61
 bulletC4:
 	bulletFib 2, #0, #62, #2, #124
 bulletC5:
@@ -792,13 +792,13 @@ bulletC6:
 bulletC7:
 	bulletFib 2, #0, #142, #3, #51
 bulletC8:
-	bulletFib 2, #0, #74, #1, #120
+	bulletFib 2, #0, #124, #2, #115
 bulletC9:
-	bulletFib 2, #0, #98, #1, #181
+	bulletFib 2, #0, #154, #2, #174
 bulletCA:
-	bulletFib 2, #0, #124, #1, #240
+	bulletFib 2, #0, #186, #2, #232
 bulletCB:
-	bulletFib 2, #0, #153, #2, #43
+	bulletFib 2, #0, #221, #3, #33
 bulletCC:
 	bulletFib 2, #0, #185, #2, #100
 bulletCD:
@@ -808,13 +808,13 @@ bulletCE:
 bulletCF:
 	bulletFib 2, #1, #43, #3, #8
 bulletD0:
-	bulletFib 2, #0, #146, #1, #98
+	bulletFib 2, #0, #244, #2, #79
 bulletD1:
-	bulletFib 2, #0, #181, #1, #153
+	bulletFib 2, #1, #29, #2, #131
 bulletD2:
-	bulletFib 2, #0, #218, #1, #206
+	bulletFib 2, #1, #72, #2, #182
 bulletD3:
-	bulletFib 2, #1, #2, #2, #2
+	bulletFib 2, #1, #118, #2, #231
 bulletD4:
 	bulletFib 2, #1, #45, #2, #52
 bulletD5:
@@ -824,13 +824,13 @@ bulletD6:
 bulletD7:
 	bulletFib 2, #1, #189, #2, #190
 bulletD8:
-	bulletFib 2, #0, #213, #1, #63
+	bulletFib 2, #1, #99, #2, #20
 bulletD9:
-	bulletFib 2, #1, #1, #1, #110
+	bulletFib 2, #1, #149, #2, #63
 bulletDA:
-	bulletFib 2, #1, #48, #1, #155
+	bulletFib 2, #1, #201, #2, #104
 bulletDB:
-	bulletFib 2, #1, #98, #1, #198
+	bulletFib 2, #1, #255, #2, #143
 bulletDC:
 	bulletFib 2, #1, #150, #1, #238
 bulletDD:
@@ -840,13 +840,13 @@ bulletDE:
 bulletDF:
 	bulletFib 2, #2, #61, #2, #90
 bulletE0:
-	bulletFib 2, #1, #15, #1, #15
+	bulletFib 2, #1, #196, #1, #196
 bulletE1:
-	bulletFib 2, #1, #68, #1, #52
+	bulletFib 2, #1, #253, #1, #229
 bulletE2:
-	bulletFib 2, #1, #123, #1, #87
+	bulletFib 2, #2, #57, #2, #3
 bulletE3:
-	bulletFib 2, #1, #180, #1, #120
+	bulletFib 2, #2, #117, #2, #31
 bulletE4:
 	bulletFib 2, #1, #238, #1, #150
 bulletE5:
@@ -856,13 +856,13 @@ bulletE6:
 bulletE7:
 	bulletFib 2, #2, #168, #1, #223
 bulletE8:
-	bulletFib 2, #1, #63, #0, #213
+	bulletFib 2, #2, #20, #1, #99
 bulletE9:
-	bulletFib 2, #1, #122, #0, #239
+	bulletFib 2, #2, #82, #1, #120
 bulletEA:
-	bulletFib 2, #1, #183, #1, #7
+	bulletFib 2, #2, #146, #1, #138
 bulletEB:
-	bulletFib 2, #1, #245, #1, #27
+	bulletFib 2, #2, #211, #1, #154
 bulletEC:
 	bulletFib 2, #2, #52, #1, #45
 bulletED:
@@ -872,13 +872,13 @@ bulletEE:
 bulletEF:
 	bulletFib 2, #2, #248, #1, #81
 bulletF0:
-	bulletFib 2, #1, #98, #0, #146
+	bulletFib 2, #2, #79, #0, #244
 bulletF1:
-	bulletFib 2, #1, #161, #0, #161
+	bulletFib 2, #2, #144, #0, #253
 bulletF2:
-	bulletFib 2, #1, #226, #0, #172
+	bulletFib 2, #2, #211, #1, #2
 bulletF3:
-	bulletFib 2, #2, #34, #0, #180
+	bulletFib 2, #3, #22, #1, #4
 bulletF4:
 	bulletFib 2, #2, #100, #0, #185
 bulletF5:
@@ -888,13 +888,13 @@ bulletF6:
 bulletF7:
 	bulletFib 2, #3, #43, #0, #182
 bulletF8:
-	bulletFib 2, #1, #120, #0, #74
+	bulletFib 2, #2, #115, #0, #124
 bulletF9:
-	bulletFib 2, #1, #185, #0, #76
+	bulletFib 2, #2, #181, #0, #120
 bulletFA:
-	bulletFib 2, #1, #250, #0, #75
+	bulletFib 2, #2, #247, #0, #112
 bulletFB:
-	bulletFib 2, #2, #59, #0, #70
+	bulletFib 2, #3, #57, #0, #101
 bulletFC:
 	bulletFib 2, #2, #124, #0, #62
 bulletFD:
@@ -903,6 +903,7 @@ bulletFE:
 	bulletFib 2, #2, #255, #0, #37
 bulletFF:
 	bulletFib 2, #3, #63, #0, #20
+
 
 Bullets_move_H:
 	.byte >(bullet00)
