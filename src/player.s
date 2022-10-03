@@ -50,8 +50,10 @@ Players_init:
 	lda #3
 	sta Player_bombs
 
-	lda #0
+	lda #3
 	sta Player_powerLevel
+
+	lda #00
 	sta Player_speedIndex
 	sta Player_current
 
@@ -99,7 +101,7 @@ FAST_MOVEMENT_L = 0
 MAX_RIGHT = 256-8
 MAX_LEFT = 08
 MAX_UP = 16
-MAX_DOWN = 256-16
+MAX_DOWN = 240-16
 SPEED_MAX=16
 
 	and #BUTTON_B
@@ -136,7 +138,7 @@ Player_move:; void(a)
 	and #BUTTON_RIGHT | BUTTON_LEFT | BUTTON_DOWN | BUTTON_UP
 	tax
 
-	lda #SPRITE01; todo animations
+	lda #SPRITE01; neutral sprite default
 	sta Player_sprite
 	
 	lda @valid,x; test if valid direction
@@ -182,6 +184,9 @@ Player_move:; void(a)
 		stx Player_lastDirection
 	:
 
+	lda #SPRITE03
+	sta Player_sprite
+
 	ldx Player_speedIndex
 
 	clc
@@ -205,6 +210,9 @@ Player_move:; void(a)
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
+	
+	lda #SPRITE02
+	sta Player_sprite
 
 	ldx Player_speedIndex
 	sec
@@ -273,6 +281,9 @@ Player_move:; void(a)
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
+	lda #SPRITE03
+	sta Player_sprite
+	
 	ldx Player_speedIndex
 
 	clc
@@ -309,6 +320,9 @@ Player_move:; void(a)
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
+	lda #SPRITE02
+	sta Player_sprite
+
 	ldx Player_speedIndex
 	sec
 	lda Player_xPos_L
@@ -340,6 +354,9 @@ Player_move:; void(a)
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
+	lda #SPRITE03
+	sta Player_sprite
+
 	ldx Player_speedIndex
 	clc
 	lda Player_yPos_L
@@ -374,7 +391,9 @@ Player_move:; void(a)
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
-	
+	lda #SPRITE02
+	sta Player_sprite
+
 	ldx Player_speedIndex
 	clc
 	lda Player_yPos_L
@@ -521,9 +540,7 @@ RECALL_FRAMES=4
 
 
 Player_isHit:;c()
-MAX_BULLET_DIAMETER=16
-HITBOX_WIDTH=1
-HITBOX_HEIGHT=1
+MAX_BULLET_DIAMETER=8
 	
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
@@ -532,61 +549,47 @@ HITBOX_HEIGHT=1
 	beq @nextBullet ;else next
 
 		sec ;find x distance
-		lda enemyBulletXH,x
-		sbc Player_xPos_H
-		bcs @compareX
+		lda Player_yPos_H
+		sbc enemyBulletYH,x
+		bcs :+
 
 			eor #%11111111
-@compareX:
-	cmp #MAX_BULLET_DIAMETER; if x distance < width
-	bcs @nextBullet ;else
+		:
+		cmp #MAX_BULLET_DIAMETER; if x distance < width
+		bcs @nextBullet ;else
 
-	sec ;find y distance
-	lda enemyBulletYH,x
-	sbc Player_yPos_H
-	bcs @compareY
+		sec ;find y distance
+		lda enemyBulletXH,x
+		sbc Player_xPos_H
+		bcs :+
 
-		eor #%11111111; if negative, 1's compliment
-
-@compareY:
-	cmp #MAX_BULLET_DIAMETER; if y distance < height
-	bcs @nextBullet
-	
-	;clc; carry is clear
-	lda Player_xPos_H; find player x bounded box
-	sta sprite1LeftOrTop
-	adc #HITBOX_WIDTH-1
-	sta sprite1RightOrBottom
-	
-	sec
-	lda enemyBulletXH,x
-	sbc #2
-	sta sprite2LeftOrTop
-	clc
-	adc #4
-	sta sprite2RightOrBottom
-
-	jsr checkCollision
-	bcc @nextBullet;if outside box
-	
-	;clc; faster to leave it
-	lda Player_yPos_H
-	sta sprite1LeftOrTop
-	adc #HITBOX_HEIGHT-1; carry is set
-	sta sprite1RightOrBottom
-	
-	sec
-	lda enemyBulletYH,x
-	sbc #2
-	sta sprite2LeftOrTop
-	clc
-	adc #4
-	sta sprite2RightOrBottom
-
-	jsr checkCollision
-	bcc @nextBullet
-
-		rts ;return carry set
+			eor #%11111111; if negative, 1's compliment
+		:
+		cmp #MAX_BULLET_DIAMETER; if y distance < height
+		bcs @nextBullet
+			
+			sec
+			lda Player_yPos_H; find player x bounded box
+			sbc enemyBulletYH,x
+			bcs :+
+				eor #%11111111
+				adc #1
+			:
+			cmp #3; todo bullet safe distances
+			bcs @nextBullet
+			
+			sec
+			lda Player_xPos_H; find player x bounded box
+			sbc enemyBulletXH,x
+			bcs :+
+				eor #%11111111
+				adc #1
+			:
+			cmp #3; todo bullet safe distances
+			bcs @nextBullet
+				
+				sec
+				rts ;return carry set
 
 @nextBullet:
 

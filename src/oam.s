@@ -95,8 +95,6 @@ OAM_build00:;c()
 	rts
 
 buildHitbox:;x(x,a)
-PLAYER_HITBOX_Y_OFFSET=10
-PLAYER_HITBOX_X_OFFSET=2
 
 	clc
 	lda Player_yPos_H
@@ -151,7 +149,8 @@ firstPass:
 		lda enemyBulletYH,x
 		sbc #4
 		sta OAM+OFFSET_Y,y
-
+		
+		sec
 		lda enemyBulletXH,x
 		sbc #4
 		sta OAM+OFFSET_X,y
@@ -386,9 +385,9 @@ YPOS=64
 OAM_build:;void (x) 
 ;a - metasprite to build
 
-	lda spritesL,x
+	lda Sprites_l,x
 	sta spritePointer
-	lda spritesH,x
+	lda Sprites_h,x
 	sta spritePointer+1
 	
 	ldy #0; sprite 0

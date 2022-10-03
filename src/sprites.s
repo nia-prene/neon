@@ -4,12 +4,12 @@
 .rodata
 
 SPRITE01=1; Player 1 neutral sprite
-SPRITE02=2; Small bullet
-SPRITE03=3
+SPRITE02=2; Player 1 moving left
+SPRITE03=3; Player 1 moving right
 SPRITE04=4; Shot large star
 SPRITE05=5; Shot charged beam
-SPRITE06=6; unused
-SPRITE07=7; unused
+SPRITE06=6
+SPRITE07=7
 SPRITE08=8; Shot small star bullet
 SPRITE09=9; Shot beam bullet
 SPRITE0A=$0a;small explosion frame 0
@@ -47,90 +47,91 @@ SPRITE22=$22;small star charm spin right slant
 ;|||+++--- Unimplemented
 ;||+------ Priority (0: in front of background; 1: behind background)
 ;|+------- Flip sprite horizontally
-;+-------- Flip sprite vertically
-sprite01:
-	.lobytes 2, -13, -4, %0
-	.lobytes 4, -13,  4, %0
-	.lobytes 6,   3, -4, %0
+;+-------- Flip nprite vertically
+Sprite01:
+	.lobytes 2, -14, -8, %0
+	.lobytes 4, -14,  0, %0
+	.lobytes 6,   2, -4, %0
 	.byte NULL
 
-sprite02:
-	.lobytes $24, %00000011
+Sprite02:
+	.lobytes $14, -14, -8, %0
+	.lobytes $16, -14,  0, %0
+	.lobytes   6,   2, -4, %0
 	.byte NULL
 
-sprite03:
-	.byte 0, $26, %00000011, 0
-	.byte 0, $26, %01000011, 8
-	.byte TERMINATE
-sprite04:
+Sprite03:
+	.lobytes $10, -14, -8, %0
+	.lobytes $12, -14,  0, %0
+	.lobytes   6,   2, -4, %0
+	.byte NULL
+
+Sprite04:
+
 	.lobytes $20, -8, -8, %0
 	.lobytes $20, -8,  0, %01000000
 	.byte NULL
-sprite05:
+Sprite05:
 	.lobytes $2E, -8, -8, %00000000
 	.lobytes $2E, -8, 00, %01000000
 	.byte NULL
-sprite06:
-	.lobytes $08,-4,-4,%0
-	.byte NULL
-sprite07:
-	.lobytes $0A,-4,-4,%0
-	.byte NULL
-sprite08:
+Sprite06:
+Sprite07:
+Sprite08:
 	.lobytes $22, -8, -4, %0
 	.byte NULL
-sprite09:
+Sprite09:
 	.lobytes $28, -8, -4, %0
 	.byte NULL
-sprite0A:
+Sprite0A:
 	.byte 0, $40, %0, 0
 	.byte 0, $40, %01000000, 8
 	.byte TERMINATE
-sprite0B:
+Sprite0B:
 	.byte 0, $42, %0, 0
 	.byte 0, $42, %01000000, 8
 	.byte TERMINATE
-sprite0C:
+Sprite0C:
 	.byte 0, $44, %0, 0
 	.byte 0, $44, %11000000, 8
 	.byte TERMINATE
-sprite0D:
+Sprite0D:
 	.byte 0, $46, %0, 0
 	.byte 0, $46, %11000000, 8
 	.byte TERMINATE
-sprite0E:
+Sprite0E:
 	.byte 0, $2a, %0, 0
 	.byte 0, $2c, %0, 8
 	.byte TERMINATE
-sprite0F:
+Sprite0F:
 	.lobytes $62, -8, -8, %00000001
 	.lobytes $62, -8,  0, %01000001
 	.byte NULL
-sprite10:
+Sprite10:
 	.byte 0, $64, %00000000, 0
 	.byte 0, $64, %01000000, 8
 	.byte 16, $66, %00000000, 0
 	.byte 16, $66, %01000000, 8
 	.byte TERMINATE
-sprite11:
+Sprite11:
 	.byte 0, $68, %00000000, 0
 	.byte 0, $68, %01000000, 8
 	.byte 16, $6a, %00000000, 0
 	.byte 16, $6a, %01000000, 8
 	.byte TERMINATE
-sprite12:
+Sprite12:
 	.byte 0, $6c, %00000001, 0
 	.byte 0, $6c, %01000001, 8
 	.byte TERMINATE
-sprite13:
+Sprite13:
 	.byte 0, $6e, %00000001, 0
 	.byte 0, $6e, %01000001, 8
 	.byte TERMINATE
-sprite14:
+Sprite14:
 	.byte 0, $70, %00000001, 0
 	.byte 0, $70, %01000001, 8
 	.byte TERMINATE
-sprite15:
+Sprite15:
 	.byte 0, $e0, %0, 0
 	.byte 0, $e2, %0, 7
 	.byte 0, $e4, %0, 14
@@ -138,91 +139,91 @@ sprite15:
 	.byte 0, $e8, %0, 28
 	.byte 0, $ea, %0, 35 
 	.byte TERMINATE
-sprite16:
+Sprite16:
 	.byte 0, $ec, %0, 0
 	.byte 0, $ee, %0, 7
 	.byte 0, $f0, %0, 12
 	.byte TERMINATE
-sprite17:
+Sprite17:
 	.byte 0, $f6, %0, 0	
 	.byte 0, $e4, %0, 07
 	.byte 0, $f8, %0, 14
 	.byte 0, $fa, %0, 21
 	.byte 0, $e2, %0, 28
 	.byte TERMINATE
-sprite18:
+Sprite18:
 	.lobytes $a8, -16, -8, %01
 	.lobytes $aa, -16,  0, %01
 	.lobytes $ac,   0, -8, %10
 	.lobytes $ae,   0,  0, %10
 	.byte NULL
-sprite19:
+Sprite19:
 	.lobytes $8,-4,-4,%0
 	.byte NULL
 	
-sprite1A:
+Sprite1A:
 	.lobytes $0A,-4,-4,%0
 	.byte NULL
-sprite1B:
+Sprite1B:
 	.lobytes $0C,-4,-4,%0
 	.byte NULL
-sprite1C:
-	.lobytes $0A,-4,-3,%01000000
+Sprite1C:
+	.lobytes $0A,-4,-4,%01000000
 	.byte NULL
-sprite1D:
+Sprite1D:
 	.lobytes $0E,-4,-4,%0
 	.byte NULL
-sprite1E:
+Sprite1E:
 	.byte 0,$3a,%0,0
 	.byte TERMINATE
-sprite1F:
+Sprite1F:
 	.byte 0,$3c,%0,0
 	.byte TERMINATE
-sprite20:
+Sprite20:
 	.byte 0,$3e,%0,0
 	.byte TERMINATE
-sprite21:
+Sprite21:
 	.lobytes $a0, -16, -8, %01
 	.lobytes $a2, -16,  0, %01
 	.lobytes $a4,   0, -8, %10
 	.lobytes $a6,   0,  0, %10
 	.byte NULL
-sprite22:
+Sprite22:
 	.byte 0,$3c,%01000000, 0
 	.byte TERMINATE
-sprite23:
+Sprite23:
 	.byte TERMINATE
-sprite24:
+Sprite24:
 	.byte TERMINATE
-sprite25:
+Sprite25:
 	.byte TERMINATE
-sprite26:
+Sprite26:
 	.byte TERMINATE
-sprite27:
+Sprite27:
 	.byte TERMINATE
-sprite28:
+Sprite28:
 	.byte TERMINATE
-sprite29:
+Sprite29:
 	.byte TERMINATE
-sprite2A:
+Sprite2A:
 	.byte TERMINATE
-sprite2B:
+Sprite2B:
 	.byte TERMINATE
-sprite2C:
+Sprite2C:
 	.byte TERMINATE
-sprite2D:
+Sprite2D:
 	.byte TERMINATE
-sprite2E:
+Sprite2E:
 	.byte TERMINATE
-sprite2F:
+Sprite2F:
 	.byte TERMINATE
 	
 ;pointer table
-spritesH:
-	.byte NULL, >sprite01, >sprite02, >sprite03, >sprite04, >sprite05, >sprite06, >sprite07, >sprite08, >sprite09, >sprite0A, >sprite0B, >sprite0C, >sprite0D, >sprite0E, >sprite0F
-	.byte >sprite10, >sprite11, >sprite12, >sprite13, >sprite14, >sprite15, >sprite16, >sprite17, >sprite18, >sprite19, >sprite1A, >sprite1B, >sprite1C, >sprite1D, >sprite1E, >sprite1F
-	.byte >sprite20, >sprite21, >sprite22, >sprite23, >sprite24, >sprite25, >sprite26, >sprite27, >sprite28, >sprite29, >sprite2A, >sprite2B, >sprite2C, >sprite2D, >sprite2E, >sprite2F
-spritesL:
-	.byte NULL, <sprite01, <sprite02, <sprite03, <sprite04, <sprite05, <sprite06, <sprite07, <sprite08, <sprite09, <sprite0A, <sprite0B, <sprite0C, <sprite0D, <sprite0E, <sprite0F
-	.byte <sprite10, <sprite11, <sprite12, <sprite13, <sprite14, <sprite15, <sprite16, <sprite17, <sprite18, <sprite19, <sprite1A, <sprite1B, <sprite1C, <sprite1D, <sprite1E, <sprite1F
-	.byte <sprite20, <sprite21, <sprite22, <sprite23, <sprite24, <sprite25, <sprite26, <sprite27, <sprite28, <sprite29, <sprite2A, <sprite2B, <sprite2C, <sprite2D, <sprite2E, <sprite2F
+Sprites_h:
+	.byte NULL, >Sprite01, >Sprite02, >Sprite03, >Sprite04, >Sprite05, >Sprite06, >Sprite07, >Sprite08, >Sprite09, >Sprite0A, >Sprite0B, >Sprite0C, >Sprite0D, >Sprite0E, >Sprite0F
+	.byte >Sprite10, >Sprite11, >Sprite12, >Sprite13, >Sprite14, >Sprite15, >Sprite16, >Sprite17, >Sprite18, >Sprite19, >Sprite1A, >Sprite1B, >Sprite1C, >Sprite1D, >Sprite1E, >Sprite1F
+	.byte >Sprite20, >Sprite21, >Sprite22, >Sprite23, >Sprite24, >Sprite25, >Sprite26, >Sprite27, >Sprite28, >Sprite29, >Sprite2A, >Sprite2B, >Sprite2C, >Sprite2D, >Sprite2E, >Sprite2F
+Sprites_l:
+	.byte NULL, <Sprite01, <Sprite02, <Sprite03, <Sprite04, <Sprite05, <Sprite06, <Sprite07, <Sprite08, <Sprite09, <Sprite0A, <Sprite0B, <Sprite0C, <Sprite0D, <Sprite0E, <Sprite0F
+	.byte <Sprite10, <Sprite11, <Sprite12, <Sprite13, <Sprite14, <Sprite15, <Sprite16, <Sprite17, <Sprite18, <Sprite19, <Sprite1A, <Sprite1B, <Sprite1C, <Sprite1D, <Sprite1E, <Sprite1F
+	.byte <Sprite20, <Sprite21, <Sprite22, <Sprite23, <Sprite24, <Sprite25, <Sprite26, <Sprite27, <Sprite28, <Sprite29, <Sprite2A, <Sprite2B, <Sprite2C, <Sprite2D, <Sprite2E, <Sprite2F

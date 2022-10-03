@@ -13,7 +13,7 @@ Shots_remaining: .res 1
 Shots_charge: .res 1
 
 .data
-SHOTS_MAX=15
+SHOTS_MAX=13
 Shots_isActive: .res SHOTS_MAX
 bulletX: .res SHOTS_MAX
 bulletY: .res SHOTS_MAX
@@ -38,7 +38,7 @@ PlayerBullets_shoot:;void(a)
 		and #BUTTON_B
 		bne @notPressingB
 			
-			jsr Shot03
+			jsr Shot04
 			
 @notPressingB:
 	
@@ -76,10 +76,12 @@ PlayerBullets_shoot:;void(a)
 	.byte <(Shot00)
 	.byte <(Shot01)
 	.byte <(Shot02)
+	.byte <(Shot03)
 @shotType_H:
 	.byte >(Shot00)
 	.byte >(Shot01)
 	.byte >(Shot02)
+	.byte >(Shot03)
 
 
 Shots_get:; cy() | x
@@ -285,6 +287,79 @@ BULLET_SPEED = 18
 	rts
 
 @status:
+	.byte TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE
+@offset_x:
+	.lobytes  -4, 4
+@offset_focus:
+	.lobytes  00, 00
+@offset_y:
+	.lobytes -12, -12
+@sprites:
+	.byte SPRITE09,SPRITE09
+@damage:
+	.byte 4, 4
+.endproc
+
+
+.proc Shot01
+
+
+	lda Shots_hold
+	and #%111
+	tax 
+	
+	lda @status,x
+	beq @return
+
+	jsr Shots_get; c,y() | x
+	bcc @return
+		
+		lda Player_focused
+		beq @fast
+		
+		@slow:
+			clc
+			lda Player_xPos_H
+			eor #$80
+			adc @offset_focus,x
+			eor #$80
+			sta bulletX,y
+			bvs @return
+			jmp @doY
+	
+		@fast:
+
+			clc
+			lda Player_xPos_H
+			eor #$80
+			adc @offset_x,x
+			eor #$80
+			sta bulletX,y
+			bvs @return
+	
+	@doY:
+		
+		clc
+		lda Player_yPos_H
+		eor #$80
+		adc @offset_y,x
+		eor #$80
+		sta bulletY,y
+		bvs @return
+
+		lda @sprites,x
+		sta bulletSprite,y
+
+		lda @damage,x
+		sta PlayerBullet_damage,y
+
+		lda #TRUE
+		sta Shots_isActive,y
+
+@return:
+	rts
+
+@status:
 	.byte TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE
 @offset_x:
 	.lobytes  -4, 12,   4, -12
@@ -299,7 +374,7 @@ BULLET_SPEED = 18
 .endproc
 
 
-.proc Shot01
+.proc Shot02
 
 	lda Shots_hold
 	and #%111
@@ -372,7 +447,7 @@ BULLET_SPEED = 18
 .endproc
 
 
-.proc Shot02
+.proc Shot03
 
 	lda Shots_hold
 	and #%111
@@ -437,7 +512,8 @@ BULLET_SPEED = 18
 
 .endproc
 
-.proc Shot03
+
+.proc Shot04
 OFFSET_Y= (256-16)
 DAMAGE = 5
 		
@@ -471,7 +547,5 @@ DAMAGE = 5
 	rts
 
 .endproc
-
-
 
 

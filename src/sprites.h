@@ -48,5 +48,5 @@
 .globalzp SPRITE2f
 
 ;address table
-.global spritesH
-.global spritesL
+.global Sprites_h
+.global Sprites_l

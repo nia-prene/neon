@@ -233,15 +233,6 @@ wave01:
 	.byte NULL
 
 wave02:
-	.byte ENEMY02, TOP|28, 32
-	.byte ENEMY02, TOP|26, 32
-	.byte ENEMY02, TOP|24, 32
-	.byte ENEMY02, TOP|22, 32
-	.byte ENEMY02, TOP|20, 32
-	.byte ENEMY02, TOP|18, 32
-	.byte ENEMY02, TOP|16, 32
-	.byte ENEMY02, TOP|14, 32
-	.byte ENEMY02, TOP|12, 32
 	.byte ENEMY02, TOP|10, 32
 	.byte NULL
 	.byte ENEMY02, TOP|23, 32
@@ -256,11 +247,6 @@ wave02:
 
 wave03:
 	.byte ENEMY02, TOP|10, 16
-	.byte ENEMY02, TOP|12, 16
-	.byte ENEMY02, TOP|15, 16
-	.byte ENEMY02, TOP|11, 16
-	.byte ENEMY02, TOP|08, 16
-	.byte ENEMY02, TOP|05, 64
 	.byte NULL
 
 wave04:

@@ -87,6 +87,7 @@ gamestate00:
 	ldx Gamepads_last
 	jsr Gamestates_pause; void(a,x) |
 	
+	lda Gamepads_state
 	jsr Player_setSpeed;(a)
 	lda Gamepads_state
 	jsr Player_move;(a)
@@ -341,6 +342,8 @@ gamestate09:; Level - charms spinning
 	jsr Gamestates_pause
 
 	lda Gamepads_state
+	jsr Player_setSpeed;(a)
+	lda Gamepads_state
 	jsr Player_move;(a)
 	jsr Hitbox_tick
 
@@ -461,7 +464,9 @@ gamestate0C:; a moment of no shooting
 	jsr Gamestates_pause;c(a,x) |
 	
 	lda Gamepads_state
-	jsr Player_move;void(a) |
+	jsr Player_setSpeed;(a)
+	lda Gamepads_state
+	jsr Player_move;(a)
 	jsr Hitbox_tick
 
 	jsr PlayerBullets_move;void()
@@ -508,6 +513,8 @@ gamestate0D:; charms spinning, main game loop
 	lda Gamepads_state
 	jsr Player_move;(a)
 	jsr Hitbox_tick
+	lda Gamepads_state
+	jsr Player_setSpeed;(a)
 
 	jsr PlayerBullets_move;void()
 
@@ -559,6 +566,8 @@ Gamestate0E:
 	lda Gamepads_state
 	jsr Player_move;(a)
 	jsr Hitbox_tick
+	lda Gamepads_state
+	jsr Player_setSpeed;(a)
 
 	jsr PlayerBullets_move;void()
 

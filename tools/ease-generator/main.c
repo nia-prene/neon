@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <math.h>
-#define FRAMES 32 
+#define FRAMES (32-1) 
 #define DISTANCE 88
 #define STEPS 1.0/FRAMES
 #define START 238
@@ -13,7 +13,7 @@ int main(){
 		
 	fprintf(file,".byte ");
 
-	for (float i=0;i<1;i=i+STEPS){
+	for (float i=0;i<=1;i=i+STEPS){
 		fprintf(file,"%.2d, ",START - (int)ceil(DISTANCE * easeOut(i)));
 
 	}

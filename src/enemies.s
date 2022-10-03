@@ -314,15 +314,15 @@ Enemy02:
 	.byte SPRITE0F; move onscreen
 	.byte NULL
 	.byte VULNERABLE
-	.byte 16; frames
+	.byte 32; frames
 
-	.byte MOVEMENT02
+	.byte MOVEMENT01
 	.byte SPRITE0F; stop and shoot
 	.byte PATTERN02
 	.byte VULNERABLE
 	.byte 128; frames
 
-	.byte MOVEMENT03
+	.byte MOVEMENT05
 	.byte SPRITE0F; move off
 	.byte NULL
 	.byte VULNERABLE
@@ -337,10 +337,11 @@ Enemies_H:
 	.byte NULL,>Enemy01,>Enemy02,>Enemy03
 
 
-MOVEMENT01=$01; reese boss not moving
-MOVEMENT02=$02; down to soft right
+MOVEMENT01=$01; not moving
+MOVEMENT02=$02; gravity
 MOVEMENT03=$03; down to medium right
-MOVEMENT04=$04; ease down
+MOVEMENT04=$04; ease in - down with gravity 32 frames
+MOVEMENT05=$05; ease out - up with gravity 32 frames
 
 
 ;Enemy stays in place
@@ -395,13 +396,18 @@ MUTATOR=16
 .proc Movement04
 	
 	lda Enemies_clock,x
-	asl
-	asl
-	and #%011
+	cmp #%11111
+	bcc :+
+		lda #%11111
+	:
+	lsr
 	tay
 	clc
+	lda enemyYL,x
+	adc Ease_out_l,y
+	sta enemyYL,x
 	lda enemyYH,x
-	adc Ease00,y
+	adc Ease_out_h,y
 	sta enemyYH,x
 
 	rts; c
@@ -409,11 +415,44 @@ MUTATOR=16
 .endproc
 
 
-Ease00:
-	.byte 2, 2, 2, 1
+.proc Movement05
 	
+	lda Enemies_clock,x
+	cmp #%11111
+	bcc :+
+		lda #%11111
+	:
+	lsr
+	tay
+	sec
+	lda enemyYL,x
+	sbc Ease_in_l,y
+	sta enemyYL,x
+	lda enemyYH,x
+	sbc Ease_in_h,y
+	sta enemyYH,x
+	bcs :+
+		sec; clear from screen
+		rts; c
+	:
+	clc
+	
+	rts; c
+
+.endproc
+
+
+Ease_in_l:
+	.byte 0, 0, 0, 0, 16, 16, 32, 48, 80, 112, 144, 208, 0, 80, 160, 0
+Ease_in_h:
+	.byte  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2
+	
+Ease_out_l:
+	.byte 0,0,0,0,240, 240, 224, 208, 176, 144, 112, 48, 0, 176, 96, 0
+Ease_out_h:
+	.byte  2,  2,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0
 
 Movement_L:
-	.byte NULL,<Movement01,<Movement02,<Movement03,<Movement04
+	.byte NULL,<Movement01,<Movement02,<Movement03,<Movement04,<Movement05
 Movement_H:
-	.byte NULL,>Movement01,>Movement02,>Movement03,>Movement04
+	.byte NULL,>Movement01,>Movement02,>Movement03,>Movement04,>Movement04
