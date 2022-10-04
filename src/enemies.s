@@ -274,27 +274,27 @@ Enemies_transferPoints:
 	;sta Score_frameTotal_H
 	;bcs @error
 
-ENEMY01=1; Reese Boss
-ENEMY02=2; Blue Drone down light right
-ENEMY03=3
-ENEMY04=4
-ENEMY05=5
-ENEMY06=6
-ENEMY07=7
-ENEMY08=$8
+ENEMY01=$01; Reese Boss
+ENEMY02=$02; Blue Drone down light right
+ENEMY03=$03; Mushroom hopper
+ENEMY04=$04
+ENEMY05=$05
+ENEMY06=$06
+ENEMY07=$07
+ENEMY08=$08
 .rodata
 ;first byte is a burner byte so we can use zero flag to denote empty slot
 
 romEnemyHPL: 
-	.byte 	NULL,	100,	10,	10
+	.byte 	NULL,	$00,	$10,	$10,	$20
 romEnemyHPH:
-	.byte 	NULL,	00,	00,	10
+	.byte 	NULL,	$00,	$00,	$10,	$00
 pointValue_L:
-	.byte 	NULL,	19,	10,	10
+	.byte 	NULL,	$19,	$10,	$10,	$30
 pointValue_H:
-	.byte 	NULL,	00,	00,	00
+	.byte 	NULL,	$00,	$00,	$00,	$00
 diameter:
-	.byte 	NULL,	16,	12,	08
+	.byte 	NULL,	16,	12,	08,	$10
 
 
 SIZE		= 5; bytes
@@ -329,6 +329,23 @@ Enemy02:
 	.byte 255; frames
 
 Enemy03:
+	.byte MOVEMENT02
+	.byte SPRITE23
+	.byte NULL
+	.byte VULNERABLE
+	.byte 8
+	.byte MOVEMENT02
+	.byte SPRITE24
+	.byte NULL
+	.byte VULNERABLE
+	.byte 8
+	.byte MOVEMENT06
+	.byte SPRITE25
+	.byte NULL
+	.byte VULNERABLE
+	.byte 16
+
+	.byte NULL, 00; stop and loop
 
 
 Enemies_L:
@@ -342,6 +359,7 @@ MOVEMENT02=$02; gravity
 MOVEMENT03=$03; down to medium right
 MOVEMENT04=$04; ease in - down with gravity 32 frames
 MOVEMENT05=$05; ease out - up with gravity 32 frames
+MOVEMENT06=$06; move down linearly (mushroom)
 
 
 ;Enemy stays in place
@@ -354,11 +372,8 @@ MOVEMENT05=$05; ease out - up with gravity 32 frames
 .proc Movement02; c(x) |
 	
 	clc
-	lda enemyYL,x
-	adc PPU_scrollSpeed_l
-	sta enemyYL,x
 	lda enemyYH,x
-	adc PPU_scrollSpeed_h
+	adc Scroll_delta
 	sta enemyYH,x
 	rts
 
@@ -442,6 +457,23 @@ MUTATOR=16
 .endproc
 
 
+.proc Movement06
+SPEED_h=1
+SPEED_l=0
+	
+	clc
+	lda enemyYL,x
+	adc #SPEED_l
+	sta enemyYL,x
+
+	lda enemyYH,x
+	adc #SPEED_h
+	sta enemyYH,x
+	rts; c
+
+.endproc
+
+
 Ease_in_l:
 	.byte 0, 0, 0, 0, 16, 16, 32, 48, 80, 112, 144, 208, 0, 80, 160, 0
 Ease_in_h:
@@ -453,6 +485,8 @@ Ease_out_h:
 	.byte  2,  2,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0
 
 Movement_L:
-	.byte NULL,<Movement01,<Movement02,<Movement03,<Movement04,<Movement05
+	.byte NULL,<Movement01,<Movement02,<Movement03,<Movement04
+	.byte <Movement05,<Movement06
 Movement_H:
-	.byte NULL,>Movement01,>Movement02,>Movement03,>Movement04,>Movement04
+	.byte NULL,>Movement01,>Movement02,>Movement03,>Movement04
+	.byte >Movement05,>Movement06

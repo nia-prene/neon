@@ -68,6 +68,8 @@ LIGHTEN_SCREEN = %00011111		; and
 	txs
 .endmacro
 .zeropage
+
+Scroll_delta: .res 1
 currentNameTable: .res 2
 currentPPUSettings: .res 1
 currentMaskSettings: .res 1
@@ -861,19 +863,27 @@ PPU_updateScroll:
 	lda yScroll_L
 	sbc PPU_scrollSpeed_l
 	sta yScroll_L
+
 	lda yScroll_H
+	sta mathTemp
 	sbc PPU_scrollSpeed_h
 	cmp #240
-	bcc @storeY
-		;clc
-		eor #%11111111
-		adc #0;+c
-		sta mathTemp
-		sec
-		lda #240
-		sbc mathTemp
-@storeY:
+	bcc :+
+		clc
+		adc #240
+	:
 	sta yScroll_H
+	
+	sec
+	lda mathTemp
+	sbc yScroll_H
+	bcs :+
+		lda mathTemp
+		adc #240
+		sbc yScroll_H
+	:
+	sta Scroll_delta
+
 	rts
 
 

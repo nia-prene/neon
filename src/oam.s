@@ -134,9 +134,8 @@ firstPass:
 @bulletLoop:
 
 	lda isEnemyBulletActive,x; if active
-	beq @skipBullet
 	cmp #1
-	bne @invisible
+	bne @skipBullet
 		
 	lda limit
 	beq @full
@@ -173,14 +172,6 @@ firstPass:
 	sty OAM_index
 	rts
 
-@invisible:
-	sbc #1
-	sta isEnemyBulletActive,x
-	dex
-	bpl @bulletLoop
-	sty OAM_index
-	rts
-
 
 .align 32
 secondPass:
@@ -188,9 +179,8 @@ secondPass:
 	
 @bulletLoop:
 	lda isEnemyBulletActive,x
-	beq @skipBullet
 	cmp #1; if active and visible
-	bne @invisible
+	bne @skipBullet
 		
 	lda limit; and not full
 	beq @full
@@ -224,14 +214,6 @@ secondPass:
 	bne @bulletLoop
 
 @full:	
-	sty OAM_index
-	rts
-
-@invisible:
-	sbc #1
-	sta isEnemyBulletActive,x
-	dex
-	bpl @bulletLoop
 	sty OAM_index
 	rts
 

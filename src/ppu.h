@@ -2,12 +2,11 @@
 .global PPUMASK
 
 ; attributes
-
 .globalzp PPU_stack
 .globalzp PPU_havePalettesChanged
 .globalzp PPU_willVRAMUpdate
-.globalzp PPU_scrollSpeed_h
-.globalzp PPU_scrollSpeed_l
+.globalzp Scroll_delta
+
 
 ; methods
 .global PPU_init

@@ -222,7 +222,7 @@ LEFT=%11
 Wave_palette00:
 	.byte NULL,PALETTE08,PALETTE06
 Wave_palette01:
-	.byte NULL,PALETTE09,PALETTE06
+	.byte NULL,PALETTE09,PALETTE07
 
 ;individual enemy waves
 ;	.byte enemy, position, hold, etc, NULL
@@ -233,15 +233,23 @@ wave01:
 	.byte NULL
 
 wave02:
-	.byte ENEMY02, TOP|10, 32
+	.byte ENEMY03, TOP|32, 116
+	.byte ENEMY03, TOP|28, 100
+	.byte ENEMY03, TOP|35, 113
+	.byte ENEMY03, TOP|28, 135
+	.byte ENEMY03, TOP|32, 122
+	.byte ENEMY03, TOP|34, 118
+	.byte ENEMY03, TOP|26, 134
+	.byte ENEMY03, TOP|32, 128
 	.byte NULL
-	.byte ENEMY02, TOP|23, 32
-	.byte ENEMY02, TOP|25, 32
-	.byte ENEMY02, TOP|20, 32
-	.byte ENEMY02, TOP|26, 32
-	.byte ENEMY02, TOP|21, 32
-	.byte ENEMY02, TOP|24, 32
-	.byte ENEMY02, TOP|20, 32
+
+	.byte ENEMY02, TOP|23, 44
+	.byte ENEMY02, TOP|25, 36
+	.byte ENEMY02, TOP|20, 40
+	.byte ENEMY02, TOP|26, 44
+	.byte ENEMY02, TOP|21, 36
+	.byte ENEMY02, TOP|24, 48
+	.byte ENEMY02, TOP|20, 36
 	.byte NULL
 
 

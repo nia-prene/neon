@@ -11,7 +11,6 @@ BULLETS_VARIETIES=8
 MAX_ENEMY_BULLETS=129
 
 .zeropage
-isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 ;arguments
 Bullets_fastForwardFrames:.res 1
 
@@ -26,6 +25,7 @@ Charms_active: .res 1
 quickBulletX: .res 1
 quickBulletY: .res 1
 
+isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 
 .data
 
@@ -88,6 +88,12 @@ Bullets_moveLoop:
 	lda isEnemyBulletActive,x
 	beq Bullets_tickDown;skip inactive bullets
 		
+		cmp #1
+		beq :+
+			;sec
+			sbc #1
+			sta isEnemyBulletActive,x
+		:
 		ldy Bullets_ID,x
 
 		lda Bullets_move_L,y

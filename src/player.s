@@ -545,8 +545,9 @@ MAX_BULLET_DIAMETER=8
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
 
-	lda isEnemyBulletActive,x ;if active
-	beq @nextBullet ;else next
+	lda isEnemyBulletActive,x
+	cmp #1; if active and visible
+	bne @nextBullet ;else next
 
 		sec ;find x distance
 		lda Player_yPos_H

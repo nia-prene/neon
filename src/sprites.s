@@ -37,6 +37,11 @@ SPRITE1F=$1f;small star charm spin left slant
 SPRITE20=$20;small star charm spin side
 SPRITE21=$21;piper frame 0
 SPRITE22=$22;small star charm spin right slant
+SPRITE23=$23; mushroom idle
+SPRITE24=$24; mushroom crouch
+SPRITE25=$25; mushroom jump
+
+
 
 ; format
 ; 	Tile, Y, X, Attribute 
@@ -192,32 +197,33 @@ Sprite22:
 	.byte 0,$3c,%01000000, 0
 	.byte TERMINATE
 Sprite23:
-	.byte TERMINATE
+	.lobytes $72, -11, -8, %10
+	.lobytes $74, -11,  0, %10
+	.lobytes $76,  -4, -4, %10
+	.byte NULL
 Sprite24:
-	.byte TERMINATE
+	.lobytes $72, -9, -8, %10
+	.lobytes $74, -9,  0, %10
+	.lobytes $76, -4, -4, %10000010
+	.byte NULL
 Sprite25:
-	.byte TERMINATE
+	.lobytes $72, -18, -8, %10
+	.lobytes $74, -18,  0, %10
+	.lobytes $76, -6, -4, %10
+	.byte NULL
 Sprite26:
-	.byte TERMINATE
 Sprite27:
-	.byte TERMINATE
 Sprite28:
-	.byte TERMINATE
 Sprite29:
-	.byte TERMINATE
 Sprite2A:
-	.byte TERMINATE
 Sprite2B:
-	.byte TERMINATE
 Sprite2C:
-	.byte TERMINATE
 Sprite2D:
-	.byte TERMINATE
 Sprite2E:
-	.byte TERMINATE
 Sprite2F:
-	.byte TERMINATE
-	
+
+
+
 ;pointer table
 Sprites_h:
 	.byte NULL, >Sprite01, >Sprite02, >Sprite03, >Sprite04, >Sprite05, >Sprite06, >Sprite07, >Sprite08, >Sprite09, >Sprite0A, >Sprite0B, >Sprite0C, >Sprite0D, >Sprite0E, >Sprite0F
@@ -227,3 +233,4 @@ Sprites_l:
 	.byte NULL, <Sprite01, <Sprite02, <Sprite03, <Sprite04, <Sprite05, <Sprite06, <Sprite07, <Sprite08, <Sprite09, <Sprite0A, <Sprite0B, <Sprite0C, <Sprite0D, <Sprite0E, <Sprite0F
 	.byte <Sprite10, <Sprite11, <Sprite12, <Sprite13, <Sprite14, <Sprite15, <Sprite16, <Sprite17, <Sprite18, <Sprite19, <Sprite1A, <Sprite1B, <Sprite1C, <Sprite1D, <Sprite1E, <Sprite1F
 	.byte <Sprite20, <Sprite21, <Sprite22, <Sprite23, <Sprite24, <Sprite25, <Sprite26, <Sprite27, <Sprite28, <Sprite29, <Sprite2A, <Sprite2B, <Sprite2C, <Sprite2D, <Sprite2E, <Sprite2F
+
