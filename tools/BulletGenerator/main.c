@@ -3,14 +3,14 @@
 #include <math.h>
 #define FILE_PATH "output.txt"
 #define PI 3.14159265
-#define SPEEDS 8
+#define SPEEDS 4
 #define SEGMENTS 256.0f
 
 int main(){
 	
 	FILE *outputFile;
 	/*different radii to select from, cycles through list*/
-	double radii[]={2.00,2.50,3.00,3.50};
+	double radii[]={1.50,2.00,2.50,3.00};
 	/*64 different angles*/
 	double x;
 	double xH;

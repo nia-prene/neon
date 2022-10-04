@@ -286,9 +286,9 @@ ENEMY08=$08
 ;first byte is a burner byte so we can use zero flag to denote empty slot
 
 romEnemyHPL: 
-	.byte 	NULL,	$00,	$10,	$10,	$20
+	.byte 	NULL,	$00,	$10,	$18,	$20
 romEnemyHPH:
-	.byte 	NULL,	$00,	$00,	$10,	$00
+	.byte 	NULL,	$00,	$00,	$00,	$00
 pointValue_L:
 	.byte 	NULL,	$19,	$10,	$10,	$30
 pointValue_H:
@@ -341,7 +341,7 @@ Enemy03:
 	.byte 8
 	.byte MOVEMENT06
 	.byte SPRITE25
-	.byte NULL
+	.byte PATTERN03
 	.byte VULNERABLE
 	.byte 16
 
@@ -462,13 +462,12 @@ SPEED_h=1
 SPEED_l=0
 	
 	clc
-	lda enemyYL,x
-	adc #SPEED_l
-	sta enemyYL,x
-
 	lda enemyYH,x
 	adc #SPEED_h
+	bcs :+
+	adc Scroll_delta
 	sta enemyYH,x
+	:
 	rts; c
 
 .endproc

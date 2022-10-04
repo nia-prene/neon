@@ -44,8 +44,9 @@ Patterns_tick:; void(x)
 BITS_QUADRANT=%11000000
 BITS_ANGLE=%11111100
 
-PATTERN01=$01
-PATTERN02=$02
+PATTERN01=$01; reese test?
+PATTERN02=$02; aimed string
+PATTERN03=$03; aimed
 
 
 .proc Pattern01
@@ -137,8 +138,29 @@ SPEED = 0
 .endproc
 
 
+.proc Pattern03
+INVISIBILITY	=16
+	
+	lda #INVISIBILITY
+	sta Bullets_fastForwardFrames
+
+	lda Enemies_clock,x
+	bne @return
+		jsr Bullets_aim
+		bit ROUND_4
+		beq :+
+			clc
+			adc #4
+		:
+		and #BITS_ANGLE
+		jmp Bullets_new
+@return:
+	rts
+
+.endproc
+
 Patterns_L:
-	.byte NULL,<Pattern01,<Pattern02
+	.byte NULL,<Pattern01,<Pattern02,<Pattern03
 Patterns_H:
-	.byte NULL,>Pattern01,>Pattern02
+	.byte NULL,>Pattern01,>Pattern02,>Pattern03
 
