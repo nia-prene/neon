@@ -10,7 +10,6 @@
 
 PLAYERS_MAX=2
 .zeropage
-Player_ptr:.res 2
 Player_xPos_H: .res 1
 Player_yPos_H: .res 1
 .data
@@ -50,7 +49,7 @@ Players_init:
 	lda #3
 	sta Player_bombs
 
-	lda #2
+	lda #0
 	sta Player_powerLevel
 
 	lda #00
@@ -145,10 +144,10 @@ Player_move:; void(a)
 	beq @return
 		
 		lda @move_l,x
-		sta Player_ptr+0
+		sta Lib_ptr0+0
 		lda @move_h,x
-		sta Player_ptr+1
-		jmp (Player_ptr)
+		sta Lib_ptr0+1
+		jmp (Lib_ptr0)
 
 @return:
 	rts
@@ -422,18 +421,58 @@ Player_move:; void(a)
 
 
 @cardinal_l:
+	;1.75 - .75
+	;.byte 192, 240, 32, 64, 96, 112, 144, 160
+	;.byte 160, 176, 176, 192, 192, 192, 192, 192
+	;1.75 - .5
+	;.byte 128, 192, 240, 32, 64, 96, 128, 144
+	;.byte 160, 176, 176, 192, 192, 192, 192, 192
+	;2 - .5	
+	;.byte 128, 192, 0, 64, 112, 144, 176, 192
+	;.byte 224, 224, 240, 0, 0, 0, 0, 0
+	;1.5 - .5
 	.byte 128, 176, 224, 0, 32, 48, 80, 96
 	.byte 96, 112, 112, 128, 128, 128, 128, 128
 
 @cardinal_h:
+	;1.75 - .75
+	;.byte 0,  0,  1,  1,  1,  1,  1,  1
+	;.byte 1,  1,  1,  1,  1,  1,  1,  1
+	;1.75 - .5
+	;.byte  0,  0,  0,  1,  1,  1,  1,  1
+	;.byte  1,  1,  1,  1,  1,  1,  1,  1
+	;2 - .5	
+	;.byte  0,  0,  1,  1,  1,  1,  1,  1
+	;.byte  1,  1,  1,  2,  2,  2,  2,  2
+	;1.5 - .5
 	.byte  0,  0,  0,  1,  1,  1,  1,  1
 	.byte  1,  1,  1,  1,  1,  1,  1,  1
 
 @ordinal_l:
-	.byte 96, 128, 144, 176, 192, 208, 224
-	.byte 224, 240, 240, 0, 0, 0, 0, 0, 0
+	;1.75 - .75
+	;.byte 128, 176, 192, 224, 240, 16, 32, 32
+	;.byte 48, 48, 64, 64, 64, 64, 64, 64
+	;1.75 - .5
+	;.byte 96, 128, 176, 208, 224, 0, 16, 32
+	;.byte 48, 48, 48, 64, 64, 64, 64, 64 
+	;2.0 - .5	
+	;.byte 96, 144, 192, 224, 0, 32, 48, 64
+	;.byte 80, 96, 96, 112, 112, 112, 112, 112
+	;1.5 - .5	
+	.byte 96, 128, 144, 176, 192, 208, 224,224
+	.byte 240, 240, 0, 0, 0, 0, 0, 0
 
 @ordinal_h:
+	;1.75 - .75
+	;.byte 0,  0,  0,  0,  0,  1,  1,  1
+	;.byte 1,  1,  1,  1,  1,  1,  1,  1
+	;1.75 - .5
+	;.byte 0,  0,  0,  0,  0,  1,  1,  1
+	;.byte 1,  1,  1,  1,  1,  1,  1,  1
+	;2 - .5
+	;.byte  0,  0,  0,  0,  1,  1,  1,  1
+	;.byte  1,  1,  1,  1,  1,  1,  1,  1
+	;1.50 - .5
 	.byte  0,  0,  0,  0,  0,  0,  0,  0
 	.byte  0,  0,  1,  1,  1,  1,  1,  1
 	
@@ -448,10 +487,10 @@ Hitbox_tick:; void()
 	beq :+
 
 		lda Hitbox_L,x; update it
-		sta Player_ptr+0
+		sta Lib_ptr0+0
 		lda Hitbox_H,x
-		sta Player_ptr+1
-		jmp (Player_ptr); void()
+		sta Lib_ptr0+1
+		jmp (Lib_ptr0); void()
 
 	:
 	lda Player_focused; if focused

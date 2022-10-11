@@ -33,10 +33,10 @@ Patterns_tick:; void(x)
 	beq @return
 		
 		lda Patterns_L,y
-		sta Enemies_ptr+0
+		sta Lib_ptr0+0
 		lda Patterns_H,y
-		sta Enemies_ptr+1
-		jmp (Enemies_ptr)
+		sta Lib_ptr0+1
+		jmp (Lib_ptr0)
 
 @return:
 	rts
@@ -45,8 +45,9 @@ BITS_QUADRANT=%11000000
 BITS_ANGLE=%11111100
 
 PATTERN01=$01; reese test?
-PATTERN02=$02; aimed string
-PATTERN03=$03; aimed
+PATTERN02=$02; aimed fairy
+PATTERN03=$03; aimed mushroom
+PATTERN04=$04; baloon cannon
 
 
 .proc Pattern01
@@ -112,10 +113,10 @@ SPEED = 0
 	sta Bullets_fastForwardFrames
 
 	lda Enemies_clock,x
-	and #%00010011
+	and #%00110011
 	bne @return
 		lda Enemies_clock,x
-		and #%00011111
+		and #%00001111
 		bne @shoot
 			jsr Bullets_aim; a(x) | x
 			bit ROUND_4
@@ -159,8 +160,62 @@ INVISIBILITY	=16
 
 .endproc
 
-Patterns_L:
-	.byte NULL,<Pattern01,<Pattern02,<Pattern03
-Patterns_H:
-	.byte NULL,>Pattern01,>Pattern02,>Pattern03
+.proc Pattern04
+INVISIBILITY	= 16
+RATE		= %11001111	
+SPEED		= BITS_ANGLE
+COUNT		= 4
+SEPARATION	= 16
+	
+	lda Enemies_clock,x
+	and #RATE
+	bne @return
+		lda Enemies_clock,x
+		bne :+
+			jsr Bullets_aim
+			and #SPEED
+			sec
+			sbc #((SEPARATION /2)+(SEPARATION*(COUNT/4))); 
+			sta p,x
+		:
+		lda p,x
+		sta mathTemp
+		lda #COUNT
+		sta bulletCount
+	@loop:
+		jsr Bullets_get; y() | x
+		
+		lda mathTemp
+		sta Bullets_ID,y
 
+		lda enemyYH,x
+		sta enemyBulletYH,y
+		lda enemyXH,x
+		sta enemyBulletXH,y
+		
+		lda #INVISIBILITY
+		sta isEnemyBulletActive,y
+		
+		clc
+		lda mathTemp
+		adc #SEPARATION
+		sta mathTemp
+
+		dec bulletCount
+		bne @loop
+		
+		clc
+		lda p,x
+		adc #5
+		sta p,x
+
+@return:
+	rts
+
+.endproc
+
+
+Patterns_L:
+	.byte NULL,<Pattern01,<Pattern02,<Pattern03,<Pattern04
+Patterns_H:
+	.byte NULL,>Pattern01,>Pattern02,>Pattern03,>Pattern04

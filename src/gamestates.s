@@ -130,7 +130,7 @@ gamestate00:
 	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00; void() |
-	jsr PPU_dimScreen; see how much frame is left over
+	;jsr PPU_dimScreen; see how much frame is left over
 	
 	rts
 
@@ -350,6 +350,7 @@ gamestate09:; Level - charms spinning
 	jsr PlayerBullets_move;void()
 
 	lda Gamepads_state
+	ldx Gamepads_last
 	jsr PlayerBullets_shoot;(a)
 	
 	;jsr PPU_waitForSprite0Reset;()
@@ -472,6 +473,7 @@ gamestate0C:; a moment of no shooting
 	jsr PlayerBullets_move;void()
 
 	lda Gamepads_state
+	ldx Gamepads_last
 	jsr PlayerBullets_shoot;(a)
 
 	;jsr PPU_waitForSprite0Reset;()
@@ -519,6 +521,7 @@ gamestate0D:; charms spinning, main game loop
 	jsr PlayerBullets_move;void()
 
 	lda Gamepads_state
+	ldx Gamepads_last
 	jsr PlayerBullets_shoot;(a)
 	
 	;jsr PPU_waitForSprite0Reset;()

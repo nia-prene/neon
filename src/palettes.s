@@ -18,21 +18,23 @@ PALETTE01=1; bg lvl 1
 PALETTE02=2; bg lvl 1
 PALETTE03=3; bg lvl 1
 PURPLE_BULLET=5
-PALETTE06=6; blue drone palette
+PALETTE06=6; blue/white fairy
 PALETTE07=7; red mushroom
 PALETTE08=$08;orange piper palette
 PALETTE09=$09;green piper palette palette
 PALETTE0A=$0a;player 1 portrait
+PALETTE0B=$0b; pink baloon cannon
+PALETTE0C=$0C; turquise fairy
 
 romColor1:
-	.byte $07, $17, $3b, $01, $1d, $04, $1d, $05
-	.byte $07, $07, $07
+	.byte $07, $17, $3b, $01, $1d, $04, $02, $05
+	.byte $07, $07, $07, $01, $0C
 romColor2:
-	.byte $25, $2a, $23, $21, $05, $24, $21, $15
-	.byte $26, $29, $15
+	.byte $25, $2a, $23, $21, $05, $24, $36, $15
+	.byte $26, $29, $15, $25, $35
 romColor3:
-	.byte $35, $39, $37, $31, $30, $34, $31, $30
-	.byte $36, $36, $35
+	.byte $35, $39, $37, $31, $30, $34, $30, $30
+	.byte $36, $36, $35, $35, $3B
 
 ;;;;;;;;;;;;;
 ;collections;

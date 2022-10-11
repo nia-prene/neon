@@ -12,18 +12,17 @@
 .include "ppu.h"
 .include "patterns.h"
 
+MAX_ENEMIES = 16
 .zeropage
 totalDamage: .res 1
 
-Enemies_ptr: .res 2
+isEnemyActive: .res MAX_ENEMIES
 
 .data
-MAX_ENEMIES = 16
-isEnemyActive: .res MAX_ENEMIES
-Enemies_ID: .res MAX_ENEMIES
-enemyXH: .res MAX_ENEMIES
-enemyXL: .res MAX_ENEMIES
 enemyYH: .res MAX_ENEMIES
+enemyXH: .res MAX_ENEMIES
+Enemies_ID: .res MAX_ENEMIES
+enemyXL: .res MAX_ENEMIES
 enemyYL: .res MAX_ENEMIES
 enemyHPH: .res MAX_ENEMIES
 enemyHPL: .res MAX_ENEMIES
@@ -31,6 +30,9 @@ enemyMetasprite: .res MAX_ENEMIES
 Enemies_diameter: .res MAX_ENEMIES
 enemyPalette: .res MAX_ENEMIES
 Enemies_pattern:.res MAX_ENEMIES
+Enemies_animation:.res MAX_ENEMIES
+Enemies_animationIndex:.res MAX_ENEMIES
+Enemies_animationTimer:.res MAX_ENEMIES
 Enemies_index:.res MAX_ENEMIES
 Enemies_movement:.res MAX_ENEMIES
 Enemies_vulnerability:.res MAX_ENEMIES
@@ -106,9 +108,7 @@ Enemies_tick:
 	lda isEnemyActive,x;update active enemies
 	beq @nextEnemy
 
-		sec
-		sbc #1
-		sta isEnemyActive,x
+		dec isEnemyActive,x
 		bne @statePersists
 
 			jsr Enemies_tickState		
@@ -131,6 +131,10 @@ Enemies_tick:
 			sta isEnemyActive,x
 			jmp @nextEnemy
 		:
+		dec Enemies_animationTimer,x
+		bne :+
+			jsr Enemies_tickAnimation
+		:
 		jsr Patterns_tick; void(x)
 		inc Enemies_clock,x
 
@@ -143,39 +147,40 @@ Enemies_tick:
 
 Enemies_tickState:
 			
-	ldy Enemies_ID,x; get format string
-	lda Enemies_L,y
-	sta Enemies_ptr+0
+	ldy Enemies_ID,x; get ID
+	
+	lda Enemies_L,y; get state pointer
+	sta Lib_ptr0+0
 	lda Enemies_H,y
-	sta Enemies_ptr+1
+	sta Lib_ptr0+1
 
-	lda Enemies_index,x; retrieve index
-	tay
+	ldy Enemies_index,x; retrieve index
 
-	lda (Enemies_ptr),y; get movement
+	lda (Lib_ptr0),y; get movement
 	bne :+; null terminated
 		iny
-		lda (Enemies_ptr),y; next byte is repeat-at
+		lda (Lib_ptr0),y; next byte is repeat-at
 		tay; new index
-		lda (Enemies_ptr),y; get movement
+		lda (Lib_ptr0),y; get movement
 	:
 	sta Enemies_movement,x
 	iny
 	
-	lda (Enemies_ptr),y; get metasprite
-	sta enemyMetasprite,x
+	lda (Lib_ptr0),y; get animation
+	sta Enemies_animation,x
 	iny
 
-	lda (Enemies_ptr),y; get pattern
+	lda (Lib_ptr0),y; get pattern
 	jsr Patterns_new; void(a) | x,y
 	iny
 
-	lda (Enemies_ptr),y; get vulnerability
+	lda (Lib_ptr0),y; get vulnerability
 	sta Enemies_vulnerability,x
 	iny
 
-	lda (Enemies_ptr),y; get vulnerability
+	lda (Lib_ptr0),y; get state timer
 	sta isEnemyActive,x
+	dec isEnemyActive,x; this frame counts
 	iny
 
 	tya
@@ -183,8 +188,9 @@ Enemies_tickState:
 
 	lda #0
 	sta Enemies_clock,x
+	sta Enemies_animationIndex,x
 
-	rts
+	jmp Enemies_tickAnimation
 
 
 Enemies_move:
@@ -193,11 +199,11 @@ Enemies_move:
 	beq @return
 
 		lda Movement_L,y
-		sta Enemies_ptr+0
+		sta Lib_ptr0+0
 		lda Movement_H,y
-		sta Enemies_ptr+1
+		sta Lib_ptr0+1
 
-		jmp (Enemies_ptr); void Enemies_move  c(x) | x
+		jmp (Lib_ptr0); void Enemies_move  c(x) | x
 
 @return:
 	clc	
@@ -264,6 +270,43 @@ Enemies_isAlive:; c(x) |
 
 	rts; c
 
+
+Enemies_tickAnimation:
+
+	ldy Enemies_animation,x; if animation is null
+	bne :+
+		lda #NULL; Clear Metasprite
+		sta enemyMetasprite,x
+		lda #255; Max out timer
+		sta Enemies_animationTimer,x
+		rts
+	:
+	lda Animations_l,y; get the animation
+	sta Lib_ptr1+0
+	lda Animations_h,y
+	sta Lib_ptr1+1
+
+	ldy Enemies_animationIndex,x; get index into animation
+	lda (Lib_ptr1),y
+	bne :+; Null terminated
+		iny
+		lda (Lib_ptr1),y; loop here
+		tay
+		lda (Lib_ptr1),y; get the metasprite
+	:
+	sta enemyMetasprite,x
+	iny
+
+	lda (Lib_ptr1),y; get frame count for animation
+	sta Enemies_animationTimer,x
+	iny
+	
+	tya
+	sta Enemies_animationIndex,x; save index
+	
+	rts
+
+
 Enemies_transferPoints:	
 
 	;lda Enemies_pointValue_L,x
@@ -277,7 +320,7 @@ Enemies_transferPoints:
 ENEMY01=$01; Reese Boss
 ENEMY02=$02; Blue Drone down light right
 ENEMY03=$03; Mushroom hopper
-ENEMY04=$04
+ENEMY04=$04; Balloon cannon left!
 ENEMY05=$05
 ENEMY06=$06
 ENEMY07=$07
@@ -286,9 +329,9 @@ ENEMY08=$08
 ;first byte is a burner byte so we can use zero flag to denote empty slot
 
 romEnemyHPL: 
-	.byte 	NULL,	$00,	$10,	$18,	$20
+	.byte 	NULL,	$00,	$10,	$18,	$00
 romEnemyHPH:
-	.byte 	NULL,	$00,	$00,	$00,	$00
+	.byte 	NULL,	$00,	$00,	$00,	$01
 pointValue_L:
 	.byte 	NULL,	$19,	$10,	$10,	$30
 pointValue_H:
@@ -303,7 +346,7 @@ INVULNERABLE	= FALSE
 
 Enemy01:
 	.byte MOVEMENT01
-	.byte SPRITE18
+	.byte ANIMATION01
 	.byte PATTERN02
 	.byte VULNERABLE
 	.byte 255; frames
@@ -311,52 +354,78 @@ Enemy01:
 
 Enemy02:
 	.byte MOVEMENT04
-	.byte SPRITE0F; move onscreen
+	.byte ANIMATION01; move onscreen
 	.byte NULL
 	.byte VULNERABLE
 	.byte 32; frames
 
 	.byte MOVEMENT01
-	.byte SPRITE0F; stop and shoot
+	.byte ANIMATION01; stop and shoot
 	.byte PATTERN02
 	.byte VULNERABLE
-	.byte 128; frames
+	.byte 255; frames
 
 	.byte MOVEMENT05
-	.byte SPRITE0F; move off
+	.byte ANIMATION01; move off
 	.byte NULL
 	.byte VULNERABLE
 	.byte 255; frames
 
 Enemy03:
-	.byte MOVEMENT02
-	.byte SPRITE23
+	.byte MOVEMENT02; stand, crouch
+	.byte ANIMATION02
 	.byte NULL
 	.byte VULNERABLE
-	.byte 8
-	.byte MOVEMENT02
-	.byte SPRITE24
-	.byte NULL
-	.byte VULNERABLE
-	.byte 8
-	.byte MOVEMENT06
-	.byte SPRITE25
+	.byte 32
+
+	.byte MOVEMENT06; jump and shoot
+	.byte ANIMATION03
 	.byte PATTERN03
 	.byte VULNERABLE
-	.byte 16
-
+	.byte 32
 	.byte NULL, 00; stop and loop
 
 
+Enemy04:
+	.byte MOVEMENT02
+	.byte ANIMATION04
+	.byte NULL
+	.byte VULNERABLE
+	.byte 64
+	.byte MOVEMENT01
+	.byte ANIMATION04
+	.byte PATTERN04
+	.byte VULNERABLE
+	.byte 128
+	.byte MOVEMENT01
+	.byte ANIMATION04
+	.byte PATTERN04
+	.byte VULNERABLE
+	.byte 128
+	.byte MOVEMENT03
+	.byte ANIMATION04
+	.byte NULL
+	.byte VULNERABLE
+	.byte 255
+
+
+Enemy05:
+	.byte MOVEMENT02
+	.byte ANIMATION01
+	.byte NULL
+	.byte VULNERABLE
+	.byte 255
+
+
 Enemies_L:
-	.byte NULL,<Enemy01,<Enemy02,<Enemy03
+	.byte NULL,<Enemy01,<Enemy02,<Enemy03,<Enemy04
 Enemies_H:
-	.byte NULL,>Enemy01,>Enemy02,>Enemy03
+	.byte NULL,>Enemy01,>Enemy02,>Enemy03,>Enemy04
 
 
 MOVEMENT01=$01; not moving
 MOVEMENT02=$02; gravity
-MOVEMENT03=$03; down to medium right
+MOVEMENT03=$03; ballon drift left
 MOVEMENT04=$04; ease in - down with gravity 32 frames
 MOVEMENT05=$05; ease out - up with gravity 32 frames
 MOVEMENT06=$06; move down linearly (mushroom)
@@ -380,8 +449,7 @@ MOVEMENT06=$06; move down linearly (mushroom)
 .endproc
 
 .proc Movement03; c(x) |
-SPEED_Y=2
-MUTATOR=16
+MUTATOR=1
 	
 	clc
 	lda i,x
@@ -390,17 +458,21 @@ MUTATOR=16
 	lda j,x
 	adc #0
 	sta j,x
-
+	
+	sec
 	lda enemyXL,x
-	adc i,x
+	sbc i,x
 	sta enemyXL,x
 	lda enemyXH,x
-	adc j,x
+	sbc j,x
 	sta enemyXH,x
-	bcs @return
-	
+	bcs :+
+		sec
+		rts; c
+	:
+	clc	
 	lda enemyYH,x
-	adc #SPEED_Y
+	adc Scroll_delta
 	sta enemyYH,x
 @return:
 	rts; c

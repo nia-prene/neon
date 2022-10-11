@@ -4,7 +4,7 @@
 #define FILE_PATH "output.txt"
 #define PI 3.14159265
 #define DIRECTIONS 8
-#define SPEED .5f
+#define SPEED 0.75f
 
 int main(){
 	

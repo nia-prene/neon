@@ -1212,12 +1212,12 @@ PPU_portraitToBuffer:
 ;set up pointer
 	ldy Portraits_current
 	lda Portraits_L,y
-	sta Portraits_pointer
+	sta Lib_ptr0+0
 	lda Portraits_H,y
-	sta Portraits_pointer+1
+	sta Lib_ptr0+0
 	ldy #16-1;16 tiles
 @loop:
-	lda (Portraits_pointer),y
+	lda (Lib_ptr0),y
 	pha
 	dey
 	bpl @loop

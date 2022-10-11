@@ -5,10 +5,10 @@
 .globalzp Enemies_ptr
 
 ; attributes
-.global enemyXH
+.global enemyYL
 .global enemyXL
 .global enemyYH
-.global enemyYL
+.global enemyXH
 .global enemyHPH
 .global enemyHPL
 .global enemyMetasprite
@@ -17,7 +17,7 @@
 .global enemyHitboxY2
 .global enemyWidth
 .global enemyPalette
-.global isEnemyActive
+.globalzp isEnemyActive
 .global Enemies_pattern
 .global Enemies_clock
 

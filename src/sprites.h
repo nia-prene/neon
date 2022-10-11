@@ -47,6 +47,24 @@
 .globalzp SPRITE2e
 .globalzp SPRITE2f
 
+.globalzp ANIMATION01
+.globalzp ANIMATION02
+.globalzp ANIMATION03
+.globalzp ANIMATION04
+.globalzp ANIMATION05
+.globalzp ANIMATION06
+.globalzp ANIMATION07
+.globalzp ANIMATION08
+.globalzp ANIMATION09
+.globalzp ANIMATION0A
+.globalzp ANIMATION0B
+.globalzp ANIMATION0C
+.globalzp ANIMATION0D
+.globalzp ANIMATION0E
+.globalzp ANIMATION0F
+
 ;address table
-.global Sprites_h
 .global Sprites_l
+.global Sprites_h
+.global Animations_l
+.global Animations_h

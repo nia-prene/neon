@@ -3,7 +3,6 @@
 
 .zeropage
 t: .res 1
-Portraits_pointer: .res 2
 Portraits_hasChanged: .res 1
 Portraits_current: .res 1
 

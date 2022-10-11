@@ -26,12 +26,6 @@ Lib_ptr0: .res 2
 Lib_ptr1: .res 2
 Lib_ptr2: .res 2
 
-sprite1LeftOrTop: .res 1
-sprite1RightOrBottom: .res 1
-sprite2LeftOrTop: .res 1
-sprite2RightOrBottom: .res 1
-Lib_errorCode: .res 1
-seed: .res 2
 .segment "HEADER"
 ;contains ines header 
 
@@ -74,55 +68,3 @@ ROUND_128:
 ROUND_256:
 	.byte %10000000
 
-
-checkCollision:
-;checks if two bound boxes intersect
-;returns
-;c - set if true clear if false
-;first we are going to find which sprite is on the left and right
-	lda sprite1LeftOrTop
-	cmp sprite2LeftOrTop
-	bmi @check2
-;if sprite 1 is on the right and sprite 2's right side is greater than sprite 1's left side
-	cmp sprite2RightOrBottom
-	bmi @insideBoundingBox
-@notInBoundingBox:
-	clc
-	rts
-@check2:
-	;if sprite 2 is on the right and sprite 2's left side is less than sprite 1's right side
-	lda sprite2LeftOrTop
-	cmp sprite1RightOrBottom
-	bpl @notInBoundingBox
-@insideBoundingBox:
-	sec
-	rts
-
-Lib_generateSeed:
-	
-	lda seed+0
-	bne :+
-		lda #$AA
-		sta seed+0
-	:lda seed+1
-	bne :+
-		lda #$85
-		sta seed+0
-	:rts
-
-Lib_getRandom:; a()
-
-	ldy #8     ; iteration count
-	lda seed+0
-:
-	asl        ; shift the register
-	rol seed+1
-	bcc :+
-	eor #$39   ; apply XOR feedback whenever a 1 bit is shifted out
-:
-	dey
-	bne :--
-	sta seed+0
-	cmp #0     ; reload flags
-
-	rts

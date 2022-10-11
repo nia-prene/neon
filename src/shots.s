@@ -7,14 +7,15 @@
 .include "apu.h"
 
 
+SHOTS_MAX=14
 .zeropage
 Shots_hold: .res 1
 Shots_remaining: .res 1
 Shots_charge: .res 1
 
-.data
-SHOTS_MAX=14
 Shots_isActive: .res SHOTS_MAX
+
+.data
 bulletX: .res SHOTS_MAX
 bulletY: .res SHOTS_MAX
 bulletSprite: .res SHOTS_MAX
@@ -32,12 +33,14 @@ PlayerBullets_shoot:;void(a)
 
 	and #BUTTON_B
 	beq @notPressingB
+
 		lda #AUTO;shoots for x frames after released
 		sta Shots_remaining
 		txa
 		and #BUTTON_B
 		bne @notPressingB
-			
+			;lda #SFX05
+			;jsr SFX_newEffect
 			jsr Shot03
 			
 @notPressingB:
@@ -46,25 +49,18 @@ PlayerBullets_shoot:;void(a)
 	beq @notFiring
 
 	@shoot:
-		inc Shots_hold
-
-		lda #SFX05;play sound effect
-		;jsr SFX_newEffect
-
 		dec Shots_remaining;
-		bpl :+
-			lda #0;don't let go negative 
-			sta Shots_remaining
-		:
+		
+		inc Shots_hold
 
 		ldy Player_powerLevel; get bullet pattern by pwr lvl
 		
 		lda @shotType_L,y
-		sta Player_ptr+0
+		sta Lib_ptr0+0
 		lda @shotType_H,y
-		sta Player_ptr+1
+		sta Lib_ptr0+1
 
-		jmp (Player_ptr); void()
+		jmp (Lib_ptr0); void()
 
 @notFiring:
 	lda #$FF
@@ -104,7 +100,7 @@ Shots_get:; cy() | x
 
 
 Shots_discharge:; a (a)
-
+	rts
 	and #BUTTON_B
 	beq @notPressingB
 

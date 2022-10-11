@@ -201,7 +201,9 @@ waveStrings_H:
 waveStrings_L:
 	.byte <waveString00
 waveString00:
+
 	.byte WAVE02
+	.byte WAVE03
 	.byte NULL
 ;pointers to individual enemy waves (below)
 
@@ -220,9 +222,9 @@ BOTTOM=%10
 LEFT=%11
 
 Wave_palette00:
-	.byte NULL,PALETTE08,PALETTE06
+	.byte NULL,PALETTE08,PALETTE06,PALETTE0C
 Wave_palette01:
-	.byte NULL,PALETTE09,PALETTE07
+	.byte NULL,PALETTE09,PALETTE07,PALETTE0B
 
 ;individual enemy waves
 ;	.byte enemy, position, hold, etc, NULL
@@ -233,28 +235,26 @@ wave01:
 	.byte NULL
 
 wave02:
-	.byte ENEMY03, TOP|32, 116
-	.byte ENEMY03, TOP|28, 100
-	.byte ENEMY03, TOP|35, 113
-	.byte ENEMY03, TOP|28, 135
-	.byte ENEMY03, TOP|32, 122
-	.byte ENEMY03, TOP|34, 118
-	.byte ENEMY03, TOP|26, 134
-	.byte ENEMY03, TOP|32, 128
-	.byte NULL
-
-	.byte ENEMY02, TOP|23, 44
-	.byte ENEMY02, TOP|25, 36
-	.byte ENEMY02, TOP|20, 40
-	.byte ENEMY02, TOP|26, 44
-	.byte ENEMY02, TOP|21, 36
-	.byte ENEMY02, TOP|24, 48
-	.byte ENEMY02, TOP|20, 36
+	.byte ENEMY02, TOP|16, 128; two fairies
+	.byte ENEMY02, TOP|48, 255
+	
+	.byte ENEMY03, TOP|38, 165
+	.byte ENEMY03, TOP|42, 159
+	.byte ENEMY03, TOP|37, 143
+	.byte ENEMY02, TOP|16, 35
+	.byte ENEMY03, TOP|40, 158
+	.byte ENEMY03, TOP|42, 172
+	.byte ENEMY03, TOP|39, 139
+	.byte ENEMY02, TOP|52, 29
+	.byte ENEMY03, TOP|41, 169
+	.byte ENEMY03, TOP|34, 173
+	.byte ENEMY03, TOP|39, 162
+	.byte ENEMY03, TOP|29, 162
 	.byte NULL
 
 
 wave03:
-	.byte ENEMY02, TOP|10, 16
+	.byte ENEMY04, TOP|10, 16
 	.byte NULL
 
 wave04:

@@ -2,8 +2,8 @@
 #include <math.h>
 #define FRAMES (16-1)
 #define STEPS 1.0/FRAMES
-#define SLOWSPEED .5
-#define FASTSPEED 1.5
+#define SLOWSPEED .75f
+#define FASTSPEED 1.75f
 #define SPEEDDIFF (float)FASTSPEED-SLOWSPEED
 #define ROUND 16
 float easeIn(float x);

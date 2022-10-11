@@ -1,5 +1,8 @@
 .include "apu.h"
+
 .include "lib.h"
+
+.include "shots.h"
 
 CHANNEL_VOL = $4000;Duty / volume for all channels
 CHANNEL_SWEEP = $4001;Sweep control for all channels
@@ -33,7 +36,6 @@ hasHiPeriodChanged:.res 1
 
 MAX_TRACKS=4
 
-APU_ptr:.res 2
 
 
 trackIndex: .res MAX_TRACKS+1
@@ -129,18 +131,18 @@ APU_setSong:;void(x)
 	lda tracks,x
 	tay
 	lda tracks_L,y
-	sta APU_ptr
+	sta Lib_ptr0
 	lda tracks_H,y
-	sta APU_ptr+1
+	sta Lib_ptr0+1
 	ldy #0
-	lda (APU_ptr),y
+	lda (Lib_ptr0),y
 	sta loops,x
 	iny
-	lda (APU_ptr),y;get new instrument
+	lda (Lib_ptr0),y;get new instrument
 	sta instrument,x
 	sta Music_savedInstrument,x
 	iny
-	lda (APU_ptr),y;get new volume
+	lda (Lib_ptr0),y;get new volume
 	sta maxVolume,x
 	sta Music_savedVolume,x
 	iny
@@ -153,11 +155,11 @@ APU_setSong:;void(x)
 	lda tracks,x
 	tay
 	lda tracks_L,y
-	sta APU_ptr
+	sta Lib_ptr0
 	lda tracks_H,y
-	sta APU_ptr+1
+	sta Lib_ptr0+1
 	ldy #0
-	lda (APU_ptr),y
+	lda (Lib_ptr0),y
 	sta loops,x
 	iny
 	sty trackIndex,x
@@ -222,6 +224,7 @@ APU_resumeSFX:
 	sta SFX_isOn
 	rts
 
+
 Song_advance:
 	lda Song_isOn
 	beq @songIsPaused
@@ -232,16 +235,8 @@ Song_advance:
 		dec length,x
 		lda mute,x
 		bne @next
-		lda	#>(@next-1)
-		pha
-		lda	#<(@next-1)
-		pha
-		ldy state,x;attack,decay,sustain
-		lda states_H,y
-		pha
-		lda states_L,y
-		pha
-		rts
+		jsr APU_tickState
+		jmp @next
 @checkRest:
 	lda rest,x
 	beq @newNote
@@ -252,9 +247,14 @@ Song_advance:
 		jmp @next	
 @newNote:
 	jsr getNewNote;(x)
+
+
 @next:
 	dex
 	bpl @squareLoop
+
+
+
 @updateSample:
 	lda rest+4
 	bne @return
@@ -263,6 +263,17 @@ Song_advance:
 	dec rest+4
 @songIsPaused:
 	rts
+
+
+APU_tickState:
+
+	ldy state,x;attack,decay,sustain
+	lda states_L,y
+	sta Lib_ptr0+0
+	lda states_H,y
+	sta Lib_ptr0+1
+	jmp (Lib_ptr0)
+
 
 SFX_advance:
 	lda SFX_isOn
@@ -278,16 +289,8 @@ SFX_advance:
 		lda SFX_length,x;if note is playing
 		beq @checkRest
 			dec SFX_length,x
-			lda	#>(@next-1)
-			pha
-			lda	#<(@next-1)
-			pha
-			ldy state,x;attack,decay,sustain
-			lda states_H,y
-			pha
-			lda states_L,y
-			pha
-			rts
+			jsr APU_tickState
+			jmp @next
 	@checkRest:
 		lda SFX_rest,x
 		beq @newNote
@@ -303,9 +306,9 @@ SFX_advance:
 	rts
 
 states_H:
-	.byte >(Note_attack-1), >(Note_decay-1), >(Note_sustain-1)
+	.byte >(Note_attack), >(Note_decay), >(Note_sustain)
 states_L:
-	.byte <(Note_attack-1), <(Note_decay-1), <(Note_sustain-1)
+	.byte <(Note_attack), <(Note_decay), <(Note_sustain)
 ;offsets each track is for the respective channel
 CHANNEL_OFFSETS:
 	.byte 0, 4, 8, 12
@@ -333,33 +336,36 @@ SFX_newEffect:;(a)
 	pla
 	rts
 
+
 getNewNote:
 	ldy loops,x;get the channel loop
+
 	lda loops_L,y;setup pointer
-	sta APU_ptr
+	sta Lib_ptr0
 	lda loops_H,y
-	sta APU_ptr+1
+	sta Lib_ptr0+1
+	
 	ldy loopIndex,x;get the index
-	lda (APU_ptr),y;get note
+	lda (Lib_ptr0),y;get note
 	bne @loopContinues;loops are null terminated
 		ldy tracks,x
 		lda tracks_L,y
-		sta APU_ptr 
+		sta Lib_ptr0
 		lda tracks_H,y
-		sta APU_ptr+1
+		sta Lib_ptr0+1
 		ldy trackIndex,x;get place in song
-		lda (APU_ptr),y;get new loop
+		lda (Lib_ptr0),y;get new loop
 		bne @trackContinues;tracks are null terminated
 			ldy Music_repeatAt,x
-			lda (APU_ptr),y;get first loop
+			lda (Lib_ptr0),y;get first loop
 	@trackContinues:
 		sta loops,x
 		iny
-		lda (APU_ptr),y;get new instrument
+		lda (Lib_ptr0),y;get new instrument
 		sta instrument,x
 		sta Music_savedInstrument,x
 		iny
-		lda (APU_ptr),y;get new volume
+		lda (Lib_ptr0),y;get new volume
 		sta maxVolume,x
 		sta Music_savedVolume,x
 		iny
@@ -367,19 +373,19 @@ getNewNote:
 	@getFirstNote:
 		ldy loops,x;get the channel loop
 		lda loops_L,y;setup pointer
-		sta APU_ptr
+		sta Lib_ptr0+0
 		lda loops_H,y
-		sta APU_ptr+1
+		sta Lib_ptr0+1
 		ldy #0;start at beginning of loop
-		lda (APU_ptr),y;get note
+		lda (Lib_ptr0),y;get note
 @loopContinues:
 	pha;save note
 	iny
-	lda (APU_ptr),y;get play duration
+	lda (Lib_ptr0),y;get play duration
 	sta length,x
 	dec length,x;this frame counts
 	iny
-	lda (APU_ptr),y;get rest duration
+	lda (Lib_ptr0),y;get rest duration
 	sta rest,x
 	iny
 	sty loopIndex,x;save the index
@@ -434,12 +440,12 @@ SFX_getNewNote:
 	
 	ldy SFX_effect,x;get the channel loop
 	lda SFX_loops_L,y;setup pointer
-	sta APU_ptr
+	sta Lib_ptr0+0
 	lda SFX_loops_H,y
-	sta APU_ptr+1
+	sta Lib_ptr0+1
 
 	ldy SFX_loopIndex,x;get the index
-	lda (APU_ptr),y;get note
+	lda (Lib_ptr0),y;get note
 	bne @loopContinues;loops are null terminated
 
 		ldy SFX_instrument,x;silence channel
@@ -460,12 +466,12 @@ SFX_getNewNote:
 	sta note,x
 
 	iny
-	lda (APU_ptr),y;get play duration
+	lda (Lib_ptr0),y;get play duration
 	sta SFX_length,x
 	dec SFX_length,x;this frame counts
 
 	iny
-	lda (APU_ptr),y;get rest duration
+	lda (Lib_ptr0),y;get rest duration
 	sta SFX_rest,x
 
 	iny
@@ -504,37 +510,37 @@ SFX_getNewNote:
 getNewSample:
 	ldy loops+4;get the channel loop
 	lda loops_L,y;setup pointer
-	sta APU_ptr
+	sta Lib_ptr0+0 
 	lda loops_H,y
-	sta APU_ptr+1
+	sta Lib_ptr0+1
 	ldy loopIndex+4;get the index
-	lda (APU_ptr),y;get note
+	lda (Lib_ptr0),y;get note
 	bne @loopContinues;loops are null terminated
 		ldy tracks+4
 		lda tracks_L,y
-		sta APU_ptr
+		sta Lib_ptr0+0
 		lda tracks_H,y
-		sta APU_ptr+1
+		sta Lib_ptr0+1
 		ldy trackIndex+4;get place in song
-		lda (APU_ptr),y;get new loop
+		lda (Lib_ptr0),y;get new loop
 		bne @trackContinues;tracks are null terminated
 			ldy Music_repeatAt+4
-			lda (APU_ptr),y;get first loop
+			lda (Lib_ptr0),y;get first loop
 	@trackContinues:
 		sta loops+4
 		iny
 		sty trackIndex+4;save place in song
 		ldy loops+4;get the channel loop
 		lda loops_L,y;setup pointer
-		sta APU_ptr
+		sta Lib_ptr0+0 
 		lda loops_H,y
-		sta APU_ptr+1
+		sta Lib_ptr0+1
 		ldy #0;start at beginning of loop
-		lda (APU_ptr),y;get sample
+		lda (Lib_ptr0),y;get sample
 @loopContinues:
 	sta note+4
 	iny
-	lda (APU_ptr),y;get rest duration
+	lda (Lib_ptr0),y;get rest duration
 	sta rest+4
 	dec rest+4;this note counts
 	iny
@@ -1284,14 +1290,14 @@ SFX07=07;bomb crash
 SFX08=08;bomb twinkle
 SFX09=09;charm woosh
 SFX_instrument:
-	.byte NULL,INST06,INST07,INST08,INST08,INST09,INST0A,INST0B
+	.byte NULL,INST06,INST07,INST08,INST08,INST03,INST0A,INST0B
 	.byte INST0C,INST0D
 ;256 is high priority
 SFX_Priority:
 	.byte NULL, 128, 255, 128, 128, 32, 192, 192
 	.byte 192, 192
 SFX_volume:
-	.byte NULL, 12, 08, 7, 7, 11, 15, 15
+	.byte NULL, 12, 08, 7, 7, 15, 15, 15
 	.byte 8, 11
 SFX_targetTrack:
 	.byte NULL, 03, 01, 00, 01, 03, 01, 03
@@ -1312,7 +1318,7 @@ SFX_loop03:
 SFX_loop04:
 	.byte Gb4, 3, 0, A4, 3, 9, Gb5, 6, 12, D5, 6, 18, NULL
 SFX_loop05:
-	.byte N0D, 3, 3, NULL
+	.byte N00, 3, 12,NULL
 SFX_loop06:
 	.byte D3,3,0,D3,13,0,NULL
 SFX_loop07:

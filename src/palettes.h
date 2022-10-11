@@ -10,6 +10,11 @@
 .globalzp PALETTE08
 .globalzp PALETTE09
 .globalzp PALETTE0A
+.globalzp PALETTE0B
+.globalzp PALETTE0C
+.globalzp PALETTE0D
+.globalzp PALETTE0E
+.globalzp PALETTE0F
 
 
 ;palette collection objects
