@@ -49,7 +49,7 @@ Players_init:
 	lda #3
 	sta Player_bombs
 
-	lda #0
+	lda #1
 	sta Player_powerLevel
 
 	lda #00

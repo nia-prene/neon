@@ -321,7 +321,7 @@ ENEMY01=$01; Reese Boss
 ENEMY02=$02; Blue Drone down light right
 ENEMY03=$03; Mushroom hopper
 ENEMY04=$04; Balloon cannon left!
-ENEMY05=$05
+ENEMY05=$05; fairy going left and right
 ENEMY06=$06
 ENEMY07=$07
 ENEMY08=$08
@@ -330,14 +330,19 @@ ENEMY08=$08
 
 romEnemyHPL: 
 	.byte 	NULL,	$00,	$10,	$18,	$00
+	.byte 	$30
 romEnemyHPH:
 	.byte 	NULL,	$00,	$00,	$00,	$01
+	.byte 	$00
 pointValue_L:
 	.byte 	NULL,	$19,	$10,	$10,	$30
+	.byte 	$20
 pointValue_H:
 	.byte 	NULL,	$00,	$00,	$00,	$00
+	.byte 	$00
 diameter:
-	.byte 	NULL,	16,	12,	08,	$10
+	.byte 	NULL,	16,	$10,	08,	$10
+	.byte 	$10
 
 
 SIZE		= 5; bytes
@@ -363,7 +368,7 @@ Enemy02:
 	.byte ANIMATION01; stop and shoot
 	.byte PATTERN02
 	.byte VULNERABLE
-	.byte 255; frames
+	.byte 128; frames
 
 	.byte MOVEMENT05
 	.byte ANIMATION01; move off
@@ -402,6 +407,11 @@ Enemy04:
 	.byte PATTERN04
 	.byte VULNERABLE
 	.byte 128
+	.byte MOVEMENT01
+	.byte ANIMATION04
+	.byte PATTERN04
+	.byte VULNERABLE
+	.byte 128
 	.byte MOVEMENT03
 	.byte ANIMATION04
 	.byte NULL
@@ -410,17 +420,26 @@ Enemy04:
 
 
 Enemy05:
-	.byte MOVEMENT02
-	.byte ANIMATION01
-	.byte NULL
-	.byte VULNERABLE
-	.byte 255
 
+	.byte MOVEMENT07
+	.byte ANIMATION01
+	.byte PATTERN03
+	.byte VULNERABLE
+	.byte 64
+	.byte MOVEMENT08
+	.byte ANIMATION01
+	.byte PATTERN03
+	.byte VULNERABLE
+	.byte 64
+
+	.byte NULL, 0
 
 Enemies_L:
-	.byte NULL,<Enemy01,<Enemy02,<Enemy03,<Enemy04
+	.byte NULL,<Enemy01,<Enemy02,<Enemy03
+	.byte <Enemy04,<Enemy05
 Enemies_H:
-	.byte NULL,>Enemy01,>Enemy02,>Enemy03,>Enemy04
+	.byte NULL,>Enemy01,>Enemy02,>Enemy03
+	.byte >Enemy04,>Enemy05
 
 
 MOVEMENT01=$01; not moving
@@ -428,7 +447,9 @@ MOVEMENT02=$02; gravity
 MOVEMENT03=$03; ballon drift left
 MOVEMENT04=$04; ease in - down with gravity 32 frames
 MOVEMENT05=$05; ease out - up with gravity 32 frames
-MOVEMENT06=$06; move down linearly (mushroom)
+MOVEMENT06=$06; jump down (mushroom)
+MOVEMENT07=$07; glide left (fairy)
+MOVEMENT08=$08; glide right (fairy)
 
 
 ;Enemy stays in place
@@ -545,6 +566,61 @@ SPEED_l=0
 .endproc
 
 
+.proc Movement07
+SPEED=1
+	lda Enemies_clock,x
+	lsr
+	lsr
+	lsr
+	tay
+
+	sec
+	lda enemyXL,x
+	sbc Ease_in_l,y
+	sta enemyXL,x
+
+	lda enemyXH,x
+	sbc Ease_in_h,y
+	sta enemyXH,x
+	
+	clc
+	lda enemyYH,x
+	adc #SPEED
+	sta enemyYH,x
+	
+	rts; c
+
+.endproc
+
+
+.proc Movement08
+SPEED=1
+
+	lda Enemies_clock,x
+	lsr
+	lsr
+	lsr
+	tay
+
+	clc
+	lda enemyXL,x
+	adc Ease_in_l,y
+	sta enemyXL,x
+
+	lda enemyXH,x
+	adc Ease_in_h,y
+	sta enemyXH,x
+	
+	clc
+	lda enemyYH,x
+	adc #SPEED
+	sta enemyYH,x
+	
+	rts; c
+
+.endproc
+
+
 Ease_in_l:
 	.byte 0, 0, 0, 0, 16, 16, 32, 48, 80, 112, 144, 208, 0, 80, 160, 0
 Ease_in_h:
@@ -556,8 +632,10 @@ Ease_out_h:
 	.byte  2,  2,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0
 
 Movement_L:
-	.byte NULL,<Movement01,<Movement02,<Movement03,<Movement04
-	.byte <Movement05,<Movement06
+	.byte 	     NULL,<Movement01,<Movement02,<Movement03
+	.byte <Movement04,<Movement05,<Movement06,<Movement07
+	.byte <Movement08
 Movement_H:
-	.byte NULL,>Movement01,>Movement02,>Movement03,>Movement04
-	.byte >Movement05,>Movement06
+	.byte        NULL,>Movement01,>Movement02,>Movement03
+	.byte >Movement04,>Movement05,>Movement06,>Movement07
+	.byte >Movement08

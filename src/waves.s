@@ -30,12 +30,16 @@ Waves_new:;void(x)
 	tax
 
 	lda waveStrings_L,x
-	sta levelWavePointer
+	sta levelWavePointer+0
 	lda waveStrings_H,x
 	sta levelWavePointer+1
+
 	;start on 0th wave, 0th enemy
 	lda #0
 	sta waveIndex
+
+	lda #1
+	sta Waves_hold
 
 	jmp Waves_next; c()
 
@@ -45,12 +49,8 @@ Waves_dispense:; void()
 	lda Waves_isEmpty
 	bne @return
 
-	clc
-	lda Waves_hold
-	sbc #1
-	bcc @dispenseEnemy
-		
-		sta Waves_hold; return if timer >= 0
+	dec Waves_hold
+	beq @dispenseEnemy
 
 		rts
 
@@ -64,7 +64,8 @@ Waves_dispense:; void()
 		jmp Waves_next; c()
 
 @addAnother:
-
+		
+	ldy enemyIndex; recall index
 	iny
 	sty enemyIndex	
 
@@ -150,6 +151,7 @@ Waves_dispense:; void()
 	sta enemyXH,x
 	jmp @setTime
 
+
 Waves_next:; c()
 ;returns false if no more enemies
 
@@ -183,14 +185,18 @@ Waves_next:; c()
 	
 		lda #0
 		sta enemyIndex
+
+		lda #FALSE
+		sta Waves_isEmpty
+		lda #1
+		sta Waves_hold
 		rts
 
 @noMoreEnemies:
 
 	lda #TRUE
 	sta Waves_isEmpty
-
-	rts
+	rts; a
 
 
 .rodata
@@ -235,26 +241,39 @@ wave01:
 	.byte NULL
 
 wave02:
-	.byte ENEMY02, TOP|16, 128; two fairies
-	.byte ENEMY02, TOP|48, 255
+	.byte ENEMY02, TOP|16, 064; two fairies
+	.byte ENEMY02, TOP|48, 128
 	
-	.byte ENEMY03, TOP|38, 165
-	.byte ENEMY03, TOP|42, 159
-	.byte ENEMY03, TOP|37, 143
-	.byte ENEMY02, TOP|16, 35
-	.byte ENEMY03, TOP|40, 158
-	.byte ENEMY03, TOP|42, 172
-	.byte ENEMY03, TOP|39, 139
-	.byte ENEMY02, TOP|52, 29
-	.byte ENEMY03, TOP|41, 169
-	.byte ENEMY03, TOP|34, 173
-	.byte ENEMY03, TOP|39, 162
-	.byte ENEMY03, TOP|29, 162
+	.byte ENEMY03, TOP|38, 83
+	.byte ENEMY03, TOP|42, 75
+	.byte ENEMY03, TOP|37, 75
+	.byte ENEMY02, TOP|16, 15
+	.byte ENEMY03, TOP|40, 75
+	.byte ENEMY03, TOP|42, 87
+	.byte ENEMY03, TOP|39, 63
+	.byte ENEMY02, TOP|42, 13
+	.byte ENEMY03, TOP|41, 71
+	.byte ENEMY03, TOP|34, 51
+	.byte ENEMY02, TOP|52, 27
+	.byte ENEMY03, TOP|31, 51
+	.byte ENEMY02, TOP|21, 255
 	.byte NULL
 
 
 wave03:
-	.byte ENEMY04, TOP|10, 16
+	.byte ENEMY05, TOP|31, 31
+	.byte ENEMY05, TOP|21, 47
+	.byte ENEMY05, TOP|27, 57
+	.byte ENEMY05, TOP|23, 55
+	.byte ENEMY05, TOP|27, 16
+	.byte ENEMY04, TOP|12, 35
+	.byte ENEMY05, TOP|29, 51
+	.byte ENEMY05, TOP|21, 57
+	.byte ENEMY05, TOP|25, 59
+	.byte ENEMY05, TOP|27, 61
+	.byte ENEMY05, TOP|25, 192
+	.byte ENEMY05, TOP|19, 51
+	.byte ENEMY05, TOP|27, 41
 	.byte NULL
 
 wave04:
