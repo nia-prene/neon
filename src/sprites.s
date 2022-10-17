@@ -105,12 +105,12 @@ Sprite0D:
 	.byte 0, $46, %11000000, 8
 	.byte TERMINATE
 Sprite0E:
-	.lobytes $60, -8, -8, %00000001
-	.lobytes $60, -8,  0, %01000001
+	.lobytes $60, -8, -8, %00000010
+	.lobytes $60, -8,  0, %01000010
 	.byte NULL
 Sprite0F:
-	.lobytes $62, -8, -8, %00000001
-	.lobytes $62, -8,  0, %01000001
+	.lobytes $62, -8, -8, %00000010
+	.lobytes $62, -8,  0, %01000010
 	.byte NULL
 Sprite10:
 	.lobytes $64, -16, -8, %00000010
@@ -197,19 +197,19 @@ Sprite22:
 	.byte 0,$3c,%01000000, 0
 	.byte TERMINATE
 Sprite23:
-	.lobytes $72, -11, -8, %10
-	.lobytes $74, -11,  0, %10
-	.lobytes $76,  -6, -4, %10
+	.lobytes $72, -11, -8, %01
+	.lobytes $74, -11,  0, %01
+	.lobytes $76,  -6, -4, %01
 	.byte NULL
 Sprite24:
-	.lobytes $72, -9, -8, %10
-	.lobytes $74, -9,  0, %10
-	.lobytes $76, -6, -4, %10000010
+	.lobytes $72, -9, -8, %01
+	.lobytes $74, -9,  0, %01
+	.lobytes $76, -6, -4, %10000001
 	.byte NULL
 Sprite25:
-	.lobytes $72, -18, -8, %10
-	.lobytes $74, -18,  0, %10
-	.lobytes $76,  -9, -4, %10
+	.lobytes $72, -18, -8, %01
+	.lobytes $74, -18,  0, %01
+	.lobytes $76,  -9, -4, %01
 	.byte NULL
 Sprite26:
 Sprite27:
@@ -226,6 +226,7 @@ ANIMATION01=$01; Fairy
 ANIMATION02=$02; Mushroom stand crouch
 ANIMATION03=$03; Mushroom jump
 ANIMATION04=$04; balloon cannon
+ANIMATION05=$05; Mushroom standing
 
 Animation01:
 	.byte SPRITE0E, 4, SPRITE0F, 4
@@ -244,6 +245,12 @@ Animation04:
 	.byte SPRITE10, 64, SPRITE11, 64
 	.byte NULL, 0
 
+
+Animation05:
+	.byte SPRITE23, 255
+	.byte NULL, 0
+
+
 ;pointer table
 Sprites_h:
 	.byte NULL, >Sprite01, >Sprite02, >Sprite03, >Sprite04, >Sprite05, >Sprite06, >Sprite07, >Sprite08, >Sprite09, >Sprite0A, >Sprite0B, >Sprite0C, >Sprite0D, >Sprite0E, >Sprite0F
@@ -255,6 +262,8 @@ Sprites_l:
 	.byte <Sprite20, <Sprite21, <Sprite22, <Sprite23, <Sprite24, <Sprite25, <Sprite26, <Sprite27, <Sprite28, <Sprite29, <Sprite2A, <Sprite2B, <Sprite2C, <Sprite2D, <Sprite2E, <Sprite2F
 
 Animations_l:
-	.byte NULL,<Animation01,<Animation02,<Animation03,<Animation04
+	.byte NULL,<Animation01,<Animation02,<Animation03
+	.byte <Animation04,<Animation05
 Animations_h:
-	.byte NULL,>Animation01,>Animation02,>Animation03,>Animation04
+	.byte NULL,>Animation01,>Animation02,>Animation03
+	.byte >Animation04,>Animation05

@@ -45,12 +45,12 @@ GAMESTATE05=$05; ease in textbox, move player/boss to dialogue spt
 GAMESTATE06=$06; fade out screen while scroll
 GAMESTATE07=$07; music test state
 GAMESTATE08=$08; game pause
-GAMESTATE09=$09; Level - charms spinning 
-GAMESTATE0A=$0A; Level - player falling
-GAMESTATE0B=$0B; Level - player recovering
-GAMESTATE0C=$0C; Level - no enemies shooting
-GAMESTATE0D=$0D; Level - Charms sucking
-GAMESTATE0E=$0E; Level - Shots discharging
+GAMESTATE09=$09; charms spinning 
+GAMESTATE0A=$0A; player falling
+GAMESTATE0B=$0B; player recovering
+GAMESTATE0C=$0C; no enemies shooting
+GAMESTATE0D=$0D; Charms sucking
+GAMESTATE0E=$0E; Shots discharging
 
 Gamestates_new:; void(a) |
 	
@@ -81,6 +81,9 @@ Gamestates_tick:
 gamestate00:
 ;the main gameplay loop
 	jsr PPU_updateScroll;void()
+	
+	ldx #0
+	jsr Score_tallyFrame; void(x)
 	jsr Score_clearFrameTally;void()
 	
 	lda Gamepads_state
@@ -118,16 +121,12 @@ gamestate00:
 	jsr Player_isHit
 	bcc @playerUnharmed
 		
-		jsr Player_hit
 		lda #GAMESTATE0A
 		jsr Gamestates_new; void(a)
 
 @playerUnharmed:
 
 	jsr OAM_build00; void()
-	
-	
-	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00; void() |
 	;jsr PPU_dimScreen; see how much frame is left over
@@ -140,6 +139,9 @@ gamestate01:;void(currentPlayer, currentScene)
 	jsr APU_setSong
 	jsr disableRendering; ()
 	
+	ldx #Main_currentPlayer
+	jsr Score_clear; void(x)
+
 	ldx Main_currentPlayer
 	lda @playerPalette,x
 	tax
@@ -191,41 +193,80 @@ gamestate02:
 gamestate03:
 SCORE_OFFSET=7
 ;move player into place, show status, ready? Go!
-	;jsr PPU_waitForSprite0Reset;()
+	lda g; if 0
+	bne :+
+		jsr OAM_initSprite0; turn on sprite 0
+		jmp :++
+	:; else wait
+	jsr PPU_waitForSprite0Reset;()
+	:; endif
 	jsr PPU_updateScroll
+
 	lda #SCORE_OFFSET
 	jsr Sprite0_setDestination;(a)
-	jsr Player_toStartingPos
-	jsr HUD_easeIn;a()
-	jsr Sprite0_setSplit;(a)
 	
+	
+	jsr HUD_easeIn; a()
+	jsr Sprite0_setSplit; void(a)
+	
+	lda g
+	jsr Player_toStartingPos; void(a)
+	
+	lda Gamepads_state
+	jsr Player_setSpeed;(a)
+	lda Gamepads_state
+	jsr Player_move;(a)
+	jsr Hitbox_tick
+
+	jsr PlayerBullets_move;void()
+
+	lda Gamepads_state
+	ldx Gamepads_last
+	jsr PlayerBullets_shoot; void(a,x) |
+	
+	jsr OAM_build00
 	jsr PPU_NMIPlan00
-	;jsr PPU_waitForSprite0Hit
 	clc
 	lda g
-	cmp #64
+	cmp #128
 	bne :+
-		lda #GAMESTATE00 
+		lda #GAMESTATE04 
 		jsr Gamestates_new
 :
+	jsr PPU_waitForSprite0Hit
 	rts
 
 gamestate04:
-;hide HUD and move player into boss dialogue position
+;hide HUD and allow player to move before level todo ready go
 	jsr PPU_updateScroll
-	;jsr PPU_waitForSprite0Reset;()
+	jsr PPU_waitForSprite0Reset;()
+	
 	jsr HUD_easeOut;a()
 	jsr Sprite0_setSplit;(a)
 	
-	;jsr PPU_waitForSprite0Hit
+	lda Gamepads_state
+	jsr Player_setSpeed;(a)
+	lda Gamepads_state
+	jsr Player_move;(a)
+	jsr Hitbox_tick
+
+	jsr PlayerBullets_move;void()
+
+	lda Gamepads_state
+	ldx Gamepads_last
+	jsr PlayerBullets_shoot;(a)
+	
+	jsr OAM_build00
+
 	clc
 	lda g
-	adc #8
-	sta g
-	bne :+
-		lda #GAMESTATE05
+	cmp #64
+	bcc :+
+		lda #GAMESTATE00
 		jsr Gamestates_new
-:	rts
+	:	
+	jsr PPU_waitForSprite0Hit
+	rts
 
 gamestate05:
 TEXTBOX_OFFSET=30
@@ -367,7 +408,7 @@ gamestate09:; Level - charms spinning
 	lda g
 	jsr OAM_build00; (a)
 	
-	jsr PPU_dimScreen
+	;jsr PPU_dimScreen
 	;jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
 
@@ -382,19 +423,32 @@ gamestate09:; Level - charms spinning
 
 
 gamestate0A:; falling off broom
-
-	jsr PPU_updateScroll;void()
+	lda g;if 0
+	bne :+
+		jsr OAM_initSprite0; set up hit
+		jmp :++; endif
+	:; else
+	jsr PPU_waitForSprite0Reset;()
+	:; endif
+	jsr PPU_updateScroll
+	
+	lda #SCORE_OFFSET
+	jsr Sprite0_setDestination;(a)
+	
+	jsr PPU_waitForSprite0Reset;()
+	
+	jsr HUD_easeIn;a()
+	jsr Sprite0_setSplit;(a)
+	
 	jsr Score_clearFrameTally;void()
 	
 	lda Gamepads_state
 	ldx Gamepads_last
 	jsr Gamestates_pause;c(a,x) |
 
-	jsr	Player_fall;void(a,f)
+	jsr Player_fall;void(a,f)
 
 	jsr PlayerBullets_move;void()
-
-	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Bullets_tick
 	jsr Enemies_tick
@@ -405,17 +459,21 @@ gamestate0A:; falling off broom
 
 	jsr OAM_build00; (a)
 
-	;jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
+	
+	lda g
+	cmp #64
+	bne:+
+		jsr Player_hit; detract heart
+	:
 
 	lda g
-	rol
-	rol
-	rol;if frames >= 32
-	bcc @statePersists
+	cmp #128
+	bne :+
 		lda #GAMESTATE0B; load recovery state
 		jsr Gamestates_new
-@statePersists:
+	:
+	jsr PPU_waitForSprite0Hit
 	rts
 
 
@@ -429,15 +487,18 @@ gamestate0B:; recovering from fall
 	jsr Gamestates_pause;c(a,x) |
 	
 	lda g
-	jsr	Player_recover;c(a,f)
-	bcc @stillRecovering
-		lda #GAMESTATE0C
-		jsr Gamestates_new
-@stillRecovering:
+	jsr Player_recover;c(a,f)
+	
+	lda Gamepads_state
+	jsr Player_setSpeed;(a)
+	lda Gamepads_state
+	jsr Player_move;(a)
+	jsr Hitbox_tick
 
 	jsr PlayerBullets_move;void()
-
-	;jsr PPU_waitForSprite0Reset;()
+	lda Gamepads_state
+	ldx Gamepads_last
+	jsr PlayerBullets_shoot; void(a,x) |
 
 	jsr Bullets_tick
 	jsr Enemies_tick
@@ -446,12 +507,21 @@ gamestate0B:; recovering from fall
 	ldx Main_currentPlayer
 	jsr Score_tallyFrame;(x)
 	
+	jsr HUD_easeOut;a()
+	jsr Sprite0_setSplit;(a)
+	
 	jsr OAM_build00;(c,a)
 	
-	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00
-	
+
+	lda g
+	asl
+	bcc :+
+		lda #GAMESTATE00
+		jsr Gamestates_new
+	:
+	jsr PPU_waitForSprite0Hit
 	rts
 
 
@@ -486,7 +556,7 @@ gamestate0C:; a moment of no shooting
 	jsr Score_tallyFrame;(x)
 	
 	jsr OAM_build00;(c,a)
-	jsr PPU_dimScreen
+	;jsr PPU_dimScreen
 
 	;jsr PPU_waitForSprite0Hit
 	
@@ -549,7 +619,7 @@ gamestate0D:; charms spinning, main game loop
 	
 	jsr OAM_build00; (a)
 	
-	jsr PPU_dimScreen
+	;jsr PPU_dimScreen
 	;jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
 
@@ -600,7 +670,7 @@ Gamestate0E:
 	jsr OAM_build00; void()
 	
 	
-	jsr PPU_dimScreen; see how much frame is left over
+	;jsr PPU_dimScreen; see how much frame is left over
 	;jsr PPU_waitForSprite0Hit
 	
 	jsr PPU_NMIPlan00; void() |

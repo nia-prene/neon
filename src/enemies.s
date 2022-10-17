@@ -317,32 +317,32 @@ Enemies_transferPoints:
 	;sta Score_frameTotal_H
 	;bcs @error
 
-ENEMY01=$01; Reese Boss
-ENEMY02=$02; Blue Drone down light right
-ENEMY03=$03; Mushroom hopper
-ENEMY04=$04; Balloon cannon left!
-ENEMY05=$05; fairy going left and right
-ENEMY06=$06
+ENEMY01=$01; reese boss
+ENEMY02=$02; fairy that returns fast
+ENEMY03=$03; mushroom hopper
+ENEMY04=$04; balloon cannon left
+ENEMY05=$05; balloon cannon right
+ENEMY06=$06; fairy that return slow
 ENEMY07=$07
 ENEMY08=$08
 .rodata
 ;first byte is a burner byte so we can use zero flag to denote empty slot
 
 romEnemyHPL: 
-	.byte 	NULL,	$00,	$10,	$18,	$00
-	.byte 	$30
+	.byte 	NULL,	$00,	$30,	$60	
+	.byte 	$00, 	$00,	$10
 romEnemyHPH:
-	.byte 	NULL,	$00,	$00,	$00,	$01
-	.byte 	$00
+	.byte 	NULL,	$01,	$00,	$00
+	.byte	$01,	$01,	$00
 pointValue_L:
-	.byte 	NULL,	$19,	$10,	$10,	$30
-	.byte 	$20
+	.byte 	NULL,	$19,	$10,	$10
+	.byte	$30,	$20,	$10
 pointValue_H:
-	.byte 	NULL,	$00,	$00,	$00,	$00
-	.byte 	$00
+	.byte 	NULL,	$00,	$00,	$00
+	.byte	$00,	$00,	$00
 diameter:
-	.byte 	NULL,	16,	$10,	08,	$10
-	.byte 	$10
+	.byte 	NULL,	$10,	$10,	$10
+	.byte	$10,	$10,	$10
 
 
 SIZE		= 5; bytes
@@ -358,13 +358,13 @@ Enemy01:
 
 
 Enemy02:
-	.byte MOVEMENT04
+	.byte MOVEMENT09
 	.byte ANIMATION01; move onscreen
 	.byte NULL
 	.byte VULNERABLE
 	.byte 32; frames
 
-	.byte MOVEMENT01
+	.byte MOVEMENT02
 	.byte ANIMATION01; stop and shoot
 	.byte PATTERN02
 	.byte VULNERABLE
@@ -377,37 +377,64 @@ Enemy02:
 	.byte 255; frames
 
 Enemy03:
+
+	.byte MOVEMENT06; jump 
+	.byte ANIMATION03
+	.byte NULL
+	.byte VULNERABLE
+	.byte 08
+	
 	.byte MOVEMENT02; stand, crouch
 	.byte ANIMATION02
 	.byte NULL
 	.byte VULNERABLE
 	.byte 32
 
-	.byte MOVEMENT06; jump and shoot
+	.byte MOVEMENT06; jump 
 	.byte ANIMATION03
-	.byte PATTERN03
+	.byte NULL
 	.byte VULNERABLE
 	.byte 32
-	.byte NULL, 00; stop and loop
+
+	.byte MOVEMENT02; stand, shoot
+	.byte ANIMATION05
+	.byte PATTERN03
+	.byte VULNERABLE
+	.byte 255
+	
+	.byte MOVEMENT02; stand, crouch
+	.byte ANIMATION02
+	.byte NULL
+	.byte VULNERABLE
+	.byte 32
+
+	.byte MOVEMENT06; jump 
+	.byte ANIMATION03
+	.byte NULL
+	.byte VULNERABLE
+	.byte 32
+
+	.byte NULL,(SIZE*4); stop and loop
 
 
-Enemy04:
-	.byte MOVEMENT02
+Enemy04:; balloon exit left
+	.byte MOVEMENT02; 	float down
 	.byte ANIMATION04
 	.byte NULL
 	.byte VULNERABLE
 	.byte 64
-	.byte MOVEMENT01
+
+	.byte MOVEMENT02;	float and shoot
 	.byte ANIMATION04
 	.byte PATTERN04
 	.byte VULNERABLE
 	.byte 128
-	.byte MOVEMENT01
+	.byte MOVEMENT02;	float and shoot
 	.byte ANIMATION04
 	.byte PATTERN04
 	.byte VULNERABLE
 	.byte 128
-	.byte MOVEMENT01
+	.byte MOVEMENT02;	float and shoot
 	.byte ANIMATION04
 	.byte PATTERN04
 	.byte VULNERABLE
@@ -419,37 +446,72 @@ Enemy04:
 	.byte 255
 
 
-Enemy05:
-
-	.byte MOVEMENT07
-	.byte ANIMATION01
-	.byte PATTERN03
+Enemy05:; balloon cannon exit right
+	.byte MOVEMENT02; 	float down
+	.byte ANIMATION04
+	.byte NULL
 	.byte VULNERABLE
 	.byte 64
-	.byte MOVEMENT08
-	.byte ANIMATION01
-	.byte PATTERN03
+	.byte MOVEMENT02;	stop and shoot
+	.byte ANIMATION04
+	.byte PATTERN04
 	.byte VULNERABLE
-	.byte 64
+	.byte 128
+	.byte MOVEMENT02;	shoot
+	.byte ANIMATION04
+	.byte PATTERN04
+	.byte VULNERABLE
+	.byte 128
+	.byte MOVEMENT02;	shoot
+	.byte ANIMATION04
+	.byte PATTERN04
+	.byte VULNERABLE
+	.byte 128
+	.byte MOVEMENT07;	exit right
+	.byte ANIMATION04
+	.byte NULL
+	.byte VULNERABLE
+	.byte 255
 
-	.byte NULL, 0
+
+Enemy06:
+
+	.byte MOVEMENT09
+	.byte ANIMATION01; move onscreen
+	.byte NULL
+	.byte VULNERABLE
+	.byte 32; frames
+
+	.byte MOVEMENT02
+	.byte ANIMATION01; stop and shoot
+	.byte PATTERN02
+	.byte VULNERABLE
+	.byte 255; frames
+
+	.byte MOVEMENT05
+	.byte ANIMATION01; move off
+	.byte NULL
+	.byte VULNERABLE
+	.byte 255; frames
+
 
 Enemies_L:
 	.byte NULL,<Enemy01,<Enemy02,<Enemy03
-	.byte <Enemy04,<Enemy05
+	.byte <Enemy04,<Enemy05,<Enemy06
 Enemies_H:
 	.byte NULL,>Enemy01,>Enemy02,>Enemy03
-	.byte >Enemy04,>Enemy05
+	.byte >Enemy04,>Enemy05,>Enemy06
 
 
 MOVEMENT01=$01; not moving
 MOVEMENT02=$02; gravity
-MOVEMENT03=$03; ballon drift left
-MOVEMENT04=$04; ease in - down with gravity 32 frames
+MOVEMENT03=$03; exit left (balloon)
+MOVEMENT04=$04; ease in - down 32 frames
 MOVEMENT05=$05; ease out - up with gravity 32 frames
 MOVEMENT06=$06; jump down (mushroom)
-MOVEMENT07=$07; glide left (fairy)
-MOVEMENT08=$08; glide right (fairy)
+MOVEMENT07=$07; exit right (baloon
+MOVEMENT08=$08; available
+MOVEMENT09=$09; ease in - down 64 frames
 
 
 ;Enemy stays in place
@@ -500,6 +562,7 @@ MUTATOR=1
 	
 
 .endproc
+
 
 .proc Movement04
 	
@@ -567,59 +630,62 @@ SPEED_l=0
 
 
 .proc Movement07
-SPEED=1
-	lda Enemies_clock,x
-	lsr
-	lsr
-	lsr
-	tay
-
-	sec
+MUTATOR=1
+	
+	clc
+	lda i,x
+	adc #MUTATOR
+	sta i,x
+	lda j,x
+	adc #0
+	sta j,x
+	
+	clc
 	lda enemyXL,x
-	sbc Ease_in_l,y
+	adc i,x
 	sta enemyXL,x
 
 	lda enemyXH,x
-	sbc Ease_in_h,y
+	adc j,x
 	sta enemyXH,x
+	bcs @return
 	
-	clc
 	lda enemyYH,x
-	adc #SPEED
+	adc Scroll_delta
 	sta enemyYH,x
-	
+@return:
 	rts; c
+	
 
 .endproc
 
 
 .proc Movement08
-SPEED=1
 
-	lda Enemies_clock,x
-	lsr
-	lsr
-	lsr
-	tay
 
-	clc
-	lda enemyXL,x
-	adc Ease_in_l,y
-	sta enemyXL,x
-
-	lda enemyXH,x
-	adc Ease_in_h,y
-	sta enemyXH,x
-	
-	clc
-	lda enemyYH,x
-	adc #SPEED
-	sta enemyYH,x
-	
-	rts; c
 
 .endproc
 
+
+.proc Movement09
+	lda Enemies_clock,x
+	cmp #%111111
+	bcc :+
+		lda #%11111
+	:
+	lsr
+	lsr
+	tay
+	clc
+	lda enemyYL,x
+	adc Ease_out_l,y
+	sta enemyYL,x
+	lda enemyYH,x
+	adc Ease_out_h,y
+	sta enemyYH,x
+
+	rts; c
+.endproc
 
 Ease_in_l:
 	.byte 0, 0, 0, 0, 16, 16, 32, 48, 80, 112, 144, 208, 0, 80, 160, 0
@@ -634,8 +700,8 @@ Ease_out_h:
 Movement_L:
 	.byte 	     NULL,<Movement01,<Movement02,<Movement03
 	.byte <Movement04,<Movement05,<Movement06,<Movement07
-	.byte <Movement08
+	.byte <Movement08,<Movement09
 Movement_H:
 	.byte        NULL,>Movement01,>Movement02,>Movement03
 	.byte >Movement04,>Movement05,>Movement06,>Movement07
-	.byte >Movement08
+	.byte >Movement08,>Movement09

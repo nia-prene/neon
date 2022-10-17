@@ -21,6 +21,7 @@ Player_current: .res 1
 Player_speedIndex:.res 1
 Player_focused: .res 1
 Player_lastDirection: .res 1
+Player_inPosition: .res 1
 
 Player_powerLevel: .res 1
 Player_hearts: .res 1
@@ -49,7 +50,7 @@ Players_init:
 	lda #3
 	sta Player_bombs
 
-	lda #1
+	lda #0
 	sta Player_powerLevel
 
 	lda #00
@@ -72,22 +73,27 @@ Players_init:
 	rts
 
 
-.proc Player_toStartingPos
-Y_SPEED_H=1
-Y_SPEED_L=128
-MAX_Y=128
-	sec
-	lda Player_yPos_L
-	sbc #Y_SPEED_L
-	sta Player_yPos_L
-	lda Player_yPos_H
-	sbc #Y_SPEED_H
-	cmp #MAX_Y
-	bcs :+
-		lda #MAX_Y
-:
-	sta Player_yPos_H
-;do animations
+.proc Player_toStartingPos; void(a)
+; a - g (gamestate iterator)
+Y_SPEED_H=4
+MAX_Y=128+16
+	bne :+; if g is 0
+		lda #FALSE
+		sta Player_inPosition
+	:
+	lda Player_inPosition
+	bne @return
+
+		sec
+		lda Player_yPos_H
+		sbc #Y_SPEED_H
+		sta Player_yPos_H
+		cmp #MAX_Y
+		bcs :+
+			lda #TRUE
+			sta Player_inPosition
+		:
+@return:
 	rts
 .endproc
 
@@ -140,13 +146,11 @@ Player_move:; void(a)
 	lda #SPRITE01; neutral sprite default
 	sta Player_sprite
 	
-	lda @valid,x; test if valid direction
-	beq @return
-		
+		lda @move_h,x
+		beq @return; return on null pointer
+		sta Lib_ptr0+1
 		lda @move_l,x
 		sta Lib_ptr0+0
-		lda @move_h,x
-		sta Lib_ptr0+1
 		jmp (Lib_ptr0)
 
 @return:
@@ -156,7 +160,6 @@ Player_move:; void(a)
 ; down, down-right, down-left, down-right-left
 ; up, up-right, up-left, up-right-left
 ; up-down, up-down-right, up-down-left, up-down-right-left
-@valid:
 	.byte FALSE,TRUE,TRUE,FALSE
 	.byte TRUE,TRUE,TRUE,FALSE
 	.byte TRUE,TRUE,TRUE,FALSE
@@ -428,11 +431,11 @@ Player_move:; void(a)
 	;.byte 128, 192, 240, 32, 64, 96, 128, 144
 	;.byte 160, 176, 176, 192, 192, 192, 192, 192
 	;2 - .5	
-	;.byte 128, 192, 0, 64, 112, 144, 176, 192
-	;.byte 224, 224, 240, 0, 0, 0, 0, 0
+	.byte 128, 192, 0, 64, 112, 144, 176, 192
+	.byte 224, 224, 240, 0, 0, 0, 0, 0
 	;1.5 - .5
-	.byte 128, 176, 224, 0, 32, 48, 80, 96
-	.byte 96, 112, 112, 128, 128, 128, 128, 128
+	;.byte 128, 176, 224, 0, 32, 48, 80, 96
+	;.byte 96, 112, 112, 128, 128, 128, 128, 128
 
 @cardinal_h:
 	;1.75 - .75
@@ -442,11 +445,11 @@ Player_move:; void(a)
 	;.byte  0,  0,  0,  1,  1,  1,  1,  1
 	;.byte  1,  1,  1,  1,  1,  1,  1,  1
 	;2 - .5	
-	;.byte  0,  0,  1,  1,  1,  1,  1,  1
-	;.byte  1,  1,  1,  2,  2,  2,  2,  2
+	.byte  0,  0,  1,  1,  1,  1,  1,  1
+	.byte  1,  1,  1,  2,  2,  2,  2,  2
 	;1.5 - .5
-	.byte  0,  0,  0,  1,  1,  1,  1,  1
-	.byte  1,  1,  1,  1,  1,  1,  1,  1
+	;.byte  0,  0,  0,  1,  1,  1,  1,  1
+	;.byte  1,  1,  1,  1,  1,  1,  1,  1
 
 @ordinal_l:
 	;1.75 - .75
@@ -456,11 +459,11 @@ Player_move:; void(a)
 	;.byte 96, 128, 176, 208, 224, 0, 16, 32
 	;.byte 48, 48, 48, 64, 64, 64, 64, 64 
 	;2.0 - .5	
-	;.byte 96, 144, 192, 224, 0, 32, 48, 64
-	;.byte 80, 96, 96, 112, 112, 112, 112, 112
+	.byte 96, 144, 192, 224, 0, 32, 48, 64
+	.byte 80, 96, 96, 112, 112, 112, 112, 112
 	;1.5 - .5	
-	.byte 96, 128, 144, 176, 192, 208, 224,224
-	.byte 240, 240, 0, 0, 0, 0, 0, 0
+	;.byte 96, 128, 144, 176, 192, 208, 224,224
+	;.byte 240, 240, 0, 0, 0, 0, 0, 0
 
 @ordinal_h:
 	;1.75 - .75
@@ -470,11 +473,11 @@ Player_move:; void(a)
 	;.byte 0,  0,  0,  0,  0,  1,  1,  1
 	;.byte 1,  1,  1,  1,  1,  1,  1,  1
 	;2 - .5
-	;.byte  0,  0,  0,  0,  1,  1,  1,  1
-	;.byte  1,  1,  1,  1,  1,  1,  1,  1
+	.byte  0,  0,  0,  0,  1,  1,  1,  1
+	.byte  1,  1,  1,  1,  1,  1,  1,  1
 	;1.50 - .5
-	.byte  0,  0,  0,  0,  0,  0,  0,  0
-	.byte  0,  0,  1,  1,  1,  1,  1,  1
+	;.byte  0,  0,  0,  0,  0,  0,  0,  0
+	;.byte  0,  0,  1,  1,  1,  1,  1,  1
 	
 
 HITBOX01=1
@@ -660,6 +663,9 @@ Player_hit:
 	lda #SFX02
 	jsr SFX_newEffect
 	
+	lda #00
+	sta Shots_remaining
+
 	lda #TRUE
 	sta Player_haveHeartsChanged
 	rts
@@ -679,30 +685,34 @@ FALL_SPEED=1
 	rts
 	
 	
-Player_recover:;void(f)
-RECOVER_Y=128
+Player_recover:; void(a)
+; a - g (gamestate counter)
+RECOVER_Y=128+16; push player to this y
 RECOVER_SPEED=5
 
-	bne @notFirstTime
+	bne :+; on 0th frame
 		lda #255
 		sta Player_yPos_H; move player to bottom
-@notFirstTime:
-	
-	clc
-	lda Player_yPos_H	
-	sbc #RECOVER_SPEED
-	
-	cmp #RECOVER_Y
-	bcs :+; if y > 255
-		lda #RECOVER_Y
-		sta Player_yPos_H
-		
-		sec; return true
-		rts
+		lda #FALSE
+		sta Player_inPosition
+	:
 
-	:sta Player_yPos_H
-	
-	clc; mark false
+	lda Player_inPosition
+	bne @return
+
+		clc
+		lda Player_yPos_H	
+		sbc #RECOVER_SPEED
+		cmp #RECOVER_Y
+		bcs :+; if y > recovery minimum
+		
+			lda #TRUE
+			sta Player_inPosition
+			rts
+
+
+		:sta Player_yPos_H
+@return:
 	rts
 
 

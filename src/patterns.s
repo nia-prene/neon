@@ -183,18 +183,9 @@ SEPARATION	= 16
 		lda #COUNT
 		sta bulletCount
 	@loop:
-		jsr Bullets_get; y() | x
 		
 		lda mathTemp
-		sta Bullets_ID,y
-
-		lda enemyYH,x
-		sta enemyBulletYH,y
-		lda enemyXH,x
-		sta enemyBulletXH,y
-		
-		lda #INVISIBILITY
-		sta isEnemyBulletActive,y
+		jsr Bullets_new; c(x) | x
 		
 		clc
 		lda mathTemp

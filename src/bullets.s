@@ -37,7 +37,7 @@ enemyBulletYL: .res MAX_ENEMY_BULLETS
 
 Bullets_init:
 	
-Bullets_new:; c(x,y) | x
+Bullets_new:; c(x) | x
 	
 	pha; save ID
 	jsr Bullets_get;c,y(void) | x

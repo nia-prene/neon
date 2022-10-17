@@ -21,6 +21,7 @@ mathTemp: .res 2
 
 yReg:.res 1
 xReg:.res 1
+regA:.res 1
 
 Lib_ptr0: .res 2
 Lib_ptr1: .res 2

@@ -849,7 +849,7 @@ PPU_renderScreen:
 PPU_resetScroll:
 	lda #0
 	sta PPU_scrollSpeed_h
-	lda #128
+	lda #64
 	sta PPU_scrollSpeed_l
 
 	lda #00

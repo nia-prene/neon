@@ -27,6 +27,8 @@ bulletShuffle: .res 1
 enemyShuffle: .res 1
 
 .segment "DATA"
+
+Sprite0_enabled:.res 1
 Sprite0_destination: .res 1
 
 .segment "OAM"
@@ -39,7 +41,7 @@ OFFSET_X=3
 .code
 .proc OAM_initSprite0
 SPRITE_Y=238
-SPRITE_TILE=$20
+SPRITE_TILE=$00
 SPRITE_ATTRIBUTE=%01100000;flip and place behind
 SPRITE_X=112
 	lda #SPRITE_Y
@@ -50,6 +52,8 @@ SPRITE_X=112
 	sta OAM+2
 	lda #SPRITE_X
 	sta OAM+3
+	lda #TRUE
+	sta Sprite0_enabled
 	rts
 .endproc
 
@@ -67,23 +71,23 @@ OAM_build00:;c()
 ;a - gamepad
 ;returns carry clear if oam overflow
 	
-	lda #0;skip sprite 0
+	lda Sprite0_enabled
+	beq :+
+		lda #4
+	:
 	sta OAM_index
-	
 
 
 	lda Hitbox_sprite;see if hitbox renders first
-	beq @buildWithoutHitbox
-
+	beq :+
 		jsr buildHitbox
-
-@buildWithoutHitbox:
-	
+	:
 	jsr OAM_buildBullets
 
 	jsr OAM_buildPlayer
 
 	jsr buildEnemies
+	bcs @oamFull
 	
 	jsr buildPlayerBullets
 	bcs @oamFull
@@ -304,7 +308,7 @@ LIMIT = 8
 
 		ldx enemyMetasprite,y
 		jsr OAM_build; void(x)
-		
+		bcs @oamFull
 		ldy yReg
 
 @skipEnemy:
@@ -333,6 +337,7 @@ LIMIT = 8
 
 		ldx enemyMetasprite,y
 		jsr OAM_build; void(x)
+		bcs @oamFull
 		
 		ldy yReg
 
@@ -342,8 +347,10 @@ LIMIT = 8
 	cpy enemyShuffle
 	bne @secondPass
 
-@full:
-	rts
+@full:	
+	clc
+@oamFull:
+	rts; c
 
 .endproc
 
