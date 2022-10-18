@@ -1,14 +1,15 @@
-.include "lib.h"
-
 .include "oam.h"
 
-.include "sprites.h"
-.include "score.h"
-.include "player.h"
-.include "shots.h"
-.include "enemies.h"
-.include "bullets.h"
+.include "lib.h"
+
 .include "bombs.h"
+.include "bullets.h"
+.include "enemies.h"
+.include "effects.h"
+.include "player.h"
+.include "score.h"
+.include "shots.h"
+.include "sprites.h"
 
 OAM_LOCATION = 02 ;located at $0200, expects hibyte
 OAMADDR = $2003;(aaaa aaaa) OAM read/write address
@@ -16,15 +17,19 @@ OAMDATA = $2004;(dddd dddd)	OAM data read/write
 OAMDMA = $4014;(aaaa aaaa)OAM DMA high address
 MAX_OVERFLOW_FRAMES=8;
 .zeropage
-OAM_index:.res 1
 
-buildX: .res 1
-buildY: .res 1
-buildPalette: .res 1
-spritePointer: .res 2
-limit: .res 1
-bulletShuffle: .res 1
-enemyShuffle: .res 1
+OAM_index:		.res 1
+
+buildX: 		.res 1
+buildY: 		.res 1
+buildPalette: 		.res 1
+spritePointer: 		.res 2
+limit: 			.res 1
+
+bulletShuffle: 		.res 1
+enemyShuffle:		.res 1
+effectsShuffle:		.res 1
+
 
 .segment "DATA"
 
@@ -85,6 +90,8 @@ OAM_build00:;c()
 	jsr OAM_buildBullets
 
 	jsr OAM_buildPlayer
+	
+	jsr OAM_buildEffects
 
 	jsr buildEnemies
 	bcs @oamFull
@@ -107,7 +114,7 @@ buildHitbox:;x(x,a)
 	lda Player_xPos_H
 	sta buildX
 
-	ldx Hitbox_sprite
+	lda Hitbox_sprite
 
 	jmp OAM_build; void(a)
 
@@ -236,8 +243,91 @@ OAM_buildPlayer:; void()
 	lda #0
 	sta buildPalette
 
-	ldx Player_sprite
+	lda Player_sprite
 	jmp OAM_build; void(x) |
+
+
+.proc OAM_buildEffects;		c() | 
+	
+	clc
+	lda effectsShuffle;		each pass shuffle through collection
+	adc #((EFFECTS_MAX/7)*3) | %1;	make this odd
+	cmp #EFFECTS_MAX-3;		make sure no overflow
+	bcc :+
+		sbc #(EFFECTS_MAX-3) & %11111110;		divide even
+		cmp #EFFECTS_MAX-3;	check within range	
+		bcc :+;			if not within range
+			sbc #(EFFECTS_MAX-3) & %11111110;	divide
+	:;				endif
+	sta effectsShuffle;		save new iterator
+	tax
+	jsr firstPass;			void(x)
+	lda effectsShuffle;		get iterator
+	and #%1;			see if odd
+	ora #EFFECTS_MAX-2;		get the end of collection
+	tax;				second loop
+	jsr secondPass;		void(x)
+	rts
+
+
+firstPass:;					for each effect in effects
+	
+	lda Effects_active,x;		if active
+	beq @next;			else next
+
+		lda #00;		zero out palette
+		sta buildPalette	
+
+		lda Effects_yPos,x;	copy y coordinate
+		sta buildY
+		lda Effects_xPos,x;	copy x coordinate
+		sta buildX
+		lda Effects_sprite,x;	get the sprite
+		stx xReg;		save x register
+		jsr OAM_build;		c(a) |
+		bcs @full;		return full
+		ldx xReg;		restore x register
+
+@next:
+	dex;			next item
+	dex;			next item
+
+	bpl firstPass;		while items in collection
+	sec;			return no overflow
+@full:
+	rts;			return c
+
+
+secondPass:;		void(x)
+; x - iterator	
+	
+	lda Effects_active,x;		if active
+	beq @next;			else next
+
+		lda #00;		zero out palette
+		sta buildPalette	
+
+		lda Effects_yPos,x;	copy y coordinate
+		sta buildY
+		lda Effects_xPos,x;	copy x coordinate
+		sta buildX
+		lda Effects_sprite,x;	get the sprite
+		stx xReg;		save x register
+		jsr OAM_build;		c(a) |
+		bcs @full;		return full
+		ldx xReg;		restore x register
+
+@next:
+	dex;			next item
+	dex;			next item
+
+	cpx effectsShuffle;	while items after first pass
+	bne secondPass
+	sec;			return no overflow
+@full:
+	rts;			return c
+
+.endproc
 
 
 buildPlayerBullets:
@@ -255,10 +345,10 @@ buildPlayerBullets:
 		sta buildY
 		lda bulletX,y
 		sta buildX
-		ldx bulletSprite,y
+		lda bulletSprite,y
 
 		sty yReg
-		jsr OAM_build; void(x)
+		jsr OAM_build; void(a)
 		bcs @full
 		ldy yReg
 
@@ -306,8 +396,8 @@ LIMIT = 8
 		
 		sty yReg
 
-		ldx enemyMetasprite,y
-		jsr OAM_build; void(x)
+		lda enemyMetasprite,y
+		jsr OAM_build; void(a)
 		bcs @oamFull
 		ldy yReg
 
@@ -335,8 +425,8 @@ LIMIT = 8
 		
 		sty yReg
 
-		ldx enemyMetasprite,y
-		jsr OAM_build; void(x)
+		lda enemyMetasprite,y
+		jsr OAM_build; void(a)
 		bcs @oamFull
 		
 		ldy yReg
@@ -371,8 +461,10 @@ YPOS=64
 .endproc
 
 .align 128
-OAM_build:;void (x) 
-;a - metasprite to build
+OAM_build:;	void (a)  | 
+; a - metasprite to build
+	
+	tax
 
 	lda Sprites_l,x
 	sta spritePointer
@@ -444,7 +536,7 @@ OAM_clearRemaining:
 ;arguments
 ;x-starting point to clear
 	
-
+	ldx OAM_index
 	lda #$FF; clear y with FF
 
 @clearOAM:

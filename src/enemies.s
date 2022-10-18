@@ -2,15 +2,16 @@
 
 .include "lib.h"
 
-.include "player.h"
-.include "sprites.h"
-.include "shots.h"
-.include "bullets.h"
-.include "pickups.h"
-.include "score.h"
 .include "apu.h"
-.include "ppu.h"
+.include "bullets.h"
+.include "effects.h"
 .include "patterns.h"
+.include "pickups.h"
+.include "player.h"
+.include "ppu.h"
+.include "score.h"
+.include "shots.h"
+.include "sprites.h"
 
 MAX_ENEMIES = 16
 .zeropage
@@ -19,24 +20,26 @@ totalDamage: .res 1
 isEnemyActive: .res MAX_ENEMIES
 
 .data
-enemyYH: .res MAX_ENEMIES
-enemyXH: .res MAX_ENEMIES
-Enemies_ID: .res MAX_ENEMIES
-enemyXL: .res MAX_ENEMIES
-enemyYL: .res MAX_ENEMIES
-enemyHPH: .res MAX_ENEMIES
-enemyHPL: .res MAX_ENEMIES
-enemyMetasprite: .res MAX_ENEMIES
-Enemies_diameter: .res MAX_ENEMIES
-enemyPalette: .res MAX_ENEMIES
-Enemies_pattern:.res MAX_ENEMIES
-Enemies_animation:.res MAX_ENEMIES
-Enemies_animationIndex:.res MAX_ENEMIES
-Enemies_animationTimer:.res MAX_ENEMIES
-Enemies_index:.res MAX_ENEMIES
-Enemies_movement:.res MAX_ENEMIES
-Enemies_vulnerability:.res MAX_ENEMIES
-Enemies_clock:.res MAX_ENEMIES
+enemyYH:			.res MAX_ENEMIES
+enemyXH: 			.res MAX_ENEMIES
+Enemies_ID: 			.res MAX_ENEMIES
+enemyXL: 			.res MAX_ENEMIES
+enemyYL: 			.res MAX_ENEMIES
+enemyHPH: 			.res MAX_ENEMIES
+enemyHPL: 			.res MAX_ENEMIES
+enemyMetasprite: 		.res MAX_ENEMIES
+Enemies_diameter: 		.res MAX_ENEMIES
+enemyPalette: 			.res MAX_ENEMIES
+Enemies_pattern:		.res MAX_ENEMIES
+Enemies_animation:		.res MAX_ENEMIES
+Enemies_animationIndex:		.res MAX_ENEMIES
+Enemies_animationTimer:		.res MAX_ENEMIES
+Enemies_index:			.res MAX_ENEMIES
+Enemies_movement:		.res MAX_ENEMIES
+Enemies_vulnerability:		.res MAX_ENEMIES
+Enemies_clock:			.res MAX_ENEMIES
+Enemies_fuse:			.res MAX_ENEMIES
+
 
 i:.res MAX_ENEMIES
 j:.res MAX_ENEMIES
@@ -66,6 +69,7 @@ Enemies_new:; void(a)
 		lda #00
 		sta Enemies_index,x
 		sta Enemies_clock,x
+		sta Enemies_fuse,x
 		sta i,x
 		sta j,x
 
@@ -108,37 +112,47 @@ Enemies_tick:
 	lda isEnemyActive,x;update active enemies
 	beq @nextEnemy
 
-		dec isEnemyActive,x
-		bne @statePersists
+		dec isEnemyActive,x;	tick down state timer
+		bne @statePersists;	if timer is 0
 
-			jsr Enemies_tickState		
+			jsr Enemies_tickState;	next state
 
 	@statePersists:
-
+		
+		lda Enemies_fuse,x;	if enemy has fuse
+		beq :+;			endif
+			dec Enemies_fuse,x;	tick down fuse
+			bne @nextEnemy;		if 0 else next
+				lda #FALSE;		clear
+				sta isEnemyActive,x
+				jmp @nextEnemy;		next enemy
+					
+		:
 		jsr Enemies_move; void(x) |  if cleared
 		bcc :+
 			lda #FALSE; remove from collection
 			sta isEnemyActive,x
 			jmp @nextEnemy
 		:
-
-		lda Enemies_vulnerability,x; if vulnerable
-		beq :+
-		jsr Enemies_isAlive; a(x) |  and defeated
-		bcs :+
-
-			lda #FALSE; remove from collection
-			sta isEnemyActive,x
-			jmp @nextEnemy
-		:
-		dec Enemies_animationTimer,x
+		lda Enemies_animationTimer,x
 		bne :+
 			jsr Enemies_tickAnimation
 		:
-		jsr Patterns_tick; void(x)
-		inc Enemies_clock,x
+		dec Enemies_animationTimer,x;	tick timer down
 
+		lda Enemies_vulnerability,x; 	if vulnerable
+		beq :+
+		jsr Enemies_isAlive; 		a(x) |  and defeated
+		bcs :+
+
+			jsr Enemies_defeat;	void(x) | 
+			jmp @nextEnemy;		next in collection
+		:
+		jsr Patterns_tick; void(x)
 @nextEnemy:
+
+	inc Enemies_clock,x
+	
 	dex
 	bpl @loop; while x
 	
@@ -189,8 +203,9 @@ Enemies_tickState:
 	lda #0
 	sta Enemies_clock,x
 	sta Enemies_animationIndex,x
+	sta Enemies_animationTimer,x
 
-	jmp Enemies_tickAnimation
+	rts
 
 
 Enemies_move:
@@ -271,7 +286,47 @@ Enemies_isAlive:; c(x) |
 	rts; c
 
 
-Enemies_tickAnimation:
+Enemies_defeat:;		void(x) | x
+FUSE 	= 16
+	
+	
+	lda #FUSE;		get fuse
+	sta Enemies_fuse,x;	give enemy fuse
+	
+	lda #00;		clear out the palette
+	sta enemyPalette,x
+	
+	ldy Enemies_ID,x;	get ID
+	lda Defeat,y;		get the defeat object
+	jmp Enemies_newEffect;	void(a) | x
+
+
+Enemies_newEffect:;		void(a) | x
+; a - animation
+
+	pha;			save effect
+	jsr Effects_get; 	get an available effect c,y() | x
+	pla;			retrieve effect
+	bcc @return;		no open effect
+
+		sta Effects_animation,y;	effect is animation
+
+		lda enemyYH,x;			copy x from enemy
+		sta Effects_yPos,y
+		lda enemyXH,x;			copy y from enemy
+		sta Effects_xPos,y
+
+		lda #0;				zero out animation frame
+		sta Effects_frame,y
+
+		lda #TRUE;			set as active
+		sta Effects_active,y
+
+@return:
+	rts
+
+
+Enemies_tickAnimation:; void(x) | x
 
 	ldy Enemies_animation,x; if animation is null
 	bne :+
@@ -325,24 +380,45 @@ ENEMY05=$05; balloon cannon right
 ENEMY06=$06; fairy that return slow
 ENEMY07=$07
 ENEMY08=$08
-.rodata
-;first byte is a burner byte so we can use zero flag to denote empty slot
 
-romEnemyHPL: 
+
+.rodata
+
+
+romEnemyHPL:;	total hit points until defeat
 	.byte 	NULL,	$00,	$30,	$60	
 	.byte 	$00, 	$00,	$10
 romEnemyHPH:
 	.byte 	NULL,	$01,	$00,	$00
 	.byte	$01,	$01,	$00
-pointValue_L:
+pointValue_L:;	points gained on defeat
 	.byte 	NULL,	$19,	$10,	$10
 	.byte	$30,	$20,	$10
 pointValue_H:
 	.byte 	NULL,	$00,	$00,	$00
 	.byte	$00,	$00,	$00
-diameter:
+
+diameter:;	hitbox diameter
 	.byte 	NULL,	$10,	$10,	$10
 	.byte	$10,	$10,	$10
+
+
+.proc Defeat
+ENEMY 	= %10000000
+EFFECT 	= %00000000
+	.byte 	NULL
+	.byte	EFFECT|ANIMATION06
+	.byte	EFFECT|ANIMATION06
+	.byte	EFFECT|ANIMATION06
+	.byte	EFFECT|ANIMATION06
+	.byte	EFFECT|ANIMATION06
+	.byte	EFFECT|ANIMATION06
+	.byte	EFFECT|ANIMATION06
+
+	.byte	EFFECT|ANIMATION01
+	.byte	EFFECT|ANIMATION01
+	.byte	EFFECT|ANIMATION01
+.endProc
 
 
 SIZE		= 5; bytes
@@ -705,3 +781,5 @@ Movement_H:
 	.byte        NULL,>Movement01,>Movement02,>Movement03
 	.byte >Movement04,>Movement05,>Movement06,>Movement07
 	.byte >Movement08,>Movement09
+
+

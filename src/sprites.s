@@ -12,10 +12,10 @@ SPRITE06=6
 SPRITE07=7
 SPRITE08=8; Shot small star bullet
 SPRITE09=9; Shot beam bullet
-SPRITE0A=$0a;small explosion frame 0
-SPRITE0B=$0b;small explosion frame 1
-SPRITE0C=$0c;small explosion frame 2
-SPRITE0D=$0d;small explosion frame 3
+SPRITE0A=$0a;	small explosion frame 0
+SPRITE0B=$0b;	small explosion frame 1
+SPRITE0C=$0c;	small explosion frame 2
+SPRITE0D=$0d;	small explosion frame 3
 SPRITE0E=$0e; fairy frame 0
 SPRITE0F=$0f; fairy frame 1 
 SPRITE10=$10; balloon cannon frame 0 palette 2
@@ -88,22 +88,22 @@ Sprite08:
 Sprite09:
 	.lobytes $28, -8, -4, %0
 	.byte NULL
-Sprite0A:
-	.byte 0, $40, %0, 0
-	.byte 0, $40, %01000000, 8
-	.byte TERMINATE
-Sprite0B:
-	.byte 0, $42, %0, 0
-	.byte 0, $42, %01000000, 8
-	.byte TERMINATE
-Sprite0C:
-	.byte 0, $44, %0, 0
-	.byte 0, $44, %11000000, 8
-	.byte TERMINATE
-Sprite0D:
-	.byte 0, $46, %0, 0
-	.byte 0, $46, %11000000, 8
-	.byte TERMINATE
+Sprite0A:;		explosion frame 1
+	.lobytes	$40,	-8,	-8,	%0
+	.lobytes	$40,	-8,	 0,	%11000000
+	.byte		NULL
+Sprite0B:;		explosion frame 2
+	.lobytes	$42,	-8,	-8,	%0
+	.lobytes	$42,	-8,	 0,	%11000000
+	.byte		NULL
+Sprite0C:;		explosion frame 3
+	.lobytes	$44,	-8,	-8,	%0
+	.lobytes	$44,	-8,	 0,	%11000000
+	.byte		NULL
+Sprite0D:;		explosion frame 4
+	.lobytes	$46,	-8,	-8,	%0
+	.lobytes	$46,	-8,	 0,	%11000000
+	.byte		NULL
 Sprite0E:
 	.lobytes $60, -8, -8, %00000010
 	.lobytes $60, -8,  0, %01000010
@@ -222,12 +222,12 @@ Sprite2D:
 Sprite2E:
 Sprite2F:
 
-ANIMATION01=$01; Fairy
-ANIMATION02=$02; Mushroom stand crouch
-ANIMATION03=$03; Mushroom jump
-ANIMATION04=$04; balloon cannon
-ANIMATION05=$05; Mushroom standing
-
+ANIMATION01	= $01; 	Fairy
+ANIMATION02	= $02; 	Mushroom stand crouch
+ANIMATION03	= $03; 	Mushroom jump
+ANIMATION04	= $04; 	balloon cannon
+ANIMATION05	= $05; 	Mushroom standing
+ANIMATION06	= $06;	enemy clear
 Animation01:
 	.byte SPRITE0E, 4, SPRITE0F, 4
 	.byte NULL, 0
@@ -251,6 +251,9 @@ Animation05:
 	.byte NULL, 0
 
 
+Animation06:
+	.byte SPRITE0A, 16, SPRITE0B, 16, SPRITE0C, 16, SPRITE0D, 16
+	.byte NULL
 ;pointer table
 Sprites_h:
 	.byte NULL, >Sprite01, >Sprite02, >Sprite03, >Sprite04, >Sprite05, >Sprite06, >Sprite07, >Sprite08, >Sprite09, >Sprite0A, >Sprite0B, >Sprite0C, >Sprite0D, >Sprite0E, >Sprite0F
@@ -263,7 +266,7 @@ Sprites_l:
 
 Animations_l:
 	.byte NULL,<Animation01,<Animation02,<Animation03
-	.byte <Animation04,<Animation05
+	.byte <Animation04,<Animation05,<Animation06
 Animations_h:
 	.byte NULL,>Animation01,>Animation02,>Animation03
-	.byte >Animation04,>Animation05
+	.byte >Animation04,>Animation05,>Animation06

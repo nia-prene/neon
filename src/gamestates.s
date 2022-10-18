@@ -1,27 +1,28 @@
-.include "gamestates.h"
-.include "lib.h"
+.include 	"gamestates.h"
+.include	"lib.h"
 
-.include "main.h"
-.include "scenes.h"
-.include "shots.h"
-.include "sprites.h"
-.include "header.s"
-.include "tiles.h"
-.include "palettes.h"
-.include "bullets.h"
-.include "player.h"
-.include "waves.h"
-.include "gamepads.h"
-.include "oam.h"
-.include "ppu.h"
-.include "enemies.h"
-.include "pickups.h"
-.include "score.h"
-.include "textbox.h"
-.include "apu.h"
-.include "bombs.h"
-.include "hud.h"
-.include "patterns.h"
+.include 	"apu.h"
+.include 	"bombs.h"
+.include	"bullets.h"
+.include	"enemies.h"
+.include	"effects.h"
+.include	"gamepads.h"
+.include	"header.s"
+.include	"hud.h"
+.include	"main.h"
+.include	"oam.h"
+.include	"palettes.h"
+.include	"patterns.h"
+.include	"pickups.h"
+.include	"player.h"
+.include	"ppu.h"
+.include	"scenes.h"
+.include	"score.h"
+.include	"shots.h"
+.include	"sprites.h"
+.include	"textbox.h"
+.include	"tiles.h"
+.include	"waves.h"
 
 .zeropage
 
@@ -98,14 +99,15 @@ gamestate00:
 
 	jsr PlayerBullets_move;void()
 
-	lda Gamepads_state
-	ldx Gamepads_last
-	jsr PlayerBullets_shoot; void(a,x) |
+	lda Gamepads_state;		get argument a
+	ldx Gamepads_last;		get argument x
+	jsr PlayerBullets_shoot; 	void(a,x) |
 	
 	jsr Bullets_tick
 
-	jsr Enemies_tick
-	jsr Waves_dispense
+	jsr Enemies_tick;		void() | 
+	jsr Waves_dispense;		void() | 
+	jsr Effects_tick;		void() | 
 
 
 	ldy Gamepads_state
@@ -398,6 +400,7 @@ gamestate09:; Level - charms spinning
 
 	jsr Waves_dispense 
 	jsr Enemies_tick
+	jsr Effects_tick;		void() | 
 	
 	jsr Charms_spin
 	jsr Player_collectCharms
@@ -452,6 +455,7 @@ gamestate0A:; falling off broom
 
 	jsr Bullets_tick
 	jsr Enemies_tick
+	jsr Effects_tick;		void() | 
 	jsr Waves_dispense 
 
 	ldx Main_currentPlayer
@@ -502,6 +506,7 @@ gamestate0B:; recovering from fall
 
 	jsr Bullets_tick
 	jsr Enemies_tick
+	jsr Effects_tick;		void() | 
 	jsr Waves_dispense
 
 	ldx Main_currentPlayer
@@ -550,6 +555,7 @@ gamestate0C:; a moment of no shooting
 
 	jsr Bullets_tick
 	jsr Enemies_tick
+	jsr Effects_tick;		void() | 
 	jsr Waves_dispense 
 
 	ldx Main_currentPlayer
@@ -653,6 +659,7 @@ Gamestate0E:
 	
 	jsr Bullets_tick
 	jsr Enemies_tick
+	jsr Effects_tick;		void() | 
 	jsr Waves_dispense
 
 	ldy Gamepads_state

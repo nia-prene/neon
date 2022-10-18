@@ -8,7 +8,7 @@
 .include "enemies.h"
 
 BULLETS_VARIETIES=8
-MAX_ENEMY_BULLETS=129
+MAX_ENEMY_BULLETS=100
 
 .zeropage
 ;arguments
