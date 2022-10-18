@@ -3,15 +3,15 @@
 
 .rodata
 
-SPRITE01=1; Player 1 neutral sprite
-SPRITE02=2; Player 1 moving left
-SPRITE03=3; Player 1 moving right
-SPRITE04=4; Shot large star
-SPRITE05=5; Shot charged beam
-SPRITE06=6
-SPRITE07=7
-SPRITE08=8; Shot small star bullet
-SPRITE09=9; Shot beam bullet
+SPRITE01=1; 	Player 1 neutral sprite
+SPRITE02=2; 	Player 1 moving left
+SPRITE03=3; 	Player 1 moving right
+SPRITE04=4;	Shot large star
+SPRITE05=5; 	Shot charged beam
+SPRITE06=6;	crumpled beam 1
+SPRITE07=7;	crumpled beam 2
+SPRITE08=8; 	Shot small star bullet
+SPRITE09=9; 	Shot beam bullet
 SPRITE0A=$0a;	small explosion frame 0
 SPRITE0B=$0b;	small explosion frame 1
 SPRITE0C=$0c;	small explosion frame 2
@@ -20,8 +20,8 @@ SPRITE0E=$0e; fairy frame 0
 SPRITE0F=$0f; fairy frame 1 
 SPRITE10=$10; balloon cannon frame 0 palette 2
 SPRITE11=$11; balloon cannon frame 1 palette 2
-SPRITE12=$12; available
-SPRITE13=$13; available
+SPRITE12=$12;	crumpled beam 1 color 2
+SPRITE13=$13;	crumpled beam 2 color 2
 SPRITE14=$14; available
 SPRITE15=$15;Ready?
 SPRITE16=$16;Go!
@@ -77,11 +77,15 @@ Sprite04:
 	.lobytes $20, -8,  0, %01000000
 	.byte NULL
 Sprite05:
-	.lobytes $2E, -8, -8, %00000000
-	.lobytes $2E, -8, 00, %01000000
-	.byte NULL
+	.lobytes 	$2E,	-8, 	-8, 	%00000000
+	.lobytes 	$2E, 	-8, 	00, 	%01000000
+	.byte 		NULL
 Sprite06:
+	.lobytes	$32,	-8,	-4,	%11
+	.byte		NULL
 Sprite07:
+	.lobytes	$34,	-8,	-4,	%11
+	.byte		NULL
 Sprite08:
 	.lobytes $22, -8, -4, %0
 	.byte NULL
@@ -129,13 +133,11 @@ Sprite12:
 	.byte 0, $6c, %01000001, 8
 	.byte TERMINATE
 Sprite13:
-	.byte 0, $6e, %00000001, 0
-	.byte 0, $6e, %01000001, 8
-	.byte TERMINATE
+	.lobytes	$32,	-8,	-4,	%00
+	.byte		NULL
 Sprite14:
-	.byte 0, $70, %00000001, 0
-	.byte 0, $70, %01000001, 8
-	.byte TERMINATE
+	.lobytes	$34,	-8,	-4,	%00
+	.byte		NULL
 Sprite15:
 	.byte 0, $e0, %0, 0
 	.byte 0, $e2, %0, 7
@@ -228,6 +230,7 @@ ANIMATION03	= $03; 	Mushroom jump
 ANIMATION04	= $04; 	balloon cannon
 ANIMATION05	= $05; 	Mushroom standing
 ANIMATION06	= $06;	enemy clear
+ANIMATION07	= $07;	shot crumpling
 Animation01:
 	.byte SPRITE0E, 4, SPRITE0F, 4
 	.byte NULL, 0
@@ -252,7 +255,11 @@ Animation05:
 
 
 Animation06:
-	.byte SPRITE0A, 16, SPRITE0B, 16, SPRITE0C, 16, SPRITE0D, 16
+	.byte SPRITE0A, 8, SPRITE0B, 8, SPRITE0C, 8, SPRITE0D, 8
+	.byte NULL
+
+Animation07:
+	.byte SPRITE06, 1, SPRITE13, 1, SPRITE14, 1, SPRITE07, 1 
 	.byte NULL
 ;pointer table
 Sprites_h:
@@ -266,7 +273,7 @@ Sprites_l:
 
 Animations_l:
 	.byte NULL,<Animation01,<Animation02,<Animation03
-	.byte <Animation04,<Animation05,<Animation06
+	.byte <Animation04,<Animation05,<Animation06,<Animation07
 Animations_h:
 	.byte NULL,>Animation01,>Animation02,>Animation03
-	.byte >Animation04,>Animation05,>Animation06
+	.byte >Animation04,>Animation05,>Animation06,>Animation07

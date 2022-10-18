@@ -234,6 +234,8 @@ Enemies_isAlive:; c(x) |
 	lda #0
 	sta totalDamage;clear out damage
 	sta enemyPalette,x; set palette to default
+
+
 	ldy #SHOTS_MAX-1
 @bulletLoop:
 ;find an active bullet
@@ -261,19 +263,40 @@ Enemies_isAlive:; c(x) |
 		bcs @nextBullet
 
 			;clc; total damage
-			lda PlayerBullet_damage,y
+			lda PlayerBullet_damage,y;	tally the damage
 			adc totalDamage
 			sta totalDamage
 
-			lda #%11
+			lda #%11;			set palette to flash
 			sta enemyPalette,x
 
-			lda #FALSE
+			stx xReg;			save enemy
+			tya;				put shot on x
+			tax
+			jsr Effects_get;		y() | x
+			bcc :+;				if effect available
+				lda bulletY,x;		copy y
+				sta Effects_yPos,y
+				lda bulletX,x;		copy x
+				sta Effects_xPos,y
+				lda #ANIMATION07;	add animation
+				sta Effects_animation,y
+
+				lda #0;			zero out frame
+				sta Effects_frame,y
+				lda #TRUE;		set active
+				sta Effects_active,y
+			:;			endif
+			txa;			put shot on y
+			tay
+			ldx xReg;		restore enemy
+
+			lda #FALSE;		deactivate shot	
 			sta Shots_isActive,y
 
 @nextBullet:
-	dey
-	bpl @bulletLoop
+	dey;			step through collection
+	bpl @bulletLoop;	while positive
 	
 	sec
 	lda enemyHPL,x
