@@ -61,9 +61,7 @@ Score_tallyFrame:
 @doScore:
 	lda #TRUE
 	sta Score_hasChanged
-	txa
-	pha
-	lda Score_multiplier,x
+	lda Score_multiplier
 	tay
 @multiplierLoop:
 	dey
@@ -74,57 +72,55 @@ Score_tallyFrame:
 :
 	jsr Score_convertToDecimal
 ;add the ones place
-	pla
-	tax
 	clc
-	lda Score_ones,x
+	lda Score_ones
 	adc DecOnes
 	cmp #10
 	bcc :+
 		sbc #10
-:	sta Score_ones,x
+:	sta Score_ones
 ;add the tens place
-	lda Score_tens,x
+	lda Score_tens
 	adc DecTens
 	cmp #10
 	bcc :+
 		sbc #10
-:	sta Score_tens,x
+:	sta Score_tens
 ;add the hundreds place
-	lda Score_hundreds,x
+	lda Score_hundreds
 	adc DecHundreds
 	cmp #10
 	bcc :+
 		sbc #10
-:	sta Score_hundreds,x
+:	sta Score_hundreds
 ;add the thousands place
-	lda Score_thousands,x
+	lda Score_thousands
 	adc DecThousands
 	cmp #10
 	bcc :+
 		sbc #10
-:	sta Score_thousands,x
+:	sta Score_thousands
 ;add the ten thousands place
-	lda Score_tenThousands,x
+	lda Score_tenThousands
 	adc DecTenThousands
 	cmp #10
 	bcc :+
 		sbc #10
-:	sta Score_tenThousands,x
+:	sta Score_tenThousands
 ;add the hundred thousands place
-	lda Score_hundredThousands,x
+	lda Score_hundredThousands
 	adc #0
 	cmp #10
 	bcc :+
 		sbc #10
-:	sta Score_hundredThousands,x
+:	sta Score_hundredThousands
 ;add the millions place
-	lda Score_millions,x
+	lda Score_millions
 	adc #0
 	cmp #10
 	bcc :+
 		sbc #10
-:	sta Score_millions,x
+:	sta Score_millions
 	rts
 
 Score_convertToDecimal:

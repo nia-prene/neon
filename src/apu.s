@@ -1258,10 +1258,10 @@ instSustain:;volume minus number below
 	.byte 3, 2, 0, 5, 3, 3, 4, 4
 	.byte 1, 8, 0, 3, 15, 0
 instRelease_H:
-	.byte 1, 1, 15, 0, 0, 15, 0, 5
+	.byte 1, 1, 15, 0, 0, 15, 0, 0
 	.byte 0, 1, 0, 0, 15, 1
 instRelease_L:
-	.byte 0, 0, 0, 128, 64, 0, 128, 0
+	.byte 0, 0, 0, 128, 64, 0, 128, 08
 	.byte 64, 0, 0, 64, 0, 0
 instBend:
 	.byte 00, 01, 0, 0, 0, 0, 2, 3
@@ -1272,10 +1272,10 @@ Bend_flags:;|uuuu uunv|
 ;v - vibrato (disregards nra)
 	.byte NULL, %10, %00, %00, %00, %10, %00
 Bend_speed_H:
-	.byte NULL, 06, 00, 32, 96, 0, 0
+	.byte NULL, 06, 00, 00, 96, 0, 0
 
 Bend_speed_L:
-	.byte NULL, 128, 64, 0, 0,128,192
+	.byte NULL, 128, 64, 16, 0,128,192
 
 Bend_target:;(half steps)
 	.byte NULL, 01, 4, 36, 24, 3, 14
@@ -1312,7 +1312,7 @@ SFX_loops_H:
 SFX_loop01:
 	.byte N0B, 6, 9, NULL
 SFX_loop02:
-	.byte D7, 06, 3, NULL
+	.byte D5, 9, 128, NULL
 SFX_loop03:
 	.byte D4, 3, 0, Gb4, 3, 9, D5, 6, 12, A4, 6, 18, NULL
 SFX_loop04:

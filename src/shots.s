@@ -16,6 +16,7 @@ Shots_charge: .res 1
 Shots_isActive: .res SHOTS_MAX
 
 .data
+Shot_ID: .res SHOTS_MAX
 bulletX: .res SHOTS_MAX
 bulletY: .res SHOTS_MAX
 bulletSprite: .res SHOTS_MAX
@@ -53,7 +54,7 @@ PlayerBullets_shoot:;void(a)
 		
 		inc Shots_hold
 
-		ldy Player_powerLevel; get bullet pattern by pwr lvl
+		ldy Player_power_h; get bullet pattern by pwr lvl
 		
 		lda @shotType_L,y
 		sta Lib_ptr0+0
@@ -469,4 +470,14 @@ DAMAGE = 5
 
 .endproc
 
+;SHOT01	= $01;	Large star
+;SHOT02	= $02;	Beam inside
+;SHOT03	= $03;	Beam middle
+;SHOT03	= $03;	Beam outside
+
+Shots_sprite:
+	
+
+
+Shots_damage:
 

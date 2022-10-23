@@ -1,1 +1,0 @@
-.global Pickups_movePowerup

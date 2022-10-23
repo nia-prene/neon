@@ -170,6 +170,8 @@ SEPARATION	= 16
 	lda Enemies_clock,x
 	and #RATE
 	bne @return
+		lda #INVISIBILITY
+		sta Bullets_fastForwardFrames
 		lda Enemies_clock,x
 		bne :+
 			jsr Bullets_aim
@@ -205,6 +207,10 @@ SEPARATION	= 16
 
 .endproc
 
+.proc Pattern05
+
+
+.endproc
 
 Patterns_L:
 	.byte NULL,<Pattern01,<Pattern02,<Pattern03,<Pattern04

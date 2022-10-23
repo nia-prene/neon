@@ -82,34 +82,34 @@ Enemies_new:; void(a)
 	rts
 
 
-Enemies_newChild:;		c,y(a) | x
-; a - child enemy ID
+Enemies_newChild:;		void(x) | x
 	
-	stx xReg;		save parent
+	stx xReg
 
-	tax;			get child ID
+	tax
 
-	jsr Enemies_get;	x() | y		get empty enemy
-	bcc @enemiesFull;	if enemy available
+	jsr Enemies_get; x() | y
+	bcc @enemiesFull
 	
-		txa; 			set ID 
+		txa; retrieve ID 
 		sta Enemies_ID,y
 		
-		lda romEnemyHPH,x;	set HP
+		lda romEnemyHPH,x
 		sta enemyHPH,y
 		lda romEnemyHPL,x
 		sta enemyHPL,y
 
-		lda diameter,x;		set hitbox
+		lda diameter,x
 		sta Enemies_diameter,y
 		
-		lda #00;		zero out attributes
+		lda #00
 		sta Enemies_index,y
 		sta Enemies_clock,y
 		sta Enemies_fuse,y
+		sta i,y
 		sta j,y
 
-		lda #TRUE;		set active
+		lda #TRUE
 		sta isEnemyActive,y
 		
 		ldx xReg;		restore parent
@@ -455,8 +455,8 @@ ENEMY03=$03; mushroom hopper
 ENEMY04=$04; balloon cannon left
 ENEMY05=$05; balloon cannon right
 ENEMY06=$06; fairy that return slow
-ENEMY07=$07;	reese's left handgun
-ENEMY08=$08;	reese's right handgun
+ENEMY07=$07
+ENEMY08=$08
 
 
 .rodata
@@ -464,30 +464,24 @@ ENEMY08=$08;	reese's right handgun
 
 romEnemyHPL:;	total hit points until defeat
 	.byte 	NULL,	$00,	$20,	$50	
-	.byte 	$00, 	$00,	$10,	$00
-	.byte	$00
+	.byte 	$00, 	$00,	$10
 romEnemyHPH:
 	.byte 	NULL,	$10,	$00,	$00
-	.byte	$01,	$01,	$00,	$FF
-	.byte	$FF
+	.byte	$01,	$01,	$00
 Enemies_points_l:;	points gained on defeat
 	.byte 	NULL,	$19,	$10,	$10
-	.byte	$30,	$20,	$10,	$00
-	.byte	$00
+	.byte	$30,	$20,	$10
 Enemies_points_h:
 	.byte 	NULL,	$00,	$00,	$00
-	.byte	$00,	$00,	$00,	$00
-	.byte	$00
+	.byte	$00,	$00,	$00
 
 diameter:;	hitbox diameter
 	.byte 	NULL,	$10,	$10,	$10
-	.byte	$10,	$10,	$10,	$00
-	.byte	$00
+	.byte	$10,	$10,	$10
 
 Enemies_powerups:;	powerup byte |b b b s s s s s|
 	.byte	NULL,	0|0, 	0|0, 	0|1
-	.byte	0|3, 	0|3, 	0|0,	$00
-	.byte	$00
+	.byte	0|3, 	0|3, 	0|0
 
 .proc Defeat
 ENEMY 	= %10000000
@@ -504,7 +498,6 @@ EFFECT 	= %00000000
 	.byte	EFFECT|ANIMATION01
 	.byte	EFFECT|ANIMATION01
 	.byte	EFFECT|ANIMATION01
-	.byte	NULL
 .endProc
 
 
@@ -513,31 +506,19 @@ VULNERABLE	= TRUE
 INVULNERABLE	= FALSE
 
 Enemy01:
-	.byte MOVEMENT0A;	fly up
+	.byte MOVEMENT0A
 	.byte ANIMATION09
 	.byte NULL
 	.byte INVULNERABLE
-	.byte 64+8; frames
+	.byte 64; frames
 
-	.byte MOVEMENT01;	wait a second
+	.byte MOVEMENT01
 	.byte ANIMATION09
 	.byte NULL
 	.byte VULNERABLE
 	.byte 64; frames
+	.byte NULL, SIZE*1
 
-	.byte MOVEMENT0E;	spawn children who shoot
-	.byte ANIMATION09
-	.byte NULL
-	.byte VULNERABLE
-	.byte 64; frames
-
-	.byte MOVEMENT01;	stand still
-	.byte ANIMATION09
-	.byte NULL
-	.byte VULNERABLE
-	.byte 64; frames
-
-	.byte NULL, SIZE*3
 
 Enemy02:
 	.byte MOVEMENT09
@@ -676,32 +657,13 @@ Enemy06:
 	.byte VULNERABLE
 	.byte 255; frames
 
-Enemy07:
-	.byte MOVEMENT0C
-	.byte NULL
-	.byte PATTERN02
-	.byte INVULNERABLE
-	.byte 255
-	.byte NULL, 0
-
-
-Enemy08:
-	.byte MOVEMENT0D
-	.byte NULL
-	.byte PATTERN02
-	.byte INVULNERABLE
-	.byte 255
-	.byte NULL, 0
-
 
 Enemies_L:
 	.byte NULL,<Enemy01,<Enemy02,<Enemy03
-	.byte <Enemy04,<Enemy05,<Enemy06,<Enemy07
-	.byte <Enemy08
+	.byte <Enemy04,<Enemy05,<Enemy06
 Enemies_H:
 	.byte NULL,>Enemy01,>Enemy02,>Enemy03
-	.byte >Enemy04,>Enemy05,>Enemy06,>Enemy07
-	.byte >Enemy08
+	.byte >Enemy04,>Enemy05,>Enemy06
 
 
 MOVEMENT01=$01; not moving
@@ -714,10 +676,6 @@ MOVEMENT07=$07; exit right (baloon
 MOVEMENT08=$08; available
 MOVEMENT09=$09; ease in - down 64 frames
 MOVEMENT0A=$0A; ease in - up 64 frames (reese boss)
-MOVEMENT0B=$0B; available
-MOVEMENT0C=$0C; lock N pixels left of parent
-MOVEMENT0D=$0D; lock N pixels right of parent
-MOVEMENT0E=$0E; spawn reese's handguns
 
 
 ;Enemy stays in place
@@ -725,7 +683,6 @@ MOVEMENT0E=$0E; spawn reese's handguns
 	clc
 	rts
 .endproc
-
 
 ;moves enemy with y scroll
 .proc Movement02; c(x) |
@@ -904,65 +861,8 @@ MUTATOR=1
 	clc
 	rts
 
-.endproc
-
-
-.proc Movement0B
-	
 
 .endproc
-
-
-.proc Movement0C;	c(x) | x
-DISTANCE	= $20
-	
-	ldy i,x;	get parent
-	lda enemyYH,y;	set y
-	sta enemyYH,x
-	
-	sec
-	lda enemyXH,y;	move left N pixels
-	sbc #DISTANCE
-	sta enemyXH,x;	set x
-	
-	clc
-	rts;		;c
-
-.endproc
-
-
-.proc Movement0D;	c(x) | x
-DISTANCE	= $20
-	
-	ldy i,x;	get parent
-	lda enemyYH,y;	set y
-	sta enemyYH,x
-	
-	clc
-	lda enemyXH,y;	move left N pixels
-	adc #DISTANCE
-	sta enemyXH,x;	set x
-	
-	clc
-	rts;		;c
-
-.endproc
-
-.proc Movement0E
-SPEED = $0020
-	lda Enemies_clock,x;	poke clock
-	bne :+;			if 0th frame
-		lda #ENEMY07;		make left handgun
-		jsr Enemies_newChild;	c,y(x) | x
-		lda #ENEMY08;		make left handgun
-		jsr Enemies_newChild;	c,y(x) | x
-	:
-	clc
-	rts;			c
-
-.endproc
-
-
 Ease_in_l:
 	.byte 0, 0, 0, 0, 16, 16, 32, 48, 80, 112, 144, 208, 0, 80, 160, 0
 Ease_in_h:
@@ -976,13 +876,10 @@ Ease_out_h:
 Movement_L:
 	.byte 	     NULL,<Movement01,<Movement02,<Movement03
 	.byte <Movement04,<Movement05,<Movement06,<Movement07
-	.byte <Movement08,<Movement09,<Movement0A,<Movement0B
-	.byte <Movement0C,<Movement0D,<Movement0E
-
+	.byte <Movement08,<Movement09,<Movement0A
 Movement_H:
 	.byte        NULL,>Movement01,>Movement02,>Movement03
 	.byte >Movement04,>Movement05,>Movement06,>Movement07
-	.byte >Movement08,>Movement09,>Movement09,>Movement0B
-	.byte >Movement0C,>Movement0D,>Movement0E
+	.byte >Movement08,>Movement09,>Movement09
 
 

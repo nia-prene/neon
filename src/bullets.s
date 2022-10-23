@@ -118,20 +118,17 @@ Charms_spin:; (void)
 	lda isEnemyBulletActive,x; if active
 	beq @skipCharm;skip inactive
 		
-		cmp #1
-		beq @visible
-			
-			lda #FALSE; clear invisible bullets
+		cmp #1;			if invisible
+		beq :+
+			lda #FALSE; 		clear invisible bullets
 			sta isEnemyBulletActive,x
-			jmp @skipCharm
-
-	@visible:
-
-		clc; make them fall down
+			jmp @skipCharm;		next charm
+		:;			else
+		clc; 			make the bullet fall down
 		lda enemyBulletYH,x
 		adc #1
 		bcc :+
-			lda #255
+			lda #255;	no overflow
 		:sta enemyBulletYH,x
 
 @skipCharm:
@@ -189,6 +186,7 @@ Bullets_aim:; a(x) | x
 
 	rts; a
 
+
 Bullets_clockwise:;void()
 
 	ldy #MAX_ENEMY_BULLETS-1
@@ -221,6 +219,12 @@ Charms_suck:
 	lda isEnemyBulletActive,x
 	beq @nextCharm
 		
+		cmp #1
+		beq :+
+			lda #FALSE
+			sta isEnemyBulletActive,x
+			jmp @nextCharm
+		:
 		sta Charms_active
 		sec
 		lda Player_xPos_H
@@ -257,8 +261,8 @@ Charms_suck:
 	dex
 	bpl @charmLoop
 
-	lda Charms_active
-	rts; a
+	rts
+
 
 @moveLeft:
 
@@ -368,6 +372,8 @@ romEnemyBulletMetasprite:
 @clearBullet:
 	jmp Bullet_clear
 .endmacro
+
+
 Bullet_clear:
 	lda #FALSE
 	sta isEnemyBulletActive,x

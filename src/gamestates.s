@@ -13,7 +13,7 @@
 .include	"oam.h"
 .include	"palettes.h"
 .include	"patterns.h"
-.include	"pickups.h"
+.include	"powerups.h"
 .include	"player.h"
 .include	"ppu.h"
 .include	"scenes.h"
@@ -80,12 +80,13 @@ Gamestates_tick:
 
 
 gamestate00:
-;the main gameplay loop
+
 	jsr PPU_updateScroll;void()
-	
-	ldx #0
-	jsr Score_tallyFrame; void(x)
+	jsr Score_tallyFrame; void()
 	jsr Score_clearFrameTally;void()
+	jsr PlayerBullets_move;void()
+	jsr Bullets_tick
+	jsr Powerups_tick
 	
 	lda Gamepads_state
 	ldx Gamepads_last
@@ -97,18 +98,14 @@ gamestate00:
 	jsr Player_move;(a)
 	jsr Hitbox_tick
 
-	jsr PlayerBullets_move;void()
-
 	lda Gamepads_state;		get argument a
 	ldx Gamepads_last;		get argument x
 	jsr PlayerBullets_shoot; 	void(a,x) |
 	
-	jsr Bullets_tick
-
+	jsr Powerups_collect;		void() |	collect powerups
 	jsr Enemies_tick;		void() | 
 	jsr Waves_dispense;		void() | 
 	jsr Effects_tick;		void() | 
-
 
 	ldy Gamepads_state
 	ldx Gamepads_last
@@ -309,6 +306,7 @@ gamestate06:
 	jsr PPU_NMIPlan03;void(y)
 	rts
 
+
 gamestate07:
 	jsr PPU_updateScroll;void()
 	;jsr PPU_waitForSprite0Reset;void()
@@ -376,9 +374,24 @@ gamestate08:; void()
 
 
 gamestate09:; Level - charms spinning
-
+	
+	lda g;				if g is 0 (first frame)
+	bne :+;				else wait for reset
+		jsr OAM_initSprite0;	turn on sprite 0
+		jmp :++;		skip waiting for reset
+	:
+	jsr PPU_waitForSprite0Reset;	void()
+	:
 	jsr PPU_updateScroll;void()
-	jsr Score_clearFrameTally;void()
+	jsr Powerups_tick;		void() | 	move powerups
+	jsr Score_tallyFrame;		void() |	total score
+	jsr Score_clearFrameTally;	void() |	clear frame score
+	
+	lda #SCORE_OFFSET
+	jsr Sprite0_setDestination;(a)
+	
+	jsr HUD_easeIn;		a()
+	jsr Sprite0_setSplit;	void(a)
 	
 	lda Gamepads_state
 	ldx Gamepads_last
@@ -399,27 +412,27 @@ gamestate09:; Level - charms spinning
 	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Waves_dispense 
+	jsr Powerups_collect;		void() |	collect powerups
 	jsr Enemies_tick
 	jsr Effects_tick;		void() | 
 	
 	jsr Charms_spin
 	jsr Player_collectCharms
 	
-	ldx Main_currentPlayer
-	jsr Score_tallyFrame;(x)
 	
-	lda g
-	jsr OAM_build00; (a)
+	jsr OAM_build00
 	
-	;jsr PPU_dimScreen
-	;jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
 
 	lda g
+	beq :+
+		jsr PPU_waitForSprite0Hit
+		lda g
+	:
 	cmp #32
 	bne @statePersists
 		lda #GAMESTATE0D
-		jsr	Gamestates_new
+		jsr Gamestates_new
 @statePersists:
 
 	rts
@@ -434,11 +447,10 @@ gamestate0A:; falling off broom
 	jsr PPU_waitForSprite0Reset;()
 	:; endif
 	jsr PPU_updateScroll
+	jsr Powerups_tick
 	
 	lda #SCORE_OFFSET
 	jsr Sprite0_setDestination;(a)
-	
-	jsr PPU_waitForSprite0Reset;()
 	
 	jsr HUD_easeIn;a()
 	jsr Sprite0_setSplit;(a)
@@ -448,8 +460,9 @@ gamestate0A:; falling off broom
 	lda Gamepads_state
 	ldx Gamepads_last
 	jsr Gamestates_pause;c(a,x) |
-
-	jsr Player_fall;void(a,f)
+	
+	lda g
+	jsr Player_fall;void(a)
 
 	jsr PlayerBullets_move;void()
 
@@ -465,25 +478,28 @@ gamestate0A:; falling off broom
 
 	jsr PPU_NMIPlan00
 	
-	lda g
+	lda g;		if g is not zero (not first frame)
+	beq :+;		else if
+		jsr PPU_waitForSprite0Hit;	do sprite 0 split
+		lda g;	recall g
+	:
 	cmp #64
 	bne:+
 		jsr Player_hit; detract heart
+		lda g;	recall g
 	:
-
-	lda g
-	cmp #128
+	cmp #128;	if g is 128
 	bne :+
-		lda #GAMESTATE0B; load recovery state
-		jsr Gamestates_new
+		lda #GAMESTATE0B;	load recovery state
+		jsr Gamestates_new;	change states
 	:
-	jsr PPU_waitForSprite0Hit
 	rts
 
 
 gamestate0B:; recovering from fall
 
 	jsr PPU_updateScroll;void()
+	jsr Powerups_tick
 	jsr Score_clearFrameTally;void()
 	
 	lda Gamepads_state
@@ -505,6 +521,7 @@ gamestate0B:; recovering from fall
 	jsr PlayerBullets_shoot; void(a,x) |
 
 	jsr Bullets_tick
+	jsr Powerups_collect;		void() |	collect powerups
 	jsr Enemies_tick
 	jsr Effects_tick;		void() | 
 	jsr Waves_dispense
@@ -554,6 +571,7 @@ gamestate0C:; a moment of no shooting
 	;jsr PPU_waitForSprite0Reset;()
 
 	jsr Bullets_tick
+	jsr Powerups_collect;		void() |	collect powerups
 	jsr Enemies_tick
 	jsr Effects_tick;		void() | 
 	jsr Waves_dispense 
@@ -582,54 +600,51 @@ gamestate0C:; a moment of no shooting
 gamestate0D:; charms spinning, main game loop
 
 	jsr PPU_updateScroll;void()
+	jsr Score_tallyFrame;
 	jsr Score_clearFrameTally;void()
+	jsr PlayerBullets_move;void()
+	jsr Charms_suck; a,x(void)
 	
 	lda Gamepads_state
 	ldx Gamepads_last
 	jsr Gamestates_pause
 
 	lda Gamepads_state
+	jsr Player_setSpeed;(a)
+	lda Gamepads_state
 	jsr Player_move;(a)
 	jsr Hitbox_tick
-	lda Gamepads_state
-	jsr Player_setSpeed;(a)
-
-	jsr PlayerBullets_move;void()
 
 	lda Gamepads_state
 	ldx Gamepads_last
 	jsr PlayerBullets_shoot;(a)
 	
-	;jsr PPU_waitForSprite0Reset;()
-
-	jsr Waves_dispense 
+	jsr Powerups_collect;		void() |	collect powerups
 	jsr Enemies_tick
+	jsr Waves_dispense 
+	jsr Effects_tick;		void() | 
 	
-	jsr Charms_suck; a,x(void)
-	bne @charmsRemain
-		lda Shots_charge; if accumulated a charge
-		beq :+
-
-			lda #GAMESTATE0E
-			jsr Gamestates_new
-			jmp @charmsRemain
-		
-		:lda #GAMESTATE00
-		jsr Gamestates_new
-
-@charmsRemain:
 	jsr Player_collectCharms
 	
 	ldx Main_currentPlayer
-	jsr Score_tallyFrame;(x)
 	
 	jsr OAM_build00; (a)
-	
-	;jsr PPU_dimScreen
-	;jsr PPU_waitForSprite0Hit
 	jsr PPU_NMIPlan00
+	
+	jsr PPU_waitForSprite0Hit
 
-
+	lda g;	if g > 32
+	cmp #128-32
+	bcc :+
+		jsr HUD_easeOut;	a()		ease the HUD out
+		jsr Sprite0_setSplit;	void(a)		set the split
+		lda g
+	:
+	cmp #128
+	bne :+
+		lda #GAMESTATE00
+		jsr Gamestates_new
+	:
 	rts
 
 
@@ -637,6 +652,8 @@ Gamestate0E:
 ;player discharging beam
 	jsr PPU_updateScroll;void()
 	jsr Score_clearFrameTally;void()
+	jsr Bullets_tick
+	jsr Powerups_tick
 	
 	lda Gamepads_state
 	ldx Gamepads_last
@@ -657,7 +674,7 @@ Gamestate0E:
 		jsr Gamestates_new
 	:
 	
-	jsr Bullets_tick
+	jsr Powerups_collect;		void() |	collect powerups
 	jsr Enemies_tick
 	jsr Effects_tick;		void() | 
 	jsr Waves_dispense

@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include <math.h>
-#define FRAMES (32-1) 
-#define DISTANCE 88
-#define STEPS 1.0/FRAMES
+#define FRAMES (32.0f - 1.0f)
+#define DISTANCE 32.0f
+#define STEPS 1.0f/FRAMES
 #define START 238
 
 float easeOut(float p);
 
 int main(){
 	FILE *file;
-	file=fopen("ease-lut.txt", "w");
+	file=fopen("out.txt", "w");
 		
-	fprintf(file,".byte ");
+	fprintf(file,"\t.byte ");
 
 	for (float i=0;i<=1;i=i+STEPS){
 		fprintf(file,"%.2d, ",START - (int)ceil(DISTANCE * easeOut(i)));

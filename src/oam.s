@@ -7,6 +7,7 @@
 .include "enemies.h"
 .include "effects.h"
 .include "player.h"
+.include "powerups.h"
 .include "score.h"
 .include "shots.h"
 .include "sprites.h"
@@ -92,6 +93,9 @@ OAM_build00:;c()
 	jsr OAM_buildPlayer
 	
 	jsr OAM_buildEffects
+	
+	jsr OAM_buildPowerups
+	bcs @oamFull
 
 	jsr buildEnemies
 	bcs @oamFull
@@ -105,13 +109,14 @@ OAM_build00:;c()
 
 	rts
 
+
 buildHitbox:;x(x,a)
 
 	clc
-	lda Player_yPos_H
+	lda Hitbox_yPos
 	sta buildY
 
-	lda Player_xPos_H
+	lda Hitbox_xPos
 	sta buildX
 
 	lda Hitbox_sprite
@@ -330,6 +335,36 @@ secondPass:;		void(x)
 .endproc
 
 
+.proc OAM_buildPowerups;	void()
+	
+	ldx #POWERUPS_MAX-1;	for each item in powerups
+
+@loop:
+	lda Powerups_active,x;	if active
+	beq @next
+		tay;			active byte is also ID
+		lda Powerups_yPos,x;	copy y value
+		sta buildY
+		lda Powerups_xPos,x;	copy x value
+		sta buildX
+		
+		lda #0
+		sta buildPalette;	clear out palette
+		
+		stx xReg;		save x
+		lda Powerups_sprite,y;	get sprite
+		jsr OAM_build;		c(a) | 
+		bcs @full;		return c set if full
+		ldx xReg;		recall x
+@next:
+	dex;		while powerups remain
+	bpl @loop
+	clc;		mark not full
+@full:
+	rts;		c
+.endProc
+
+
 buildPlayerBullets:
 
 	lda #0
@@ -461,8 +496,9 @@ YPOS=64
 .endproc
 
 .align 128
-OAM_build:;	void (a)  | 
+OAM_build:;	c(a)  | 
 ; a - metasprite to build
+; c - set if full
 	
 	tax
 

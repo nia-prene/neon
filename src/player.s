@@ -1,6 +1,7 @@
 .include "lib.h"
 .include "player.h"
 
+.include "score.h"
 .include "shots.h"
 .include "sprites.h"
 .include "palettes.h"
@@ -8,7 +9,8 @@
 .include "bullets.h"
 .include "apu.h"
 
-PLAYERS_MAX=2
+PLAYERS_MAX		= 2
+PLAYERS_POWER_MAX	= $200
 .zeropage
 Player_xPos_H: .res 1
 Player_yPos_H: .res 1
@@ -23,13 +25,15 @@ Player_focused: .res 1
 Player_lastDirection: .res 1
 Player_inPosition: .res 1
 
-Player_powerLevel: .res 1
+Player_power_l: .res 1
+Player_power_h: .res 1
 Player_hearts: .res 1
-Player_bombs: .res 1
 Player_haveHeartsChanged: .res 1
+Player_bombs: .res 1
 Player_haveBombsChanged: .res 1
 
-Players_powerLevel: .res PLAYERS_MAX
+Players_power_h: .res PLAYERS_MAX
+Players_power_l: .res PLAYERS_MAX
 Players_hearts: .res PLAYERS_MAX
 Players_bombs: .res PLAYERS_MAX
 
@@ -37,6 +41,8 @@ Player_sprite: .res 1
 Player_willRender: .res 1
 
 Hitbox_state:.res 1
+Hitbox_xPos:.res 1
+Hitbox_yPos:.res 1
 Hitbox_sprite: .res 1
 h:.res 1;hitbox variable
 
@@ -51,7 +57,9 @@ Players_init:
 	sta Player_bombs
 
 	lda #0
-	sta Player_powerLevel
+	sta Player_power_h
+	lda #0
+	sta Player_power_l
 
 	lda #00
 	sta Player_speedIndex
@@ -105,7 +113,7 @@ FAST_MOVEMENT_L = 0
 ;pixel per frame when moving slow
 MAX_RIGHT = 256-8
 MAX_LEFT = 08
-MAX_UP = 16
+MAX_UP = 0+16
 MAX_DOWN = 240-16
 SPEED_MAX=16
 
@@ -480,9 +488,10 @@ Player_move:; void(a)
 	;.byte  0,  0,  1,  1,  1,  1,  1,  1
 	
 
-HITBOX01=1
-HITBOX02=2
-HITBOX03=3
+HITBOX01	=1;	Deploying
+HITBOX02	=2;	deployed
+HITBOX03	=3;	retracting
+HITBOX04	=4;	broom when falling
 
 Hitbox_tick:; void()
 
@@ -503,7 +512,6 @@ Hitbox_tick:; void()
 		lda #HITBOX01; deploy the hitbox
 		jsr Hitbox_new
 	:
-
 	rts
 
 Hitbox_new:; void(a)
@@ -518,13 +526,21 @@ Hitbox_L:
 	.byte <(Hitbox_01)
 	.byte <(Hitbox_02)
 	.byte <(Hitbox_03)
+	.byte <(Hitbox_04)
 Hitbox_H:
 	.byte NULL 
 	.byte >(Hitbox_01)
 	.byte >(Hitbox_02)
 	.byte >(Hitbox_03)
+	.byte >(Hitbox_04)
 Hitbox_01:
 DEPLOY_FRAMES=4
+
+	lda Player_xPos_H
+	sta Hitbox_xPos
+	lda Player_yPos_H
+	sta Hitbox_yPos
+
 	lda h
 	adc #1
 	cmp #DEPLOY_FRAMES
@@ -539,6 +555,11 @@ DEPLOY_FRAMES=4
 	rts
 
 Hitbox_02:
+	lda Player_xPos_H
+	sta Hitbox_xPos
+	lda Player_yPos_H
+	sta Hitbox_yPos
+	
 	inc h
 	lda h
 	lsr
@@ -551,7 +572,6 @@ Hitbox_02:
 
 	lda Player_focused
 	bne :+
-		
 		lda #HITBOX03
 		jmp Hitbox_new
 	:
@@ -563,6 +583,11 @@ Hitbox_02:
 
 Hitbox_03:
 RECALL_FRAMES=4
+	lda Player_xPos_H
+	sta Hitbox_xPos
+	lda Player_yPos_H
+	sta Hitbox_yPos
+	
 	clc
 	lda h
 	adc #1
@@ -578,6 +603,10 @@ RECALL_FRAMES=4
 	lda #SPRITE1D
 	sta Hitbox_sprite
 
+	rts
+
+
+Hitbox_04:
 	rts
 
 
@@ -631,6 +660,11 @@ MAX_BULLET_DIAMETER=8
 			cmp #3; todo bullet safe distances
 			bcs @nextBullet
 				
+				lda Player_yPos_H;	mark where hit
+				sta Hitbox_yPos
+				lda Player_xPos_H
+				sta Hitbox_xPos
+				
 				sec
 				rts ;return carry set
 
@@ -646,12 +680,13 @@ MAX_BULLET_DIAMETER=8
 Player_hit:
 
 	sec; decrease power level
-	lda Player_powerLevel
+	lda Player_power_h
 	sbc #1
 	bcs :+
 		lda #0; no underflow
+		sta Player_power_l
 		sec; reset carry
-	:sta Player_powerLevel
+	:sta Player_power_h
 
 	;sec; decrease hearts
 	lda Player_hearts
@@ -659,9 +694,6 @@ Player_hit:
 	bcs :+
 		lda #5; do gameover stuff
 	:sta Player_hearts
-	
-	lda #SFX02
-	jsr SFX_newEffect
 	
 	lda #00
 	sta Shots_remaining
@@ -671,19 +703,34 @@ Player_hit:
 	rts
 
 
-Player_fall:;void()
-FALL_SPEED=1
-	
+.proc Player_fall;	void(a)
+; a - gamestate clock
+SPEED_h		= 1
+SPEED_l		= 0
+	bne :+
+		lda #SFX02
+		jsr SFX_newEffect
+	:
 	clc
+	lda Player_yPos_L; 	move player down
+	adc #SPEED_l 
+	sta Player_yPos_L
+	
 	lda Player_yPos_H
-	adc #FALL_SPEED; move player down
+	adc #SPEED_h
 	bcc :+; if y > 255
-		lda #255; y = 255
+		lda #255;	no overflow
 	:sta Player_yPos_H
 
-	; todo animation
+	lda #SPRITE13;		set hitbox sprite to broom
+	sta Hitbox_sprite
+
+	lda #SPRITE14;		set player to falling sprite
+	sta Player_sprite
+				
 	rts
-	
+.endproc
+
 	
 Player_recover:; void(a)
 ; a - g (gamestate counter)
@@ -692,9 +739,12 @@ RECOVER_SPEED=5
 
 	bne :+; on 0th frame
 		lda #255
-		sta Player_yPos_H; move player to bottom
+		sta Player_yPos_H; 	move player to bottom
+		
 		lda #FALSE
-		sta Player_inPosition
+		sta Player_inPosition;	player not in position
+		sta Hitbox_sprite;	remove broom
+		sta Hitbox_state;	disable hitbox
 	:
 
 	lda Player_inPosition
@@ -746,12 +796,14 @@ Player_collectCharms:
 		bcs @nextBullet
 			
 			;clc
-			lda Shots_charge
-			adc #4
-			bcc :+
-				lda #255
-			:sta Shots_charge
-			lda #FALSE
+			lda Score_frameTotal_L;		add to score
+			adc #25
+			sta Score_frameTotal_L
+			lda Score_frameTotal_H
+			adc #0
+			sta Score_frameTotal_H
+
+			lda #FALSE;			deactivate bullet
 			sta isEnemyBulletActive,x
 
 @nextBullet:

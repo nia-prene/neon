@@ -15,7 +15,7 @@
 .include "oam.h"
 .include "ppu.h"
 .include "enemies.h"
-.include "pickups.h"
+.include "powerups.h"
 .include "score.h"
 .include "hud.h"
 .include "init.s"
