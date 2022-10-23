@@ -13,11 +13,11 @@
 .include "shots.h"
 .include "sprites.h"
 
-MAX_ENEMIES = 16
+MAX_ENEMIES 	= 16
+CHILDREN_MAX 	= 8
 .zeropage
-totalDamage: .res 1
-
-isEnemyActive: .res MAX_ENEMIES
+totalDamage: 			.res 1
+isEnemyActive: 			.res MAX_ENEMIES
 
 .data
 enemyYH:			.res MAX_ENEMIES
@@ -39,10 +39,12 @@ Enemies_movement:		.res MAX_ENEMIES
 Enemies_vulnerability:		.res MAX_ENEMIES
 Enemies_clock:			.res MAX_ENEMIES
 Enemies_fuse:			.res MAX_ENEMIES
+i:				.res MAX_ENEMIES
+j:				.res MAX_ENEMIES
 
+Children_active:		.res CHILDREN_MAX
+Children_offset:		.res CHILDREN_MAX
 
-i:.res MAX_ENEMIES
-j:.res MAX_ENEMIES
 
 .code
 Enemies_new:; void(a)
@@ -82,7 +84,7 @@ Enemies_new:; void(a)
 	rts
 
 
-Enemies_newChild:;		c,y(a) | x
+Children_new:;			c,y(a) | x
 ; a - child enemy ID
 	
 	stx xReg;		save parent
@@ -109,9 +111,15 @@ Enemies_newChild:;		c,y(a) | x
 		sta Enemies_fuse,y
 		sta j,y
 
-		lda #TRUE;		set active
-		sta isEnemyActive,y
+		jsr Children_get;	c,x() | y
+		bcc @enemiesFull;	return if full
 		
+		tya;			save the offset
+		sta Children_offset,x
+		
+		lda #TRUE
+		sta Children_active,x;	set active
+
 		ldx xReg;		restore parent
 		lda enemyYH,x;		copy parent y
 		sta enemyYH,y
@@ -119,11 +127,16 @@ Enemies_newChild:;		c,y(a) | x
 		sta enemyXH,y
 		txa
 		sta i,y;		save parent
+		
+		lda #TRUE;		set active
+		sta isEnemyActive,y
+		
 		;sec; return true
 
 @enemiesFull:
 	;clc; return false
 	rts
+
 
 Enemies_get:; y() | x
 ;returns
@@ -134,15 +147,27 @@ Enemies_get:; y() | x
 
 	lda isEnemyActive,y; if active
 	beq @returnEnemy
-
 		dey; next enemy
 		bpl @enemySlotLoop; while x
 		clc; return false
 		rts
-
 @returnEnemy:; else return active
 	sec; return true
 	rts
+
+
+Children_get:;			c,y() | x
+	ldx #CHILDREN_MAX-1;	for each child
+@loop:	
+	lda Children_active,x;	if inactive
+	beq @return;		else return child
+		dex;		tick down through collection
+		bpl @loop
+		clc;		mark fail
+		rts;		c
+@return:
+	sec;			mark success
+	rts;			c
 
 
 Enemies_tick:
@@ -374,6 +399,20 @@ FUSE 	= 16
 	jmp Enemies_newEffect;	void(a) | x
 
 
+Children_clear:;		void() | x
+	
+	ldy #CHILDREN_MAX-1;	for each child
+@loop:
+	lda Children_active,y;	if active
+	beq @next;		else next
+		lda #FALSE;		deactivate
+		sta Children_active
+@next:
+	dey
+	bpl @loop
+	rts
+
+
 Enemies_newEffect:;		void(a) | x
 ; a - animation
 
@@ -449,14 +488,16 @@ Enemies_transferPoints:;	void(x) | x
 
 	rts
 
-ENEMY01=$01; reese boss
-ENEMY02=$02; fairy that returns fast
-ENEMY03=$03; mushroom hopper
-ENEMY04=$04; balloon cannon left
-ENEMY05=$05; balloon cannon right
-ENEMY06=$06; fairy that return slow
+ENEMY01=$01;	reese boss
+ENEMY02=$02;	fairy that returns fast
+ENEMY03=$03;	mushroom hopper
+ENEMY04=$04;	balloon cannon left
+ENEMY05=$05;	balloon cannon right
+ENEMY06=$06;	fairy that return slow
 ENEMY07=$07;	reese's left handgun
 ENEMY08=$08;	reese's right handgun
+ENEMY09=$09;	reese's right handgun
+ENEMY0A=$0A;	reese's right handgun
 
 
 .rodata
@@ -525,19 +566,30 @@ Enemy01:
 	.byte VULNERABLE
 	.byte 64; frames
 
-	.byte MOVEMENT0E;	spawn children who shoot
+	.byte MOVEMENT0E;	spawn children handguns
 	.byte ANIMATION09
 	.byte NULL
 	.byte VULNERABLE
-	.byte 64; frames
+	.byte 128; frames
 
 	.byte MOVEMENT01;	stand still
 	.byte ANIMATION09
 	.byte NULL
 	.byte VULNERABLE
-	.byte 64; frames
+	.byte 128; frames
 
-	.byte NULL, SIZE*3
+	.byte MOVEMENT0B;	spawn side patterns
+	.byte ANIMATION09
+	.byte NULL
+	.byte VULNERABLE
+	.byte 128
+
+	.byte MOVEMENT01;	stand still
+	.byte ANIMATION09
+	.byte NULL
+	.byte VULNERABLE
+	.byte 128; frames
+	.byte NULL, SIZE*5
 
 Enemy02:
 	.byte MOVEMENT09
@@ -679,7 +731,7 @@ Enemy06:
 Enemy07:
 	.byte MOVEMENT0C
 	.byte NULL
-	.byte PATTERN02
+	.byte PATTERN05
 	.byte INVULNERABLE
 	.byte 255
 	.byte NULL, 0
@@ -688,7 +740,25 @@ Enemy07:
 Enemy08:
 	.byte MOVEMENT0D
 	.byte NULL
-	.byte PATTERN02
+	.byte PATTERN05
+	.byte INVULNERABLE
+	.byte 255
+	.byte NULL, 0
+
+
+Enemy09:
+	.byte MOVEMENT0F
+	.byte NULL
+	.byte PATTERN01
+	.byte INVULNERABLE
+	.byte 255
+	.byte NULL, 0
+
+
+Enemy0A:
+	.byte MOVEMENT10
+	.byte NULL
+	.byte PATTERN01
 	.byte INVULNERABLE
 	.byte 255
 	.byte NULL, 0
@@ -697,11 +767,11 @@ Enemy08:
 Enemies_L:
 	.byte NULL,<Enemy01,<Enemy02,<Enemy03
 	.byte <Enemy04,<Enemy05,<Enemy06,<Enemy07
-	.byte <Enemy08
+	.byte <Enemy08,<Enemy09,<Enemy0A
 Enemies_H:
 	.byte NULL,>Enemy01,>Enemy02,>Enemy03
 	.byte >Enemy04,>Enemy05,>Enemy06,>Enemy07
-	.byte >Enemy08
+	.byte >Enemy08,>Enemy09,>Enemy0A
 
 
 MOVEMENT01=$01; not moving
@@ -714,10 +784,12 @@ MOVEMENT07=$07; exit right (baloon
 MOVEMENT08=$08; available
 MOVEMENT09=$09; ease in - down 64 frames
 MOVEMENT0A=$0A; ease in - up 64 frames (reese boss)
-MOVEMENT0B=$0B; available
-MOVEMENT0C=$0C; lock N pixels left of parent
-MOVEMENT0D=$0D; lock N pixels right of parent
+MOVEMENT0B=$0B; spawn reese's side patterns
+MOVEMENT0C=$0C; lock $20 pixels left of parent
+MOVEMENT0D=$0D; lock $20 pixels right of parent
 MOVEMENT0E=$0E; spawn reese's handguns
+MOVEMENT0F=$0F; Lock $60 pixels left of parent
+MOVEMENT10=$10; Lock $60 pixels right of parent
 
 
 ;Enemy stays in place
@@ -908,7 +980,16 @@ MUTATOR=1
 
 
 .proc Movement0B
-	
+
+	lda Enemies_clock,x;	poke clock
+	bne :+;			if 0th frame
+		lda #ENEMY09;		make left pattern
+		jsr Children_new;	c,y(x) | x
+		lda #ENEMY0A;		make right pattern
+		jsr Children_new;	c,y(x) | x
+	:
+	clc;			mark still onscreen
+	rts;			c
 
 .endproc
 
@@ -925,8 +1006,12 @@ DISTANCE	= $20
 	sbc #DISTANCE
 	sta enemyXH,x;	set x
 	
-	clc
-	rts;		;c
+	clc;			mark false
+	lda isEnemyActive,y;	if parent is inactive
+	bne :+
+		sec;		mark true
+	:
+	rts;			c
 
 .endproc
 
@@ -939,25 +1024,74 @@ DISTANCE	= $20
 	sta enemyYH,x
 	
 	clc
-	lda enemyXH,y;	move left N pixels
+	lda enemyXH,y;	move right N pixels
 	adc #DISTANCE
 	sta enemyXH,x;	set x
 	
-	clc
-	rts;		;c
+	clc;			mark false
+	lda isEnemyActive,y;	if parent is inactive
+	bne :+
+		sec;		mark true
+	:
+	rts;			c
 
 .endproc
 
+
 .proc Movement0E
-SPEED = $0020
 	lda Enemies_clock,x;	poke clock
 	bne :+;			if 0th frame
 		lda #ENEMY07;		make left handgun
-		jsr Enemies_newChild;	c,y(x) | x
+		jsr Children_new;	c,y(x) | x
 		lda #ENEMY08;		make left handgun
-		jsr Enemies_newChild;	c,y(x) | x
+		jsr Children_new;	c,y(x) | x
 	:
+	clc;			mark still onscreen
+	rts;			c
+
+.endproc
+
+
+.proc Movement0F
+DISTANCE	= $60
+	
+	ldy i,x;	get parent
+	lda enemyYH,y;	set y
+	sta enemyYH,x
+	
+	sec
+	lda enemyXH,y;	move right N pixels
+	sbc #DISTANCE
+	sta enemyXH,x;	set x
+	
+	clc;			mark false
+	lda isEnemyActive,y;	if parent is inactive
+	bne :+
+		sec;		mark true
+	:
+	rts;			c
+
+
+.endproc
+
+
+.proc Movement10
+DISTANCE	= $60
+	
+	ldy i,x;	get parent
+	lda enemyYH,y;	set y
+	sta enemyYH,x
+	
 	clc
+	lda enemyXH,y;	move right N pixels
+	adc #DISTANCE
+	sta enemyXH,x;	set x
+	
+	clc;			mark false
+	lda isEnemyActive,y;	if parent is inactive
+	bne :+
+		sec;		mark true
+	:
 	rts;			c
 
 .endproc
@@ -977,12 +1111,14 @@ Movement_L:
 	.byte 	     NULL,<Movement01,<Movement02,<Movement03
 	.byte <Movement04,<Movement05,<Movement06,<Movement07
 	.byte <Movement08,<Movement09,<Movement0A,<Movement0B
-	.byte <Movement0C,<Movement0D,<Movement0E
+	.byte <Movement0C,<Movement0D,<Movement0E,<Movement0F
+	.byte <Movement10
 
 Movement_H:
 	.byte        NULL,>Movement01,>Movement02,>Movement03
 	.byte >Movement04,>Movement05,>Movement06,>Movement07
 	.byte >Movement08,>Movement09,>Movement09,>Movement0B
-	.byte >Movement0C,>Movement0D,>Movement0E
+	.byte >Movement0C,>Movement0D,>Movement0E,>Movement0F
+	.byte >Movement10
 
 

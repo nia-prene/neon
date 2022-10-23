@@ -24,7 +24,6 @@ OAM_index:		.res 1
 buildX: 		.res 1
 buildY: 		.res 1
 buildPalette: 		.res 1
-spritePointer: 		.res 2
 limit: 			.res 1
 
 bulletShuffle: 		.res 1
@@ -123,116 +122,185 @@ buildHitbox:;x(x,a)
 
 	jmp OAM_build; void(a)
 
-.proc OAM_buildBullets
+.proc OAM_buildBullets;		void() |
 LIMIT=32
+	
+	lda #00
+	sta buildPalette;			universal clear attribute
+	
+	jsr Build_setShuffle;			a()
+	
+	ldy #LIMIT
+	lda Bullets_stagger;			see if building ones or twos
+	bne :+
+		jsr Build_firstPassOnes;		c,y(y) | y
+		bcs @limit
+		jmp Build_secondPassOnes; 		c(y) | y
+	:
+	jsr Build_firstPassTwos
+	bcs @limit
+	jmp Build_secondPassTwos
+@limit:
+	rts
 
-	lda #LIMIT; set sprite limit for layer
-	sta limit
+
+Build_setShuffle:
 
 	lda bulletShuffle; shuffle bullets
-	adc #(MAX_ENEMY_BULLETS/5) * 3; 3/5ths item collection
-	cmp #MAX_ENEMY_BULLETS-1
+	adc #((MAX_ENEMY_BULLETS/5) * 3)| 1; 	odd 3/5ths item collection
+	cmp #MAX_ENEMY_BULLETS-3;	
 	bcc @storeShuffle
-		sbc #MAX_ENEMY_BULLETS-1; make sure no wrap
+		sbc #MAX_ENEMY_BULLETS-3 & %11111111; make sure no wrap
+		cmp #MAX_ENEMY_BULLETS-3 & %11111111
+		bcc @storeShuffle
+		sbc #MAX_ENEMY_BULLETS-3
 @storeShuffle:
 	sta bulletShuffle
+	rts
 
-	tax; set as initial iterator
-	jsr firstPass; y(x) |
+
+Build_firstPassOnes:
+
+	ldx bulletShuffle
+@loop:
+	lda isEnemyBulletActive,x; 	if active and visible
+	cmp #1
+	bne @next;			else skip
+		
+	dey;				and bullets haven't hit limit
+	bmi @full;			else full
+
+		lda enemyBulletYH,x;	set y coordinate
+		sta buildY	
+		lda enemyBulletXH,x;	set x coordinate
+		sta buildX
+		
+		stx xReg;		save registers
+		sty yReg
+		
+		ldy Bullets_type,x;	get metaspirte
+		lda Bullets_sprite,y
+		jsr OAM_build
+
+		ldx xReg;		restore registers
+		ldy yReg
+@next:
+	dex
+	bpl @loop
+	clc;	mark not full
+	rts
+@full:	
+	sec;	mark full
+	rts
+
+
+Build_firstPassTwos:
+
+	ldx bulletShuffle
+@loop:
+	lda isEnemyBulletActive,x; 	if active and visible
+	cmp #1
+	bne @next;			else skip
+		
+	dey;				and bullets haven't hit limit
+	bmi @full;			else full
+
+		lda enemyBulletYH,x;	copy coordinates
+		sta buildY	
+		lda enemyBulletXH,x
+		sta buildX
+		
+		stx xReg;		save registers
+		sty yReg
+		
+		ldy Bullets_type,x;	get metaspirte
+		lda Bullets_sprite,y
+		jsr OAM_build;		c(a) |	build sprite 
+		ldx xReg;		restore registers
+		ldy yReg
+@next:
+	dex;		loop evens / odds
+	dex
+	bpl @loop
+	clc;		mark not full
+	rts
+@full:	
+	sec;	mark full
+	rts
+
+
+Build_secondPassOnes:
 
 	ldx #MAX_ENEMY_BULLETS-1
-	jsr secondPass; void(y,x) |
-	rts
-
-.align 32
-firstPass:
-	ldy OAM_index
-@bulletLoop:
-
-	lda isEnemyBulletActive,x; if active
+@loop:
+	lda isEnemyBulletActive,x; 	if active and visible
 	cmp #1
-	bne @skipBullet
+	bne @next;			else skip
 		
-	lda limit
-	beq @full
+	dey;				and bullets haven't hit limit
+	bmi @full;			else full
 
-		lda #$24
-
-		sta OAM+OFFSET_TILE,y
+		lda enemyBulletYH,x;	copy y coordinate
+		sta buildY	
+		lda enemyBulletXH,x;	copy x coordinate
+		sta buildX
 		
-		sec
-		lda enemyBulletYH,x
-		sbc #4
-		sta OAM+OFFSET_Y,y
+		stx xReg;		save registers
+		sty yReg
 		
-		sec
-		lda enemyBulletXH,x
-		sbc #4
-		sta OAM+OFFSET_X,y
-
-		lda #%11
-		sta OAM+OFFSET_ATTRIBUTE,y
-		
-		dec limit
-
-		iny
-		iny
-		iny
-		iny
-
-@skipBullet:
-	dex
-	bpl @bulletLoop
-
-@full:	
-	sty OAM_index
-	rts
-
-
-.align 32
-secondPass:
-	ldy OAM_index
-	
-@bulletLoop:
-	lda isEnemyBulletActive,x
-	cmp #1; if active and visible
-	bne @skipBullet
-		
-	lda limit; and not full
-	beq @full
-
-		lda #$24
-
-		sta OAM+OFFSET_TILE,y
-		
-		sec
-		lda enemyBulletYH,x
-		sbc #4
-		sta OAM+OFFSET_Y,y
-
-		lda enemyBulletXH,x
-		sbc #4
-		sta OAM+OFFSET_X,y
-
-		lda #%11
-		sta OAM+OFFSET_ATTRIBUTE,y
-
-		dec limit
-
-		iny
-		iny
-		iny
-		iny
-
-@skipBullet:
+		ldy Bullets_type,x;	get metaspirte
+		lda Bullets_sprite,y
+		jsr OAM_build;		c(a) | 	build entry
+		ldx xReg;		restore registers
+		ldy yReg
+@next:
 	dex
 	cpx bulletShuffle
-	bne @bulletLoop
-
+	bne @loop
+	clc;	mark not full
+	rts
 @full:	
-	sty OAM_index
+	sec;	mark full
 	rts
 
+
+Build_secondPassTwos:
+	lda bulletShuffle;		get iterator
+	and #%1;			see if odd
+	ora #MAX_ENEMY_BULLETS-2;	get the end of collection
+	tax;				second loop
+
+@loop:
+	lda isEnemyBulletActive,x; 	if active and visible
+	cmp #1
+	bne @next;			else skip
+		
+	dey;				and bullets haven't hit limit
+	bmi @full;			else full
+
+		lda enemyBulletYH,x;	copy y coordinate
+		sta buildY	
+		lda enemyBulletXH,x;	copy x coordinate
+		sta buildX
+		
+		stx xReg;		save registers
+		sty yReg
+
+		ldy Bullets_type,x;	get metaspirte
+		lda Bullets_sprite,y
+		jsr OAM_build;		c(a) | 	build entry
+		ldx xReg;		restore registers
+		ldy yReg
+@next:
+	dex;		loop odds / evens
+	dex
+	cpx bulletShuffle
+	bne @loop
+	clc;	mark not full
+	rts
+@full:	
+	sec;	mark full
+	rts
 
 .endproc
 
@@ -416,7 +484,10 @@ LIMIT = 8
 	tay; set as initial iterator
 	
 @firstPass:
-	lda isEnemyActive,y
+	lda isEnemyActive,y;	if active
+	beq @skipEnemy
+		
+	lda enemyMetasprite,y;	and has sprite
 	beq @skipEnemy
 		
 		dec limit
@@ -446,6 +517,8 @@ LIMIT = 8
 
 @secondPass:
 	lda isEnemyActive,y
+	beq @skip
+	lda enemyMetasprite,y
 	beq @skip
 		
 		dec limit
@@ -499,73 +572,70 @@ YPOS=64
 OAM_build:;	c(a)  | 
 ; a - metasprite to build
 ; c - set if full
-	
-	tax
+	tax;			get the sprite offset
 
-	lda Sprites_l,x
-	sta spritePointer
+	lda Sprites_l,x;	copy pointer
+	sta Lib_ptr0
 	lda Sprites_h,x
-	sta spritePointer+1
+	sta Lib_ptr0+1
 	
-	ldy #0; sprite 0
+	ldy #0;			start on byte 0
 	
-	ldx OAM_index; get the index
-
-@spriteLoop:
-
-	lda (spritePointer),y
-	beq @finished
-
-		sta OAM+OFFSET_TILE,x
-		iny
+	ldx OAM_index;		get the current index
+	lda (Lib_ptr0),y;	get the first byte (tile)
+@loop:
+	sta OAM+OFFSET_TILE,x;	set tile
+	iny
 		
-		clc
-		lda buildY
-		eor #$80
-		adc (spritePointer),y
-		eor #$80
-		bvs @nextAtY
-		sta OAM+OFFSET_Y,x
-		iny
+	clc;			add tile y offset to y coordinate
+	lda buildY
+	eor #$80
+	adc (Lib_ptr0),y;	signed addition
+	eor #$80
+	bvs @nextAtY;		if offscreen, skip
+	sta OAM+OFFSET_Y,x;	set y position
+	iny
 
-		clc
-		lda buildX
-		eor #$80
-		adc (spritePointer),y
-		eor #$80
-		bvs @nextAtX
-		sta OAM+OFFSET_X,x
-		iny
+	clc;			add tile x offset to x coordinate
+	lda buildX
+	eor #$80
+	adc (Lib_ptr0),y;	signed addition
+	eor #$80
+	bvs @nextAtX;		if offscreen, skip
+	sta OAM+OFFSET_X,x;	set x position
+	iny
 
-		lda (spritePointer),y
-		ora buildPalette
-		sta OAM+OFFSET_ATTRIBUTE,x
-		iny
+	lda (Lib_ptr0),y;	get attribute byte
+	ora buildPalette
+	sta OAM+OFFSET_ATTRIBUTE,x
+	iny
 
-		inx
-		inx
-		inx
-		inx
-
-		beq @full
-		
-		jmp @spriteLoop
-	@nextAtY:
-		iny
-	@nextAtX:
-		iny
-		iny
-		jmp @spriteLoop
-@finished:
-
-	stx OAM_index
+	inx;			move to next oam entry
+	inx
+	inx
+	inx
+	beq @full;		if full, return carry set
 	
-	clc
-	rts
+	lda (Lib_ptr0),y;	null to terminate
+	bne @loop
 
+	stx OAM_index;		save oam entry
+	clc;			mark space remaining
+	rts;			c
+
+@nextAtY:
+	iny;			skip to next sprite in metasprite
+@nextAtX:
+	iny
+	iny
+	lda (Lib_ptr0),y;	null terminated
+	bne @loop
+	stx OAM_index;		save oam entry
+	clc;			set room available
+	rts;			c
 @full:
-	sec
-	rts
+	sec;			mark full
+	rts;			c
 
 
 OAM_clearRemaining:

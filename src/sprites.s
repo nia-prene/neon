@@ -3,46 +3,48 @@
 
 .rodata
 
-SPRITE01=1; 	Player 1 neutral sprite
-SPRITE02=2; 	Player 1 moving left
-SPRITE03=3; 	Player 1 moving right
-SPRITE04=4;	Shot large star
-SPRITE05=5; 	Shot charged beam
-SPRITE06=6;	crumpled beam 1
-SPRITE07=7;	crumpled beam 2
-SPRITE08=8; 	Shot small star bullet
-SPRITE09=9; 	Shot beam bullet
-SPRITE0A=$0a;	small explosion frame 0
-SPRITE0B=$0b;	small explosion frame 1
-SPRITE0C=$0c;	small explosion frame 2
-SPRITE0D=$0d;	small explosion frame 3
-SPRITE0E=$0e;	fairy frame 0
-SPRITE0F=$0f; 	fairy frame 1 
-SPRITE10=$10; 	balloon cannon frame 0 palette 2
-SPRITE11=$11; 	balloon cannon frame 1 palette 2
-SPRITE12=$12;	Shot large star crumple
-SPRITE13=$13;	empty broom 
-SPRITE14=$14;	falling off broom
-SPRITE15=$15;Ready?
-SPRITE16=$16;Go!
-SPRITE17=$17;PAUSE
-SPRITE18=$18;Piper attack animation
-SPRITE19=$19;hitbox main frame 1
-SPRITE1A=$1a;hitbox main frame 2
-SPRITE1B=$1b;hitbox main frame 3
-SPRITE1C=$1c;hitbox main frame 4
-SPRITE1D=$1d;hitbox deploying
-SPRITE1E=$1e;small star charm spin front
-SPRITE1F=$1f;small star charm spin left slant
-SPRITE20=$20;small star charm spin side
-SPRITE21=$21;piper idle
-SPRITE22=$22;small star charm spin right slant
-SPRITE23=$23; mushroom idle
-SPRITE24=$24; mushroom crouch
-SPRITE25=$25; mushroom jump
-SPRITE26	= $26;		powerup small
-SPRITE27	= $27;		powerup large
-
+SPRITE01	=$01;	Player 1 neutral sprite
+SPRITE02	=$02; 	Player 1 moving left
+SPRITE03	=$03; 	Player 1 moving right
+SPRITE04	=$04;	Shot large star
+SPRITE05	=$05; 	Shot charged beam
+SPRITE06	=$06;	crumpled beam 1
+SPRITE07	=$07;	crumpled beam 2
+SPRITE08	=$08; 	Shot small star
+SPRITE09	=$09; 	Shot beam 
+SPRITE0A	=$0a;	small explosion frame 0
+SPRITE0B	=$0b;	small explosion frame 1
+SPRITE0C	=$0c;	small explosion frame 2
+SPRITE0D	=$0d;	small explosion frame 3
+SPRITE0E	=$0e;	fairy frame 0
+SPRITE0F	=$0f; 	fairy frame 1 
+SPRITE10	=$10; 	balloon cannon frame 0 palette 2
+SPRITE11	=$11; 	balloon cannon frame 1 palette 2
+SPRITE12	=$12;	Shot large star crumple
+SPRITE13	=$13;	empty broom 
+SPRITE14	=$14;	falling off broom
+SPRITE15	=$15;	Ready?
+SPRITE16	=$16;	Go!
+SPRITE17	=$17;	PAUSE
+SPRITE18	=$18;	Piper attack animation
+SPRITE19	=$19;	hitbox main frame 1
+SPRITE1A	=$1a;	hitbox main frame 2
+SPRITE1B	=$1b;	hitbox main frame 3
+SPRITE1C	=$1c;	hitbox main frame 4
+SPRITE1D	=$1d;	hitbox deploying
+SPRITE1E	=$1e;	small star charm spin front
+SPRITE1F	=$1f;	small star charm spin left slant
+SPRITE20	=$20;	small star charm spin side
+SPRITE21	=$21;	piper idle
+SPRITE22	=$22;	small star charm spin right slant
+SPRITE23	=$23;	mushroom idle
+SPRITE24	=$24;	mushroom crouch
+SPRITE25	= $25;	mushroom jump
+SPRITE26	= $26;	powerup small
+SPRITE27	= $27;	powerup large
+SPRITE28	= $28;	bullet 11
+SPRITE29	= $29;	bullet 01
+SPRITE2A	= $2A;	bullet 10
 
 ; format
 ; 	Tile, Y, X, Attribute 
@@ -186,8 +188,8 @@ Sprite1D:
 	.lobytes $0E,-4,-4,%0
 	.byte NULL
 Sprite1E:
-	.byte 0,$3a,%0,0
-	.byte TERMINATE
+	.lobytes 	$3a,	-04,	-04,	%0
+	.byte NULL
 Sprite1F:
 	.byte 0,$3c,%0,0
 	.byte TERMINATE
@@ -226,8 +228,14 @@ Sprite27:
 	.lobytes $2C,	 -08,	 00,	%00
 	.byte NULL
 Sprite28:
+	.lobytes $24,	 -04,	-04,	%11
+	.byte NULL
 Sprite29:
+	.lobytes $24,	 -04,	-04,	%01
+	.byte NULL
 Sprite2A:
+	.lobytes $24,	 -04,	-04,	%10
+	.byte NULL
 Sprite2B:
 Sprite2C:
 Sprite2D:

@@ -132,6 +132,7 @@ gamestate00:
 	
 	rts
 
+
 gamestate01:;void(currentPlayer, currentScene)
 ;loads level with current player.
 

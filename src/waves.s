@@ -172,6 +172,9 @@ Waves_next:; c()
 		lda wavePointerH,x
 		sta wavePointer+1
 
+		lda Wave_stagger,x
+		sta Bullets_stagger
+
 		lda Wave_palette00,x
 		tax
 		ldy #5
@@ -210,8 +213,8 @@ waveStrings_L:
 	.byte <waveString00
 waveString00:
 
-	;.byte WAVE02
-	;.byte WAVE03
+	.byte WAVE02
+	.byte WAVE03
 	.byte WAVE01
 	.byte NULL
 ;pointers to individual enemy waves (below)
@@ -234,7 +237,8 @@ Wave_palette00:
 	.byte NULL,PALETTE08,PALETTE07,PALETTE07
 Wave_palette01:
 	.byte NULL,PALETTE09,PALETTE06,PALETTE0B
-
+Wave_stagger:
+	.byte NULL,TRUE,FALSE,FALSE
 ;individual enemy waves
 ;	.byte enemy, position, hold, etc, NULL
 

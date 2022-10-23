@@ -44,20 +44,20 @@ Patterns_tick:; void(x)
 BITS_QUADRANT=%11000000
 BITS_ANGLE=%11111100
 
-PATTERN01=$01; reese test?
-PATTERN02=$02; aimed fairy
-PATTERN03=$03; aimed mushroom
-PATTERN04=$04; baloon cannon
+PATTERN01=$01; 			reese patterns
+PATTERN02=$02;			aimed fairy
+PATTERN03=$03;			aimed mushroom
+PATTERN04=$04;			baloon cannon
+PATTERN05=$05;			Reese handguns
 
 
 .proc Pattern01
-SHOTS=4
-RATE=%11
-BULLET_COUNT=4
-BULLET_INVISIBILITY=24
-FRAME_CHANGE=8*15
-PATTERN_CHANGE=256/BULLET_COUNT
-MAX_TIME=SHOTS*(RATE+1)
+RATE			= %1111111
+BULLET_COUNT		= 16
+BULLET_INVISIBILITY	= 32
+FRAME_CHANGE		= 4
+PATTERN_CHANGE		= 128/BULLET_COUNT
+TYPE			= 1
 
 	lda Enemies_clock,x
 	and #RATE
@@ -68,6 +68,7 @@ MAX_TIME=SHOTS*(RATE+1)
 		
 		clc
 		adc #FRAME_CHANGE
+		and #%01111111
 
 		sta p,x
 
@@ -92,6 +93,9 @@ MAX_TIME=SHOTS*(RATE+1)
 		lda enemyXH,x
 		sta enemyBulletXH,y
 		
+		lda #TYPE
+		sta Bullets_type,y
+
 		lda #BULLET_INVISIBILITY
 		sta isEnemyBulletActive,y
 
@@ -105,34 +109,38 @@ MAX_TIME=SHOTS*(RATE+1)
 .endproc
 
 .proc Pattern02
-INVISIBILITY = 8
-RATE = %11111111
-SPEED = 0
+INVISIBILITY 	= 8
+RATE 		= %00110011
+SPEED 		= 0
+TYPE		= 1
+AIM		= %00001111
 
-	lda #INVISIBILITY
-	sta Bullets_fastForwardFrames
+	lda Enemies_clock,x;	if firing
+	and #RATE
+	bne @return;		else return
+		lda #INVISIBILITY;		set invisibility
+		sta Bullet_invisibility
+		lda #TYPE;			set type
+		sta Bullet_type
 
-	lda Enemies_clock,x
-	and #%00110011
-	bne @return
-		lda Enemies_clock,x
-		and #%00001111
+		lda Enemies_clock,x;		if aiming frame
+		and #AIM
 		bne @shoot
-			jsr Bullets_aim; a(x) | x
-			bit ROUND_4
+			jsr Bullets_aim; a(x) | x	aim bullet
+			bit ROUND_4;		round to nearest 4
 			beq :+
-				clc
+				clc;		round up
 				adc #4
-			:and #BITS_ANGLE
-			sta p,x
-			jmp Bullets_new; cax) | x
+			:and #BITS_ANGLE;	isolate angle
+			sta p,x;		save bullet
+			jmp Bullets_new; 	c(a,x) | x 	new bullet
 		
 	@shoot:
-		clc
+		clc;			offset to next shot
 		lda p,x
 		adc #1
 		sta p,x
-		jmp Bullets_new; cax) | x
+		jmp Bullets_new;	c(a,x) | x	new bullet
 @return:	
 	rts
 
@@ -141,9 +149,12 @@ SPEED = 0
 
 .proc Pattern03
 INVISIBILITY	=16
+TYPE			= 1
 	
 	lda #INVISIBILITY
-	sta Bullets_fastForwardFrames
+	sta Bullet_invisibility
+	lda #TYPE
+	sta Bullet_type
 
 	lda Enemies_clock,x
 	bne @return
@@ -166,12 +177,15 @@ RATE		= %11001111
 SPEED		= BITS_ANGLE
 COUNT		= 4
 SEPARATION	= 16
+TYPE			= 1
 	
 	lda Enemies_clock,x
 	and #RATE
 	bne @return
 		lda #INVISIBILITY
-		sta Bullets_fastForwardFrames
+		sta Bullet_invisibility
+		lda #TYPE
+		sta Bullet_type
 		lda Enemies_clock,x
 		bne :+
 			jsr Bullets_aim
@@ -207,12 +221,47 @@ SEPARATION	= 16
 
 .endproc
 
-.proc Pattern05
 
+.proc Pattern05
+TYPE		= 2
+INVISIBILITY 	= 8
+RATE 		= %00100111
+AIM		= %00111111
+
+	lda Enemies_clock,x;	if firing
+	and #RATE
+	bne @return;		else return
+		lda #INVISIBILITY;		set invisibility
+		sta Bullet_invisibility
+		lda #TYPE;			set type
+		sta Bullet_type
+
+		lda Enemies_clock,x;		if aiming frame
+		and #AIM
+		bne @shoot
+			jsr Bullets_aim; a(x) | x	aim bullet
+			bit ROUND_4;		round to nearest 4
+			beq :+
+				clc;		round up
+				adc #4
+			:and #BITS_ANGLE;	isolate angle
+			sta p,x;		save bullet
+			jmp Bullets_new; 	c(a,x) | x 	new bullet
+		
+	@shoot:
+		clc;			offset to next shot
+		lda p,x
+		adc #1
+		sta p,x
+		jmp Bullets_new;	c(a,x) | x	new bullet
+@return:	
+	rts
 
 .endproc
 
 Patterns_L:
-	.byte NULL,<Pattern01,<Pattern02,<Pattern03,<Pattern04
+	.byte NULL,<Pattern01,<Pattern02,<Pattern03
+	.byte <Pattern04,<Pattern05
 Patterns_H:
-	.byte NULL,>Pattern01,>Pattern02,>Pattern03,>Pattern04
+	.byte NULL,>Pattern01,>Pattern02,>Pattern03
+	.byte >Pattern04,>Pattern05

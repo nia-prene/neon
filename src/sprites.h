@@ -40,12 +40,12 @@
 .globalzp SPRITE27
 .globalzp SPRITE28
 .globalzp SPRITE29
-.globalzp SPRITE2a
-.globalzp SPRITE2b
-.globalzp SPRITE2c
-.globalzp SPRITE2d
-.globalzp SPRITE2e
-.globalzp SPRITE2f
+.globalzp SPRITE2A
+.globalzp SPRITE2B
+.globalzp SPRITE2C
+.globalzp SPRITE2D
+.globalzp SPRITE2E
+.globalzp SPRITE2F
 
 .globalzp ANIMATION01
 .globalzp ANIMATION02

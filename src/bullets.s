@@ -8,11 +8,10 @@
 .include "enemies.h"
 
 BULLETS_VARIETIES=8
-MAX_ENEMY_BULLETS=100
+MAX_ENEMY_BULLETS=80
 
 .zeropage
 ;arguments
-Bullets_fastForwardFrames:.res 1
 
 
 ;locals
@@ -26,16 +25,21 @@ quickBulletY: .res 1
 isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 
 .data
+Bullets_stagger:	.res 1;		staggers oam build
 
-Bullets_ID: .res MAX_ENEMY_BULLETS
-enemyBulletXH: .res MAX_ENEMY_BULLETS
-enemyBulletXL: .res MAX_ENEMY_BULLETS
-enemyBulletYH: .res MAX_ENEMY_BULLETS
-enemyBulletYL: .res MAX_ENEMY_BULLETS
+Bullet_invisibility:	.res 1;		invisibility for constructed bullet
+Bullet_type:		.res 1;		type for cunstructed bullet
+
+Bullets_ID: 		.res MAX_ENEMY_BULLETS
+Bullets_type:		.res MAX_ENEMY_BULLETS
+enemyBulletXH:		.res MAX_ENEMY_BULLETS
+enemyBulletXL:		.res MAX_ENEMY_BULLETS
+enemyBulletYH:		.res MAX_ENEMY_BULLETS
+enemyBulletYL:		.res MAX_ENEMY_BULLETS
+
 
 .code
 
-Bullets_init:
 	
 Bullets_new:; c(x) | x
 	
@@ -49,8 +53,11 @@ Bullets_new:; c(x) | x
 		sta enemyBulletXH,y
 		lda enemyYH,x
 		sta enemyBulletYH,y;
+		
+		lda Bullet_type
+		sta Bullets_type,y
 	
-		lda Bullets_fastForwardFrames; invisibility frames
+		lda Bullet_invisibility; invisibility frames
 		sta isEnemyBulletActive,y
 	
 @bulletsFull:
@@ -130,6 +137,9 @@ Charms_spin:; (void)
 		bcc :+
 			lda #255;	no overflow
 		:sta enemyBulletYH,x
+		
+		lda #BULLET04;		change type
+		sta Bullets_type,x
 
 @skipCharm:
 	
@@ -314,17 +324,15 @@ Charms_suck:
 
 .rodata
 
-Bullets_spriteBank:
-	.byte SPRITE02,SPRITE02,SPRITE02,SPRITE02
-;the following attributes are the bullets type. The bullet type is stored with the enemy wave, so that each bullet can change sprite, width, etc throughout gameplay at the beginning of each enemy wave, where it will remain constant until the next enemy wave is loaded.
-romEnemyBulletHitbox1:
-	.byte 2, 3
-romEnemyBulletHitbox2:
-	.byte 4, 12
-Bullets_diameterROM:
-	.byte 8, 16	
-romEnemyBulletMetasprite:
-	.byte SPRITE02,SPRITE03
+BULLET01 = $01;		standard purple
+BULLET02 = $02;		standard color 01
+BULLET03 = $03;		standard color 10
+BULLET04 = $04;		standard color 01
+
+
+Bullets_sprite:
+	.byte NULL,SPRITE28,SPRITE29,SPRITE2A
+	.byte SPRITE1E
 
 .macro bulletFib quadrant, X_H, X_L, Y_H, Y_L,
 .if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))

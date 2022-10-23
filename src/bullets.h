@@ -1,6 +1,15 @@
 ;constants
 .globalzp MAX_ENEMY_BULLETS
 
+
+;constructors
+.global 	Bullets_new
+.global 	Bullets_get
+.global		Bullet_invisibility
+.global		Bullet_type
+
+
+
 ;locals
 .globalzp quickBulletX
 .globalzp quickBulletY
@@ -8,27 +17,19 @@
 .globalzp octant
 .globalzp numberOfBullets
 .globalzp bulletAngle
-.globalzp Bullets_fastForwardFrames
 
 ;attributes
-.globalzp isEnemyBulletActive
-.global enemyBulletHitbox1
-.global enemyBulletHitbox2
-.global enemyBulletBehaviorH
-.global enemyBulletBehaviorL
-.global enemyBulletXH
-.global enemyBulletXL
-.global enemyBulletYH
-.global enemyBulletYL
-.global enemyBulletMetasprite
-.global enemyBulletBehaviorH
-.global enemyBulletBehaviorL
-.global Bullets_ID
-
+.globalzp	isEnemyBulletActive
+.global		enemyBulletXH
+.global		enemyBulletXL
+.global		enemyBulletYH
+.global		enemyBulletYL
+.global 	Bullets_ID
+.global		Bullets_type
+.global		Bullets_sprite
+.global		Bullets_stagger
 
 ;functions
-.global Bullets_new
-.global Bullets_get
 .global Bullets_tick
 .global Bullets_aim
 .global Bullets_clockwise
