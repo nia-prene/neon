@@ -400,16 +400,21 @@ FUSE 	= 16
 
 
 Children_clear:;		void() | x
+	stx xReg;		save x register
 	
 	ldy #CHILDREN_MAX-1;	for each child
 @loop:
 	lda Children_active,y;	if active
 	beq @next;		else next
+		ldx Children_offset,y
 		lda #FALSE;		deactivate
-		sta Children_active
+		sta isEnemyActive,x
+		sta Children_active,y
 @next:
-	dey
+	dey;			while children left
 	bpl @loop
+
+	ldx xReg;		restore x register
 	rts
 
 
@@ -496,21 +501,23 @@ ENEMY05=$05;	balloon cannon right
 ENEMY06=$06;	fairy that return slow
 ENEMY07=$07;	reese's left handgun
 ENEMY08=$08;	reese's right handgun
-ENEMY09=$09;	reese's right handgun
-ENEMY0A=$0A;	reese's right handgun
+ENEMY09=$09;	reese's left pattern
+ENEMY0A=$0A;	reese's right pattern
+ENEMY0B=$0B;	reese's left sniper
+ENEMY0C=$0C;	reese's right sniper
 
 
 .rodata
 
 
 romEnemyHPL:;	total hit points until defeat
-	.byte 	NULL,	$00,	$20,	$50	
-	.byte 	$00, 	$00,	$10,	$00
-	.byte	$00
+	.byte 	NULL,	$00,	$20,	$30	
+	.byte 	$80, 	$80,	$10,	$00
+	.byte	$00,	$00,	$00
 romEnemyHPH:
 	.byte 	NULL,	$10,	$00,	$00
-	.byte	$01,	$01,	$00,	$FF
-	.byte	$FF
+	.byte	$00,	$00,	$00,	$FF
+	.byte	$FF,	$FF,	$FF
 Enemies_points_l:;	points gained on defeat
 	.byte 	NULL,	$19,	$10,	$10
 	.byte	$30,	$20,	$10,	$00
@@ -557,39 +564,41 @@ Enemy01:
 	.byte MOVEMENT0A;	fly up
 	.byte ANIMATION09
 	.byte NULL
-	.byte INVULNERABLE
+	.byte VULNERABLE
 	.byte 64+8; frames
-
-	.byte MOVEMENT01;	wait a second
+	
+	.byte MOVEMENT0E;	spawn handguns
 	.byte ANIMATION09
 	.byte NULL
 	.byte VULNERABLE
-	.byte 64; frames
+	.byte 255; frames
 
-	.byte MOVEMENT0E;	spawn children handguns
+	.byte MOVEMENT0B;	spawn patterns
 	.byte ANIMATION09
 	.byte NULL
 	.byte VULNERABLE
-	.byte 128; frames
+	.byte 255
 
-	.byte MOVEMENT01;	stand still
+	.byte MOVEMENT08;	charge forward
 	.byte ANIMATION09
-	.byte NULL
+	.byte PATTERN06
 	.byte VULNERABLE
-	.byte 128; frames
+	.byte 16
 
-	.byte MOVEMENT0B;	spawn side patterns
+	.byte MOVEMENT11;	pull back handgun
 	.byte ANIMATION09
-	.byte NULL
+	.byte PATTERN07
 	.byte VULNERABLE
-	.byte 128
+	.byte 93;		lign up with previous value
 
-	.byte MOVEMENT01;	stand still
-	.byte ANIMATION09
-	.byte NULL
+	.byte MOVEMENT12;	spawn snipers and self pattern
+	.byte ANIMATION0A
+	.byte PATTERN08
 	.byte VULNERABLE
-	.byte 128; frames
-	.byte NULL, SIZE*5
+	.byte 255; frames
+
+	.byte NULL, 2*SIZE
+
 
 Enemy02:
 	.byte MOVEMENT09
@@ -657,23 +666,17 @@ Enemy04:; balloon exit left
 	.byte NULL
 	.byte VULNERABLE
 	.byte 64
-
 	.byte MOVEMENT02;	float and shoot
 	.byte ANIMATION04
 	.byte PATTERN04
 	.byte VULNERABLE
-	.byte 128
-	.byte MOVEMENT02;	float and shoot
+	.byte 255
+	.byte MOVEMENT02; 	float down
 	.byte ANIMATION04
-	.byte PATTERN04
+	.byte NULL
 	.byte VULNERABLE
-	.byte 128
-	.byte MOVEMENT02;	float and shoot
-	.byte ANIMATION04
-	.byte PATTERN04
-	.byte VULNERABLE
-	.byte 128
-	.byte MOVEMENT03
+	.byte 64
+	.byte MOVEMENT03;	exit
 	.byte ANIMATION04
 	.byte NULL
 	.byte VULNERABLE
@@ -690,17 +693,12 @@ Enemy05:; balloon cannon exit right
 	.byte ANIMATION04
 	.byte PATTERN04
 	.byte VULNERABLE
-	.byte 128
-	.byte MOVEMENT02;	shoot
+	.byte 255
+	.byte MOVEMENT02; 	float down
 	.byte ANIMATION04
-	.byte PATTERN04
+	.byte NULL
 	.byte VULNERABLE
-	.byte 128
-	.byte MOVEMENT02;	shoot
-	.byte ANIMATION04
-	.byte PATTERN04
-	.byte VULNERABLE
-	.byte 128
+	.byte 64
 	.byte MOVEMENT07;	exit right
 	.byte ANIMATION04
 	.byte NULL
@@ -729,7 +727,7 @@ Enemy06:
 	.byte 255; frames
 
 Enemy07:
-	.byte MOVEMENT0C
+	.byte MOVEMENT0C;	shoot handgun
 	.byte NULL
 	.byte PATTERN05
 	.byte INVULNERABLE
@@ -738,7 +736,7 @@ Enemy07:
 
 
 Enemy08:
-	.byte MOVEMENT0D
+	.byte MOVEMENT0D;	shot handgun
 	.byte NULL
 	.byte PATTERN05
 	.byte INVULNERABLE
@@ -747,7 +745,7 @@ Enemy08:
 
 
 Enemy09:
-	.byte MOVEMENT0F
+	.byte MOVEMENT0F;	make pattern on left
 	.byte NULL
 	.byte PATTERN01
 	.byte INVULNERABLE
@@ -756,22 +754,39 @@ Enemy09:
 
 
 Enemy0A:
-	.byte MOVEMENT10
+	.byte MOVEMENT10;	make pattern on right
 	.byte NULL
 	.byte PATTERN01
 	.byte INVULNERABLE
 	.byte 255
 	.byte NULL, 0
 
+Enemy0B:
+	.byte MOVEMENT0C;	make sniper on left
+	.byte NULL
+	.byte PATTERN05
+	.byte INVULNERABLE
+	.byte 255
+	.byte NULL, 0
+
+Enemy0C:
+	.byte MOVEMENT0D;	make sniper on right
+	.byte NULL
+	.byte PATTERN05
+	.byte INVULNERABLE
+	.byte 255
+	.byte NULL, 0
 
 Enemies_L:
 	.byte NULL,<Enemy01,<Enemy02,<Enemy03
 	.byte <Enemy04,<Enemy05,<Enemy06,<Enemy07
-	.byte <Enemy08,<Enemy09,<Enemy0A
+	.byte <Enemy08,<Enemy09,<Enemy0A,<Enemy0B
+	.byte <Enemy0C
 Enemies_H:
 	.byte NULL,>Enemy01,>Enemy02,>Enemy03
 	.byte >Enemy04,>Enemy05,>Enemy06,>Enemy07
-	.byte >Enemy08,>Enemy09,>Enemy0A
+	.byte >Enemy08,>Enemy09,>Enemy0A,>Enemy0B
+	.byte >Enemy0C
 
 
 MOVEMENT01=$01; not moving
@@ -781,7 +796,7 @@ MOVEMENT04=$04; ease in - down 32 frames
 MOVEMENT05=$05; ease out - up with gravity 32 frames
 MOVEMENT06=$06; jump down (mushroom)
 MOVEMENT07=$07; exit right (baloon
-MOVEMENT08=$08; available
+MOVEMENT08=$08; reese charge forward
 MOVEMENT09=$09; ease in - down 64 frames
 MOVEMENT0A=$0A; ease in - up 64 frames (reese boss)
 MOVEMENT0B=$0B; spawn reese's side patterns
@@ -790,6 +805,8 @@ MOVEMENT0D=$0D; lock $20 pixels right of parent
 MOVEMENT0E=$0E; spawn reese's handguns
 MOVEMENT0F=$0F; Lock $60 pixels left of parent
 MOVEMENT10=$10; Lock $60 pixels right of parent
+MOVEMENT11=$11; reese charge back
+MOVEMENT12=$12; spawn reese's snipers
 
 
 ;Enemy stays in place
@@ -854,10 +871,10 @@ MUTATOR=1
 	tay
 	clc
 	lda enemyYL,x
-	adc Ease_out_l,y
+	adc Ease_outTwos_l,y
 	sta enemyYL,x
 	lda enemyYH,x
-	adc Ease_out_h,y
+	adc Ease_outTwos_h,y
 	sta enemyYH,x
 
 	rts; c
@@ -876,10 +893,10 @@ MUTATOR=1
 	tay
 	sec
 	lda enemyYL,x
-	sbc Ease_in_l,y
+	sbc Ease_inTwos_l,y
 	sta enemyYL,x
 	lda enemyYH,x
-	sbc Ease_in_h,y
+	sbc Ease_inTwos_h,y
 	sta enemyYH,x
 	bcs :+
 		sec; clear from screen
@@ -940,8 +957,23 @@ MUTATOR=1
 
 
 .proc Movement08
+	
+	ldy Enemies_clock,x
+	bne :+
+		jsr Children_clear;	void() | x
+		ldy Enemies_clock,x
+	:
+	
+	clc
+	lda Ease_outFours_l,y
+	adc enemyYL,x
+	sta enemyYL,x
 
+	lda Ease_outFours_h,y
+	adc enemyYH,x
+	sta enemyYH,x
 
+	rts
 
 .endproc
 
@@ -957,10 +989,10 @@ MUTATOR=1
 	tay
 	clc
 	lda enemyYL,x
-	adc Ease_out_l,y
+	adc Ease_outTwos_l,y
 	sta enemyYL,x
 	lda enemyYH,x
-	adc Ease_out_h,y
+	adc Ease_outTwos_h,y
 	sta enemyYH,x
 
 	rts; c
@@ -968,9 +1000,9 @@ MUTATOR=1
 
 
 .proc Movement0A
-	clc
+	sec
 	lda enemyYH,x
-	sbc #2
+	sbc #3
 	sta enemyYH,x
 
 	clc
@@ -995,7 +1027,7 @@ MUTATOR=1
 
 
 .proc Movement0C;	c(x) | x
-DISTANCE	= $20
+DISTANCE	= $18
 	
 	ldy i,x;	get parent
 	lda enemyYH,y;	set y
@@ -1017,7 +1049,7 @@ DISTANCE	= $20
 
 
 .proc Movement0D;	c(x) | x
-DISTANCE	= $20
+DISTANCE	= $18
 	
 	ldy i,x;	get parent
 	lda enemyYH,y;	set y
@@ -1096,29 +1128,73 @@ DISTANCE	= $60
 
 .endproc
 
-
-Ease_in_l:
-	.byte 0, 0, 0, 0, 16, 16, 32, 48, 80, 112, 144, 208, 0, 80, 160, 0
-Ease_in_h:
-	.byte  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2
+.proc Movement11
+SPEED		= $0080
 	
-Ease_out_l:
+	lda Enemies_clock,x
+	bne :+
+		lda #00;	zero this out so same spot
+		sta enemyYL,x
+	:
+	sec
+	lda enemyYL,x
+	sbc #<SPEED
+	sta enemyYL,x
+
+	lda enemyYH,x
+	sbc #>SPEED
+	sta enemyYH,x
+	
+	clc
+	rts
+
+.endproc
+
+
+.proc Movement12
+	lda Enemies_clock,x;	poke clock
+	bne :+;			if 0th frame
+		lda #ENEMY0B;		make left sniper
+		jsr Children_new;	c,y(x) | x
+		lda #ENEMY0C;		make right sniper
+		jsr Children_new;	c,y(x) | x
+	:
+	clc;			mark still onscreen
+	rts;			c
+	
+
+.endproc
+
+
+Ease_inTwos_l:
+	.byte 0, 0, 0, 0, 16, 16, 32, 48, 80, 112, 144, 208, 0, 80, 160, 0
+Ease_inTwos_h:
+	.byte  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2
+Ease_inFours_l:
+Ease_inFours_H:
+	
+Ease_outTwos_l:
 	.byte 0,0,0,0,240, 240, 224, 208, 176, 144, 112, 48, 0, 176, 96, 0
-Ease_out_h:
+Ease_outTwos_h:
 	.byte  2,  2,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0
+
+Ease_outFours_l:
+	.byte 0, 0, 0, 240, 240, 224, 192, 144, 96, 32, 208, 112, 240, 96, 192, 0
+Ease_outFours_h:
+	.byte  4,  4,  4,  3,  3,  3,  3,  3,  3,  3,  2,  2,  1,  1,  0,  0
 
 Movement_L:
 	.byte 	     NULL,<Movement01,<Movement02,<Movement03
 	.byte <Movement04,<Movement05,<Movement06,<Movement07
 	.byte <Movement08,<Movement09,<Movement0A,<Movement0B
 	.byte <Movement0C,<Movement0D,<Movement0E,<Movement0F
-	.byte <Movement10
+	.byte <Movement10,<Movement11,<Movement12
 
 Movement_H:
 	.byte        NULL,>Movement01,>Movement02,>Movement03
 	.byte >Movement04,>Movement05,>Movement06,>Movement07
 	.byte >Movement08,>Movement09,>Movement09,>Movement0B
 	.byte >Movement0C,>Movement0D,>Movement0E,>Movement0F
-	.byte >Movement10
+	.byte >Movement10,>Movement11,>Movement12
 
 

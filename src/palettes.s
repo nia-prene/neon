@@ -23,7 +23,7 @@ PALETTE07=7; red mushroom
 PALETTE08=$08;orange piper palette
 PALETTE09=$09;green piper palette palette
 PALETTE0A=$0a;player 1 portrait
-PALETTE0B=$0b; pink baloon cannon
+PALETTE0B=$0b; orange baloon cannon
 PALETTE0C=$0C; turquise fairy
 
 romColor1:
@@ -31,10 +31,10 @@ romColor1:
 	.byte $07, $07, $07, $01, $0C
 romColor2:
 	.byte $25, $2a, $23, $21, $05, $24, $36, $15
-	.byte $26, $29, $15, $25, $35
+	.byte $26, $29, $15, $26, $35
 romColor3:
 	.byte $35, $39, $37, $31, $30, $34, $30, $30
-	.byte $36, $36, $35, $35, $3B
+	.byte $36, $36, $35, $36, $3B
 
 ;;;;;;;;;;;;;
 ;collections;

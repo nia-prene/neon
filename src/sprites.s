@@ -26,7 +26,7 @@ SPRITE14	=$14;	falling off broom
 SPRITE15	=$15;	Ready?
 SPRITE16	=$16;	Go!
 SPRITE17	=$17;	PAUSE
-SPRITE18	=$18;	Piper attack animation
+SPRITE18	=$18;	reese hands up
 SPRITE19	=$19;	hitbox main frame 1
 SPRITE1A	=$1a;	hitbox main frame 2
 SPRITE1B	=$1b;	hitbox main frame 3
@@ -35,7 +35,7 @@ SPRITE1D	=$1d;	hitbox deploying
 SPRITE1E	=$1e;	small star charm spin front
 SPRITE1F	=$1f;	small star charm spin left slant
 SPRITE20	=$20;	small star charm spin side
-SPRITE21	=$21;	piper idle
+SPRITE21	=$21;	reese idle
 SPRITE22	=$22;	small star charm spin right slant
 SPRITE23	=$23;	mushroom idle
 SPRITE24	=$24;	mushroom crouch
@@ -294,6 +294,8 @@ Animation09:
 	.byte SPRITE21, 255
 	.byte NULL, 0
 Animation0A:
+	.byte SPRITE18, 255
+	.byte NULL, 0
 Animation0B:
 
 Sprites_h:

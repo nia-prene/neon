@@ -118,6 +118,7 @@ gamestate00:
 @noBomb:
 	clc
 	jsr Player_isHit
+	clc;	invincible
 	bcc @playerUnharmed
 		
 		lda #GAMESTATE0A
@@ -515,8 +516,10 @@ gamestate0B:; recovering from fall
 	lda Gamepads_state
 	jsr Player_move;(a)
 	jsr Hitbox_tick
-
-	jsr PlayerBullets_move;void()
+	
+	lda g
+	jsr Player_flicker;	void(a) |	flicker the player
+	jsr PlayerBullets_move;	void()
 	lda Gamepads_state
 	ldx Gamepads_last
 	jsr PlayerBullets_shoot; void(a,x) |

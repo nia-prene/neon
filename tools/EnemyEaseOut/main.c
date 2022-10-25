@@ -3,7 +3,7 @@
 #define FRAMES (16-1)
 #define STEPS 1.0/FRAMES
 #define SLOWSPEED .0f
-#define FASTSPEED 2.0f
+#define FASTSPEED 4.0f
 #define SPEEDDIFF (float)FASTSPEED-SLOWSPEED
 #define ROUND 16
 float easeOut(float x);

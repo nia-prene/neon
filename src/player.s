@@ -11,6 +11,8 @@
 
 PLAYERS_MAX		= 2
 PLAYERS_POWER_MAX	= $200
+
+
 .zeropage
 Player_xPos_H: .res 1
 Player_yPos_H: .res 1
@@ -115,19 +117,17 @@ MAX_RIGHT = 256-8
 MAX_LEFT = 08
 MAX_UP = 0+16
 MAX_DOWN = 240-16
-SPEED_MAX=16
+SPEED_MIN=16
 
 	and #BUTTON_B
 	bne @goingSlow
 
 	@goingFast:
 
-		clc 
+		sec
 		lda Player_speedIndex; move index 
-		adc #1
-
-		cmp #SPEED_MAX
-		bcc :+
+		sbc #1
+		bcs :+
 			lda #FALSE
 			sta Player_focused; all the way slow
 			rts
@@ -135,10 +135,11 @@ SPEED_MAX=16
 		rts
 
 	@goingSlow:
-		sec
+		clc 
 		lda Player_speedIndex; move the index
-		sbc #1
-		bcs :+
+		adc #1
+		cmp #SPEED_MIN
+		bcc :+
 			lda #TRUE
 			sta Player_focused; all the way fast
 			rts
@@ -432,6 +433,9 @@ Player_move:; void(a)
 
 
 @cardinal_l:
+	;2 - .75
+	.byte 0, 0, 0, 0, 0, 240, 240, 224
+	.byte 208, 192, 160, 128, 96, 48, 0, 192
 	;1.75 - .75
 	;.byte 192, 240, 32, 64, 96, 112, 144, 160
 	;.byte 160, 176, 176, 192, 192, 192, 192, 192
@@ -439,13 +443,16 @@ Player_move:; void(a)
 	;.byte 128, 192, 240, 32, 64, 96, 128, 144
 	;.byte 160, 176, 176, 192, 192, 192, 192, 192
 	;2 - .5	
-	.byte 128, 192, 0, 64, 112, 144, 176, 192
-	.byte 224, 224, 240, 0, 0, 0, 0, 0
+	;.byte 128, 192, 0, 64, 112, 144, 176, 192
+	;.byte 224, 224, 240, 0, 0, 0, 0, 0
 	;1.5 - .5
 	;.byte 128, 176, 224, 0, 32, 48, 80, 96
 	;.byte 96, 112, 112, 128, 128, 128, 128, 128
 
 @cardinal_h:
+	;2 - .75
+	.byte 2,  2,  2,  2,  2,  1,  1,  1
+	.byte 1,  1,  1,  1,  1,  1,  1,  0
 	;1.75 - .75
 	;.byte 0,  0,  1,  1,  1,  1,  1,  1
 	;.byte 1,  1,  1,  1,  1,  1,  1,  1
@@ -453,13 +460,16 @@ Player_move:; void(a)
 	;.byte  0,  0,  0,  1,  1,  1,  1,  1
 	;.byte  1,  1,  1,  1,  1,  1,  1,  1
 	;2 - .5	
-	.byte  0,  0,  1,  1,  1,  1,  1,  1
-	.byte  1,  1,  1,  2,  2,  2,  2,  2
+	;.byte  0,  0,  1,  1,  1,  1,  1,  1
+	;.byte  1,  1,  1,  2,  2,  2,  2,  2
 	;1.5 - .5
 	;.byte  0,  0,  0,  1,  1,  1,  1,  1
 	;.byte  1,  1,  1,  1,  1,  1,  1,  1
 
 @ordinal_l:
+	;2.0 - .75
+	.byte 112, 112, 112, 112, 112, 96, 96, 80
+	.byte 80, 64, 48, 16, 240, 208, 176, 128
 	;1.75 - .75
 	;.byte 128, 176, 192, 224, 240, 16, 32, 32
 	;.byte 48, 48, 64, 64, 64, 64, 64, 64
@@ -467,13 +477,16 @@ Player_move:; void(a)
 	;.byte 96, 128, 176, 208, 224, 0, 16, 32
 	;.byte 48, 48, 48, 64, 64, 64, 64, 64 
 	;2.0 - .5	
-	.byte 96, 144, 192, 224, 0, 32, 48, 64
-	.byte 80, 96, 96, 112, 112, 112, 112, 112
+	;.byte 96, 144, 192, 224, 0, 32, 48, 64
+	;.byte 80, 96, 96, 112, 112, 112, 112, 112
 	;1.5 - .5	
 	;.byte 96, 128, 144, 176, 192, 208, 224,224
 	;.byte 240, 240, 0, 0, 0, 0, 0, 0
 
 @ordinal_h:
+	;2.0 - .75
+	.byte  1,  1,  1,  1,  1,  1,  1,  1
+	.byte  1,  1,  1,  1,  0,  0,  0,  0
 	;1.75 - .75
 	;.byte 0,  0,  0,  0,  0,  1,  1,  1
 	;.byte 1,  1,  1,  1,  1,  1,  1,  1
@@ -481,8 +494,8 @@ Player_move:; void(a)
 	;.byte 0,  0,  0,  0,  0,  1,  1,  1
 	;.byte 1,  1,  1,  1,  1,  1,  1,  1
 	;2 - .5
-	.byte  0,  0,  0,  0,  1,  1,  1,  1
-	.byte  1,  1,  1,  1,  1,  1,  1,  1
+	;.byte  0,  0,  0,  0,  1,  1,  1,  1
+	;.byte  1,  1,  1,  1,  1,  1,  1,  1
 	;1.50 - .5
 	;.byte  0,  0,  0,  0,  0,  0,  0,  0
 	;.byte  0,  0,  1,  1,  1,  1,  1,  1
@@ -701,6 +714,19 @@ Player_hit:
 	lda #TRUE
 	sta Player_haveHeartsChanged
 	rts
+
+
+.proc Player_flicker;	void(a)
+;a - gamestate iterator
+RATE	= %1
+	and #RATE
+	bne :+
+		lda #NULL
+		sta Player_sprite
+		sta Hitbox_sprite
+	:
+	rts
+.endproc
 
 
 .proc Player_fall;	void(a)

@@ -16,12 +16,13 @@
 .global Player_haveBombsChanged
 .global Player_hearts
 .global Player_bombs
-.global Player_willRender
 .global Hitbox_sprite
 .global Hitbox_tick
 .global Hitbox_yPos
 .global Hitbox_xPos
 
+
+;functions
 .global Players_init
 .global Player_setSpeed
 .global Player_move
@@ -29,5 +30,6 @@
 .global Player_hit
 .global Player_fall
 .global Player_recover
+.global Player_flicker
 .global Player_toStartingPos
 .global Player_collectCharms

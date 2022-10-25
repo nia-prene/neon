@@ -1243,10 +1243,10 @@ INST0B=$0b;bomb crash
 INST0C=$0c;bomb twinkle
 INST0D=$0d;charm woosh
 instDuty:;ddlc vvvv
-	.byte DUTY02,DUTY02,TRI,NOISE,DUTY02,DUTY00,NOISE,DUTY02
+	.byte DUTY02,DUTY02,TRI,NOISE,DUTY02,DUTY00,NOISE,DUTY01
 	.byte DUTY02,NOISE,DUTY02,NOISE,DUTY02,NOISE
 instAttack_H:
-	.byte 8, 8, 15, 15, 15, 15, 15, 15
+	.byte 8, 8, 15, 15, 15, 15, 15, 4
 	.byte 6, 15, 15, 15, 15, 6
 instAttack_L:
 	.byte 0, 0, 0, 0, 0, 0, 0 
@@ -1281,7 +1281,7 @@ Bend_target:;(half steps)
 	.byte NULL, 01, 4, 36, 24, 3, 14
 	
 SFX01=01;explosion small craft
-SFX02=02;player ouch
+SFX02=02;player fall
 SFX03=03;Powerup melody
 SFX04=04;Powerup harmony
 SFX05=05;player shots

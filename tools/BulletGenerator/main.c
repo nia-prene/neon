@@ -10,7 +10,7 @@ int main(){
 	
 	FILE *outputFile;
 	/*different radii to select from, cycles through list*/
-	double radii[]={1.25,1.50,1.75,2.00};
+	double radii[]={1.00,1.25,1.50,1.75};
 	/*64 different angles*/
 	double x;
 	double xH;

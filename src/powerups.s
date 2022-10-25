@@ -56,20 +56,27 @@ Powerups_new:;			void(a,x) | x
 	eor #%10000000;		flip high bit
 	adc @yOffset,y;		move away from enemy
 	eor #%10000000;		flip high bit back
-	bvs @next;		if set now, went off screen
+	bvc :+;			if set now, went off screen
+		jmp @next
+	:
 	pha;			save y
-
 	clc
 	lda enemyXH,x;		get enemy's y position
 	eor #%10000000;		flip high bit
 	adc @xOffset,y;		move away from enemy
 	eor #%10000000;		flip high bit back
-	bvs @next;		if still set, went off screen
+	bvc :+	;		if still set, went off screen
+		pla;		remove y
+		jmp @next	
+	:
 	pha;			save x
 
 	jsr Powerups_get;	y() | x	  get an empty powerup slot
-	bcc @full;		return if full
-
+	bcs :+;			return if full
+		pla;		remove x
+		pla;		remove y
+		jmp @return
+	:
 	pla;			recall x
 	sta Powerups_xPos,y;	set powerup x position
 	pla;			recall y
@@ -81,10 +88,7 @@ Powerups_new:;			void(a,x) | x
 
 	dec Powerups_count
 	bne @loop
-	rts
-@full:
-	pla;	remove x
-	pla;	remove y
+@return:
 	rts
 
 @yOffset:	

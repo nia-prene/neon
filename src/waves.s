@@ -172,8 +172,6 @@ Waves_next:; c()
 		lda wavePointerH,x
 		sta wavePointer+1
 
-		lda Wave_stagger,x
-		sta Bullets_stagger
 
 		lda Wave_palette00,x
 		tax
@@ -237,8 +235,6 @@ Wave_palette00:
 	.byte NULL,PALETTE08,PALETTE07,PALETTE07
 Wave_palette01:
 	.byte NULL,PALETTE09,PALETTE06,PALETTE0B
-Wave_stagger:
-	.byte NULL,TRUE,FALSE,FALSE
 ;individual enemy waves
 ;	.byte enemy, position, hold, etc, NULL
 
@@ -256,55 +252,54 @@ wave02:
 	.byte ENEMY02, TOP|08, 064
 	.byte ENEMY06, TOP|28, 064
 	
-	.byte ENEMY03, TOP|38, 83
+	.byte ENEMY03, TOP|38, 73
 	.byte ENEMY03, TOP|42, 75
-	.byte ENEMY03, TOP|37, 65
-	.byte ENEMY02, TOP|16, 15; fairy
-	.byte ENEMY03, TOP|40, 75
-	.byte ENEMY03, TOP|42, 87
-	.byte ENEMY03, TOP|39, 63
-	.byte ENEMY02, TOP|18, 13; fairy
+	.byte ENEMY03, TOP|37, 77
+	.byte ENEMY02, TOP|16, 01; fairy
+	.byte ENEMY03, TOP|42, 75
+	.byte ENEMY03, TOP|45, 77
+	.byte ENEMY03, TOP|37, 73
+	.byte ENEMY02, TOP|18, 01; fairy
 	.byte ENEMY03, TOP|41, 71
-	.byte ENEMY03, TOP|34, 51
-	.byte ENEMY02, TOP|52, 27; fairy
+	.byte ENEMY03, TOP|34, 77
+	.byte ENEMY02, TOP|52, 01; fairy
 	.byte ENEMY03, TOP|28, 71
-	.byte ENEMY03, TOP|31, 81
-	.byte ENEMY03, TOP|25, 77	
-	.byte ENEMY03, TOP|28, 81	
-	.byte ENEMY03, TOP|19, 75	
-	.byte ENEMY03, TOP|23, 63	
+	.byte ENEMY03, TOP|31, 61
+	.byte ENEMY03, TOP|25, 57	
+	.byte ENEMY03, TOP|29, 41	
+	.byte ENEMY03, TOP|19, 35	
+	.byte ENEMY03, TOP|23, 33	
 
 	.byte NULL
 
 
 wave03:
-	.byte ENEMY03, TOP|26, 87	
-	.byte ENEMY03, TOP|25, 87	
-	.byte ENEMY03, TOP|31, 71
-	.byte ENEMY05, TOP|60, 01; balloon
-	.byte ENEMY03, TOP|21, 77	
-	.byte ENEMY03, TOP|17, 75	
+	.byte ENEMY03, TOP|26, 37	
+	.byte ENEMY03, TOP|21, 31	
+	.byte ENEMY03, TOP|29, 67
+	.byte ENEMY05, TOP|56, 01; balloon
+	.byte ENEMY03, TOP|23, 77	
+	.byte ENEMY03, TOP|20, 75	
 	.byte ENEMY03, TOP|25, 77
-	.byte ENEMY03, TOP|28, 77	
 	.byte ENEMY03, TOP|31, 71	
+	.byte ENEMY03, TOP|28, 73	
 	.byte ENEMY03, TOP|35, 77
-	.byte ENEMY03, TOP|33, 71
-	.byte ENEMY03, TOP|41, 76
+	.byte ENEMY03, TOP|33, 76
+	.byte ENEMY03, TOP|41, 71
 	.byte ENEMY03, TOP|36, 77
-	.byte ENEMY03, TOP|39, 79
+	.byte ENEMY03, TOP|39, 75
 	.byte ENEMY03, TOP|43, 71
 	.byte ENEMY04, TOP|08, 01; balloon
-	.byte ENEMY03, TOP|47, 75
+	.byte ENEMY03, TOP|41, 75
 	.byte ENEMY03, TOP|43, 79
 	.byte ENEMY03, TOP|38, 75
 	.byte ENEMY03, TOP|41, 71
 	.byte ENEMY03, TOP|33, 67
-	.byte ENEMY03, TOP|35, 71
-	.byte ENEMY03, TOP|45, 75
-	.byte ENEMY03, TOP|39, 75
-	.byte ENEMY03, TOP|43, 71
-	.byte ENEMY03, TOP|43, 67
-	.byte ENEMY03, TOP|45, 71
+	.byte ENEMY03, TOP|35, 62
+	.byte ENEMY03, TOP|45, 65
+	.byte ENEMY03, TOP|39, 67
+	.byte ENEMY03, TOP|43, 66
+	.byte ENEMY03, TOP|45, 255
 	.byte NULL
 
 wave04:

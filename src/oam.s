@@ -30,6 +30,7 @@ bulletShuffle: 		.res 1
 enemyShuffle:		.res 1
 effectsShuffle:		.res 1
 
+Limits_bullets:		.res 1
 
 .segment "DATA"
 
@@ -83,10 +84,8 @@ OAM_build00:;c()
 	sta OAM_index
 
 
-	lda Hitbox_sprite;see if hitbox renders first
-	beq :+
-		jsr buildHitbox
-	:
+	jsr buildHitbox
+
 	jsr OAM_buildBullets
 
 	jsr OAM_buildPlayer
@@ -96,16 +95,32 @@ OAM_build00:;c()
 	jsr OAM_buildPowerups
 	bcs @oamFull
 
-	jsr buildEnemies
+	jsr buildPlayerBullets
 	bcs @oamFull
 	
-	jsr buildPlayerBullets
+	jsr buildEnemies
 	bcs @oamFull
 
 	jsr OAM_clearRemaining
+	
+	clc;				we have spritest to spare
+	lda Limits_bullets;		increase bullet limit
+	adc #16
+	cmp #56
+	bcc :+
+		lda #56;		don't go over player + boss
+	:
+	sta Limits_bullets
+	rts
 
 @oamFull:
-
+	sec;				we ran out of sprites
+	lda Limits_bullets;		decrease the bullet limit
+	sbc #4
+	cmp #32;			minimum of 32
+	bcc :+
+		lda #32
+	sta Limits_bullets;		set limit
 	rts
 
 
@@ -119,27 +134,22 @@ buildHitbox:;x(x,a)
 	sta buildX
 
 	lda Hitbox_sprite
-
-	jmp OAM_build; void(a)
+	beq :+
+		jmp OAM_build; void(a)
+	:
+	rts
 
 .proc OAM_buildBullets;		void() |
-LIMIT=32
 	
 	lda #00
 	sta buildPalette;			universal clear attribute
 	
 	jsr Build_setShuffle;			a()
 	
-	ldy #LIMIT
-	lda Bullets_stagger;			see if building ones or twos
-	bne :+
-		jsr Build_firstPassOnes;		c,y(y) | y
-		bcs @limit
-		jmp Build_secondPassOnes; 		c(y) | y
-	:
-	jsr Build_firstPassTwos
+	ldy Limits_bullets
+	jsr Build_firstPassOnes;		c,y(y) | y
 	bcs @limit
-	jmp Build_secondPassTwos
+	jmp Build_secondPassOnes; 		c(y) | y
 @limit:
 	rts
 
@@ -148,12 +158,12 @@ Build_setShuffle:
 
 	lda bulletShuffle; shuffle bullets
 	adc #((MAX_ENEMY_BULLETS/5) * 3)| 1; 	odd 3/5ths item collection
-	cmp #MAX_ENEMY_BULLETS-3;	
+	cmp #MAX_ENEMY_BULLETS-2;	
 	bcc @storeShuffle
-		sbc #MAX_ENEMY_BULLETS-3 & %11111111; make sure no wrap
-		cmp #MAX_ENEMY_BULLETS-3 & %11111111
+		sbc #MAX_ENEMY_BULLETS-2 ; make sure no wrap
+		cmp #MAX_ENEMY_BULLETS-2 
 		bcc @storeShuffle
-		sbc #MAX_ENEMY_BULLETS-3
+			sbc #MAX_ENEMY_BULLETS-2
 @storeShuffle:
 	sta bulletShuffle
 	rts
@@ -194,41 +204,6 @@ Build_firstPassOnes:
 	rts
 
 
-Build_firstPassTwos:
-
-	ldx bulletShuffle
-@loop:
-	lda isEnemyBulletActive,x; 	if active and visible
-	cmp #1
-	bne @next;			else skip
-		
-	dey;				and bullets haven't hit limit
-	bmi @full;			else full
-
-		lda enemyBulletYH,x;	copy coordinates
-		sta buildY	
-		lda enemyBulletXH,x
-		sta buildX
-		
-		stx xReg;		save registers
-		sty yReg
-		
-		ldy Bullets_type,x;	get metaspirte
-		lda Bullets_sprite,y
-		jsr OAM_build;		c(a) |	build sprite 
-		ldx xReg;		restore registers
-		ldy yReg
-@next:
-	dex;		loop evens / odds
-	dex
-	bpl @loop
-	clc;		mark not full
-	rts
-@full:	
-	sec;	mark full
-	rts
-
-
 Build_secondPassOnes:
 
 	ldx #MAX_ENEMY_BULLETS-1
@@ -262,46 +237,6 @@ Build_secondPassOnes:
 @full:	
 	sec;	mark full
 	rts
-
-
-Build_secondPassTwos:
-	lda bulletShuffle;		get iterator
-	and #%1;			see if odd
-	ora #MAX_ENEMY_BULLETS-2;	get the end of collection
-	tax;				second loop
-
-@loop:
-	lda isEnemyBulletActive,x; 	if active and visible
-	cmp #1
-	bne @next;			else skip
-		
-	dey;				and bullets haven't hit limit
-	bmi @full;			else full
-
-		lda enemyBulletYH,x;	copy y coordinate
-		sta buildY	
-		lda enemyBulletXH,x;	copy x coordinate
-		sta buildX
-		
-		stx xReg;		save registers
-		sty yReg
-
-		ldy Bullets_type,x;	get metaspirte
-		lda Bullets_sprite,y
-		jsr OAM_build;		c(a) | 	build entry
-		ldx xReg;		restore registers
-		ldy yReg
-@next:
-	dex;		loop odds / evens
-	dex
-	cpx bulletShuffle
-	bne @loop
-	clc;	mark not full
-	rts
-@full:	
-	sec;	mark full
-	rts
-
 .endproc
 
 
@@ -317,7 +252,10 @@ OAM_buildPlayer:; void()
 	sta buildPalette
 
 	lda Player_sprite
-	jmp OAM_build; void(x) |
+	beq :+
+		jmp OAM_build; void(x) |
+	:
+	rts
 
 
 .proc OAM_buildEffects;		c() | 
