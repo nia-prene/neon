@@ -5,10 +5,10 @@
 .globalzp Enemies_ptr
 
 ; attributes
+.globalzp enemyYH
+.globalzp enemyXH
 .global enemyYL
 .global enemyXL
-.global enemyYH
-.global enemyXH
 .global enemyHPH
 .global enemyHPL
 .global enemyMetasprite

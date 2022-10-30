@@ -8,14 +8,13 @@ Gamepads_last: .res 1
 
 .code
 Gamepads_read:;a(x)
-;reads joypad of current player and checks for DMA bug
-;arguments
-;x - player to read
-;returns a - gamepad
-CHECKS=2;number of times we will read controllers for accuracy
+CHECKS=2;	number of times we will read controllers for accuracy
 	lda Gamepads_state
 	sta Gamepads_last
-@redoRead:;if the reads are different, we will redo them here
+
+	ldx #0
+
+@redoRead:
 	ldy #CHECKS-1
 @readPads:
 	lda #$01

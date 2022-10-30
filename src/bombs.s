@@ -2,6 +2,7 @@
 
 .include "lib.h"
 .include "bullets.h"
+.include "gamepads.h"
 .include "player.h"
 .include "apu.h"
 
@@ -9,43 +10,37 @@
 .code
 
 
-Bombs_toss:; c(y,x)
-; arguments
-; x - last gamepad state
-; y - current gamepad state
-; returns
+Bombs_toss:; 			c() |
 ; c - true if bomb dropped
 	
-	tya; retrieve current gamepad state
-	and #BUTTON_A; if holding b
+	lda Gamepads_state; 	if holding b
+	and #BUTTON_A
 	beq @noBomb
+	lda Gamepads_last; 	and not holding last frame
+	and #BUTTON_A
+	bne @noBomb
+				
+	lda Player_bombs; and the player has a bomb
+	beq @noBomb
+				
+		sec; decrease bombs
+		sbc #1
+		sta Player_bombs
+				
+		lda #TRUE; set it to render
+		sta Player_haveBombsChanged
 
-		txa; retrieve last gamepad state
-		and #BUTTON_A; and not holding last frame
-		bne @noBomb
+		lda #SFX06; play bass
+		jsr SFX_newEffect; void(a)
+		lda #SFX07; play boom
+		jsr SFX_newEffect; void(a)
 				
-			lda Player_bombs; and the player has a bomb
-			beq @noBomb
-				
-				sec; decrease bombs
-				sbc #1
-				sta Player_bombs
-				
-				lda #TRUE; set it to render
-				sta Player_haveBombsChanged
-
-				lda #SFX06; play bass
-				jsr SFX_newEffect; void(a)
-				lda #SFX07; play boom
-				jsr SFX_newEffect; void(a)
-				
-				sec
-				rts
-				;lda #SFX08; play twinkle
-				;jsr SFX_newEffect; void(a)
+		sec;	mark bomb
+		rts
+			;lda #SFX08; play twinkle
+			;jsr SFX_newEffect; void(a)
 					
 @noBomb:
-	clc
-	
+	clc;	mark no bomb 
 	rts
 

@@ -30,14 +30,14 @@ Score_clear:
 ;arguments -
 ;x - player score to clear
 	lda #0
-	sta Score_ones,x
-	sta Score_tens,x
-	sta Score_hundreds,x
-	sta Score_thousands,x
-	sta Score_tenThousands,x
-	sta Score_hundredThousands,x
-	sta Score_millions,x
-	sta Score_multiplier,x
+	sta Score_ones
+	sta Score_tens
+	sta Score_hundreds
+	sta Score_thousands
+	sta Score_tenThousands
+	sta Score_hundredThousands
+	sta Score_millions
+	sta Score_multiplier
 	lda #TRUE
 	sta Score_hasChanged
 	rts

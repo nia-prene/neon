@@ -3,8 +3,8 @@
 
 ;attributes
 .globalzp Shots_charge
-.global bulletX
-.global bulletY
+.globalzp bulletX
+.globalzp bulletY
 .globalzp Shots_isActive
 .globalzp Shots_remaining
 .global bulletSprite

@@ -2,9 +2,10 @@
 
 .include "shots.h"
 
+.include "apu.h"
+.include "gamepads.h"
 .include "player.h"
 .include "sprites.h"
-.include "apu.h"
 
 
 SHOTS_MAX=14
@@ -14,11 +15,11 @@ Shots_remaining: .res 1
 Shots_charge: .res 1
 
 Shots_isActive: .res SHOTS_MAX
+bulletX: .res SHOTS_MAX
+bulletY: .res SHOTS_MAX
 
 .data
 Shot_ID: .res SHOTS_MAX
-bulletX: .res SHOTS_MAX
-bulletY: .res SHOTS_MAX
 bulletSprite: .res SHOTS_MAX
 PlayerBullet_damage: .res SHOTS_MAX
 
@@ -26,47 +27,39 @@ Missiles_velocity: .res 1
 
 .code
 
-AUTO=32;amount of shoots after release
 	
-PlayerBullets_shoot:;void(a)
-;a - current controller state
+PlayerBullets_shoot:;void()
+MAGAZINE=32;	amount of shoots after release
+	
+	inc Shots_hold;		increase the shot cycler
 
-
+	lda Gamepads_state;	if pressing b
 	and #BUTTON_B
-	beq @notPressingB
-
-		lda #AUTO;shoots for x frames after released
+	beq @emptyClip
+		lda Shots_remaining;	if not shooting last frame
+		bne :+
+			lda #00;	start pattern over
+			sta Shots_hold
+		:
+		lda #MAGAZINE;		refill ammo
 		sta Shots_remaining
-		txa
+		
+		lda Gamepads_last;	if not pressing b last frame
 		and #BUTTON_B
-		bne @notPressingB
-			;lda #SFX05
-			;jsr SFX_newEffect
-			jsr Shot03
-			
-@notPressingB:
-	
-	lda Shots_remaining;if timer > 0
-	beq @notFiring
+		bne @emptyClip
+			jsr Shot03;		shoot a missile
+@emptyClip:	
+	lda Shots_remaining;	if has ammo	
+	beq @clipEmpty
+		dec Shots_remaining;	subtract from ammo
 
-	@shoot:
-		dec Shots_remaining;
-		
-		inc Shots_hold
-
-		ldy Player_power_h; get bullet pattern by pwr lvl
-		
-		lda @shotType_L,y
+		ldy Player_power_h; 	get bullet pattern by pwr lvl
+		lda @shotType_L,y;	shoot that pattern
 		sta Lib_ptr0+0
 		lda @shotType_H,y
 		sta Lib_ptr0+1
-
 		jmp (Lib_ptr0); void()
-
-@notFiring:
-	lda #$FF
-	sta Shots_hold
-
+@clipEmpty:	
 	rts
 
 @shotType_L:;shooting functions by power level
@@ -87,80 +80,19 @@ Shots_get:; cy() | x
 	ldy #SHOTS_MAX-2
 
 @shotLoop:
-	lda Shots_isActive,y
+	lda Shots_isActive,y;	if object is available
 	beq @inactive
 		dey
 		bpl @shotLoop
 		ldy #0
-		
-		clc
+		clc;	mark failure
 		rts
 @inactive:
-	sec
+	sec;	mark success
 	rts; return y
 
 
 Shots_discharge:; a (a)
-	rts
-	and #BUTTON_B
-	beq @notPressingB
-
-		lda #AUTO;shoots for x frames after released
-		sta Shots_remaining
-
-@notPressingB:
-	
-	lda Shots_remaining;if timer > 0
-	beq @notFiring
-
-		inc Shots_hold
-
-		lda #SFX05;play sound effect
-		;jsr SFX_newEffect
-
-		dec Shots_remaining;
-		bpl :+
-			lda #0;don't let go negative 
-			sta Shots_remaining
-		:
-		
-		lda Shots_hold
-		and #%1
-		bne @return
-		jsr Shots_get; c,y() | x
-		bcc @return
-		
-			clc
-			lda Player_xPos_H
-			sta bulletX,y
-			bvs @return
-		
-			clc
-			lda Player_yPos_H
-			eor #$80
-			adc #$F8
-			eor #$80
-			sta bulletY,y
-			bvs @return
-
-			lda #SPRITE05
-			sta bulletSprite,y
-
-			lda #TRUE
-			sta Shots_isActive,y
-		
-			sec
-			lda Shots_charge
-			sbc #1
-			sta Shots_charge
-
-		@return:
-			rts
-
-
-@notFiring:
-	lda #$FF
-	sta Shots_hold
 	rts
 
 

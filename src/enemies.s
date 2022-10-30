@@ -19,9 +19,10 @@ CHILDREN_MAX 	= 8
 totalDamage: 			.res 1
 isEnemyActive: 			.res MAX_ENEMIES
 
-.data
 enemyYH:			.res MAX_ENEMIES
 enemyXH: 			.res MAX_ENEMIES
+
+.data
 Enemies_ID: 			.res MAX_ENEMIES
 enemyXL: 			.res MAX_ENEMIES
 enemyYL: 			.res MAX_ENEMIES

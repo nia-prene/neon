@@ -26,6 +26,7 @@ regA:.res 1
 Lib_ptr0: .res 2
 Lib_ptr1: .res 2
 Lib_ptr2: .res 2
+NMIptr0: 	.res 2
 
 .segment "HEADER"
 ;contains ines header 

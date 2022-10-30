@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 typedef struct Tile{
 //8 rows, two bytes each
@@ -61,7 +62,7 @@ typedef struct Palettemap{
 }Palettemap;
 
 typedef struct CollectionBuffer{
-//a screen CAN hold 356 16x16s (though unlikely)
+//a screen CAN hold 256 16x16s (though unlikely)
 	Metatile16 metatiles16[256];
 //a screen CAN hold 64 32x32s (though unlikely)
 	Metatile32 metatiles32[64];
@@ -75,6 +76,9 @@ typedef struct CollectionBuffer{
 }CollectionBuffer;
 
 
+FILE* openchr(int i);
+FILE* openmap(int i);
+FILE* openpal(int i);
 void clearBuffer(CollectionBuffer *cb);
 void addDefaultTiles(TileCollection *tc);
 void readchr(CollectionBuffer *cb, FILE *chrin);
@@ -106,24 +110,9 @@ int main(){
 	TileCollection tileCollection={0};
 	CollectionBuffer collectionBuffer={0};
 
-	chrin = fopen("in/raw00.chr", "rb");
-	if (chrin == NULL){
-		printf("file not valid");
-		return 1;
-	}
 	chrout = fopen("out/all.chr", "wb");
 	if (chrout == NULL){
 		printf("file out not valid");
-		return 1;
-	}
-	mapin = fopen("in/tilemap00.bin", "rb");
-	if (mapin == NULL){
-		printf("map file not valid");
-		return 1;
-	}
-	palin = fopen("in/palettemap00.bin", "rb");
-	if (palin == NULL){
-		printf("pal file not valid");
 		return 1;
 	}
 	out16= fopen("out/16.txt", "w");
@@ -132,25 +121,35 @@ int main(){
 		return 1;
 	}
 	addDefaultTiles(&tileCollection);
-	readchr(&collectionBuffer, chrin);
-	readmap(&collectionBuffer, mapin);
-	readpal(&collectionBuffer, palin);
-	findRedundantChr(&collectionBuffer, &tileCollection);
-	insertUniqueChr(&collectionBuffer, &tileCollection);
-	remapTilemap(&collectionBuffer);
-	to16(&collectionBuffer);
-	findRedundant16(&collectionBuffer, &tileCollection);
-	insertUnique16(&collectionBuffer, &tileCollection);
-	to32(&collectionBuffer);
-	findRedundant32(&collectionBuffer, &tileCollection);
-	insertUnique32(&collectionBuffer, &tileCollection);
-	insertScreen(&collectionBuffer, &tileCollection);
+	for(int i = 0; i<256; i++){
+		chrin = openchr(i);
+		if (!chrin)break;
+		mapin = openmap(i);
+		if (!mapin)break;
+		palin = openpal(i);
+		if (!palin)break;
+		
+		clearBuffer(&collectionBuffer);/*Clear buffer*/
+		readchr(&collectionBuffer, chrin);
+		readmap(&collectionBuffer, mapin);
+		readpal(&collectionBuffer, palin);
+		findRedundantChr(&collectionBuffer, &tileCollection);
+		insertUniqueChr(&collectionBuffer, &tileCollection);
+		remapTilemap(&collectionBuffer);
+		to16(&collectionBuffer);
+		findRedundant16(&collectionBuffer, &tileCollection);
+		insertUnique16(&collectionBuffer, &tileCollection);
+		to32(&collectionBuffer);
+		findRedundant32(&collectionBuffer, &tileCollection);
+		insertUnique32(&collectionBuffer, &tileCollection);
+		insertScreen(&collectionBuffer, &tileCollection);
+		fclose(chrin);
+		fclose(mapin);
+		fclose(palin);
+	}
 	printChr(&tileCollection, chrout);
 	print16(&tileCollection, out16);
 	
-	fclose(chrin);
-	fclose(mapin);
-	fclose(palin);
 	fclose(chrout);
 	fclose(out16);
 	return 0;
@@ -160,6 +159,47 @@ void clearBuffer(CollectionBuffer *cb){
 	for (int i = 0; i < 256; i++){
 		cb -> tiles[i].isActive = 0;
 	}
+}
+
+FILE* openchr(int i){
+	char file[100] = "in/raw";
+	char type[] = ".chr";
+	char buf[10] = {};
+	
+	snprintf(buf, 10, "%02x", i);
+	strcat (file, buf);
+	strcat (file, type);
+
+	printf("%s\n",file);
+	FILE *chrin;
+	chrin = fopen(file, "rb");
+	return chrin;
+}
+FILE* openmap(int i){
+	char file[100] = "in/tilemap";
+	char type[] = ".bin";
+	char buf[10] = {};
+	
+	snprintf(buf, 10, "%02x", i);
+	strcat (file, buf);
+	strcat (file, type);
+	printf("%s\n",file);
+	FILE *mapin;
+	mapin = fopen(file, "rb");
+	return mapin;
+}
+FILE* openpal(int i){
+	char file[100] = "in/palettemap";
+	char type[] = ".bin";
+	char buf[10] = {};
+	
+	snprintf(buf, 10, "%02x", i);
+	strcat (file, buf);
+	strcat (file, type);
+	printf("%s\n",file);
+	FILE *palin;
+	palin = fopen(file, "rb");
+	return palin;
 }
 
 void addDefaultTiles(TileCollection *tc){
@@ -448,7 +488,7 @@ void insertScreen(CollectionBuffer *cb, TileCollection *tc){
 void print16(TileCollection *tc, FILE *out16){
 	for(int i=0; i<256; i++){
 		if(tc->screens[i].isActive){
-			fprintf(out16,"screen%.2x:\n\t.byte ",i);
+			fprintf(out16,"\nscreen%.2x:\n\t.byte ",i);
 			for(int j =0;j<64;j++){
 				fprintf(out16,"$%.2x, ",tc->screens[i].metatiles[j]);
 			}		

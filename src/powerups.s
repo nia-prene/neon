@@ -6,16 +6,16 @@
 .include "player.h"
 .include "apu.h"	
 
+POWERUPS_MAX		= 16
+.zeropage
 
 .data
-
 POWERUPS_BIG 		= %11100000;		| b b b s s s s s|
 POWERUPS_SMALL		= %00011111;		b - big powerups
 Powerups_encoded:	.res 1;			s - small powerups
 Powerups_count:		.res 1;			amount to release
 Powerups_upgraded:	.res 1;			true if leveled up
 
-POWERUPS_MAX		= 16
 
 Powerups_active: 	.res POWERUPS_MAX;	enabled
 Powerups_yPos: 		.res POWERUPS_MAX;	y coordinate

@@ -1,13 +1,14 @@
 .include "lib.h"
 .include "player.h"
 
+.include "apu.h"
+.include "bullets.h"
+.include "enemies.h"
+.include "gamepads.h"
+.include "palettes.h"
 .include "score.h"
 .include "shots.h"
 .include "sprites.h"
-.include "palettes.h"
-.include "enemies.h"
-.include "bullets.h"
-.include "apu.h"
 
 PLAYERS_MAX		= 2
 PLAYERS_POWER_MAX	= $200
@@ -58,27 +59,10 @@ Players_init:
 	lda #3
 	sta Player_bombs
 
-	lda #0
-	sta Player_power_h
-	lda #0
-	sta Player_power_l
-
-	lda #00
-	sta Player_speedIndex
-	sta Player_current
-
 	lda #TRUE
 	sta Player_haveHeartsChanged
 	sta Player_haveBombsChanged
 	sta Player_willRender
-
-	lda #FALSE
-	sta Player_focused
-
-	lda #255
-	sta Player_yPos_H
-	lda #128
-	sta Player_xPos_H
 
 	rts
 
@@ -87,25 +71,29 @@ Players_init:
 ; a - g (gamestate iterator)
 Y_SPEED_H=4
 MAX_Y=128+16
-	bne :+; if g is 0
-		lda #FALSE
+	bne :+;			if 0th frame of gamestate
+		lda #255;		move to bottom middle
+		sta Player_yPos_H
+		lda #128
+		sta Player_xPos_H
+		lda #FALSE;		set as not in position
 		sta Player_inPosition
 	:
-	lda Player_inPosition
+	lda Player_inPosition;		if not in position
 	bne @return
-
-		sec
+		sec;			move upward
 		lda Player_yPos_H
 		sbc #Y_SPEED_H
 		sta Player_yPos_H
-		cmp #MAX_Y
+		cmp #MAX_Y;		until reach this spot
 		bcs :+
-			lda #TRUE
+			lda #TRUE;		mark as in position
 			sta Player_inPosition
 		:
 @return:
 	rts
 .endproc
+
 
 Player_setSpeed:;(controller) returns void
 ;controller bits are | a b sel st u d l r |
@@ -117,89 +105,78 @@ MAX_RIGHT = 256-8
 MAX_LEFT = 08
 MAX_UP = 0+16
 MAX_DOWN = 240-16
-SPEED_MIN=16
+BRAKES_MAX=16
+	
+	lda Gamepads_state;	get the controller input
+	and #BUTTON_B;		see if pressing b
+	beq @goingFast;		if so, go slower
+	
+	@goingSlow:
+		inc Player_speedIndex;	hoding down b taps the brakes
 
-	and #BUTTON_B
-	bne @goingSlow
+		lda #BRAKES_MAX-1;	make sure it doesnt go over
+		cmp Player_speedIndex
+		bcs :+
+			sta Player_speedIndex;	clamp the overflow
+			lda #TRUE;		player is totally slowed
+			sta Player_focused
+		rts;			void
 
 	@goingFast:
-
-		sec
-		lda Player_speedIndex; move index 
-		sbc #1
-		bcs :+
+		dec Player_speedIndex; move index 
+		bpl :+
 			lda #FALSE
-			sta Player_focused; all the way slow
-			rts
-		:sta Player_speedIndex
-		rts
+			sta Player_focused;	player is going fast
+			sta Player_speedIndex;	zero out speed index
+		:
+		rts;			void
 
-	@goingSlow:
-		clc 
-		lda Player_speedIndex; move the index
-		adc #1
-		cmp #SPEED_MIN
-		bcc :+
-			lda #TRUE
-			sta Player_focused; all the way fast
-			rts
-		:sta Player_speedIndex
-		rts
 
 
 Player_move:; void(a)
+DPAD 	= BUTTON_RIGHT | BUTTON_LEFT | BUTTON_DOWN | BUTTON_UP	
 
-	and #BUTTON_RIGHT | BUTTON_LEFT | BUTTON_DOWN | BUTTON_UP
-	tax
+	lda Gamepads_state;	get the controller input
+	and #DPAD;		isolate the d pad
+	tax;			get the movement pased on d pad
 
-	lda #SPRITE01; neutral sprite default
+	and #%11;		isolate right, left and neutral
+	tay;			
+	lda @sprites,y
 	sta Player_sprite
-	
-		lda @move_h,x
-		beq @return; return on null pointer
-		sta Lib_ptr0+1
+
+	lda @move_h,x;		if not a null pointer
+	beq :+
+		sta Lib_ptr0+1;		jump to the movement
 		lda @move_l,x
 		sta Lib_ptr0+0
-		jmp (Lib_ptr0)
-
-@return:
+		jmp (Lib_ptr0);		void(x) | 	pass in d pad
+	:;			else not moving
 	rts
 
-; in order - still, right, left, right-left
-; down, down-right, down-left, down-right-left
-; up, up-right, up-left, up-right-left
-; up-down, up-down-right, up-down-left, up-down-right-left
-	.byte FALSE,TRUE,TRUE,FALSE
-	.byte TRUE,TRUE,TRUE,FALSE
-	.byte TRUE,TRUE,TRUE,FALSE
-	.byte FALSE,FALSE,FALSE,FALSE
-
 @move_l:
-	.byte null, <@right, <@left, null
-	.byte <@down, <@downRight, <@downLeft, null
-	.byte <@up, <@upRight, <@upLeft, null
-	.byte null, null, null, null
+	.byte NULL, 	<@right, 	<@left, 	null
+	.byte <@down, 	<@downRight,	<@downLeft,	null
+	.byte <@up,	<@upRight, 	<@upLeft, 	null
+	;.byte null, null, null, null; 	technically exist, but unused
 
 @move_h:
-	.byte null, >@right, >@left, null
-	.byte >@down, >@downRight, >@downLeft, null
-	.byte >@up, >@upRight, >@upLeft, null
-	.byte null, null, null, null
+	.byte null, 	>@right, 	>@left, 	null
+	.byte >@down, 	>@downRight, 	>@downLeft, 	null
+	.byte >@up, 	>@upRight, 	>@upLeft, 	null
+	.byte null, null, null, null;	used for null pointer
+
+@sprites:
+	.byte SPRITE01,SPRITE03,SPRITE02,SPRITE01;	neutral right left
 
 @right:
-	
 	cpx Player_lastDirection
 	beq :+
 		lda #00; direction changed
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
-
-	lda #SPRITE03
-	sta Player_sprite
-
 	ldx Player_speedIndex
-
 	clc
 	lda Player_xPos_L
 	adc @cardinal_l,x
@@ -214,17 +191,12 @@ Player_move:; void(a)
 
 
 @left:
-	
 	cpx Player_lastDirection
 	beq :+
 		lda #$ff; direction changed
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
-	
-	lda #SPRITE02
-	sta Player_sprite
-
 	ldx Player_speedIndex
 	sec
 	lda Player_xPos_L
@@ -240,7 +212,6 @@ Player_move:; void(a)
 
 
 @down:
-	
 	cpx Player_lastDirection
 	beq :+
 		lda #$00; direction changed
@@ -268,7 +239,6 @@ Player_move:; void(a)
 		sta Player_yPos_L
 		stx Player_lastDirection
 	:
-	
 	ldx Player_speedIndex
 	sec
 	lda Player_yPos_L
@@ -283,7 +253,6 @@ Player_move:; void(a)
 
 
 @upRight:
-	
 	cpx Player_lastDirection
 	beq :+	
 		lda #$ff; direction changed
@@ -292,11 +261,7 @@ Player_move:; void(a)
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
-	lda #SPRITE03
-	sta Player_sprite
-	
 	ldx Player_speedIndex
-
 	clc
 	lda Player_xPos_L
 	adc @ordinal_l,x
@@ -306,11 +271,9 @@ Player_move:; void(a)
 	adc @ordinal_h,x
 	cmp #MAX_RIGHT
 	bcs :+
-
 		sta Player_xPos_H
 		sec
-	:
-	;sec
+	:;sec
 	lda Player_yPos_L
 	sbc @ordinal_l,x
 	sta Player_yPos_L
@@ -323,7 +286,6 @@ Player_move:; void(a)
 
 
 @upLeft:
-	
 	cpx Player_lastDirection
 	beq :+
 		lda #$ff; direction changed
@@ -331,9 +293,6 @@ Player_move:; void(a)
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
-	lda #SPRITE02
-	sta Player_sprite
-
 	ldx Player_speedIndex
 	sec
 	lda Player_xPos_L
@@ -357,7 +316,6 @@ Player_move:; void(a)
 
 
 @downRight:
-	
 	cpx Player_lastDirection
 	beq :+
 		lda #00; direction changed
@@ -365,9 +323,6 @@ Player_move:; void(a)
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
-	lda #SPRITE03
-	sta Player_sprite
-
 	ldx Player_speedIndex
 	clc
 	lda Player_yPos_L
@@ -379,7 +334,8 @@ Player_move:; void(a)
 	cmp #MAX_DOWN
 	bcs :+
 		sta Player_yPos_H
-	:clc
+	:
+	clc
 	lda Player_xPos_L
 	adc @ordinal_l,x
 	sta Player_xPos_L
@@ -389,7 +345,8 @@ Player_move:; void(a)
 	cmp #MAX_RIGHT
 	bcs :+
 		sta Player_xPos_H
-	:rts
+	:
+	rts
 
 
 @downLeft:; void(x)
@@ -402,9 +359,6 @@ Player_move:; void(a)
 		sta Player_xPos_L
 		stx Player_lastDirection
 	:
-	lda #SPRITE02
-	sta Player_sprite
-
 	ldx Player_speedIndex
 	clc
 	lda Player_yPos_L
@@ -415,10 +369,8 @@ Player_move:; void(a)
 	adc @ordinal_h,x
 	cmp #MAX_DOWN
 	bcs :+
-	
 		sec
 		sta Player_yPos_H
-	
 	:;sec
 	lda Player_xPos_L
 	sbc @ordinal_l,x
@@ -508,24 +460,20 @@ HITBOX04	=4;	broom when falling
 
 Hitbox_tick:; void()
 
-	ldx Hitbox_state; if hitbox active
+	ldx Hitbox_state; 	if hitbox active
 	beq :+
-
-		lda Hitbox_L,x; update it
+		lda Hitbox_L,x; 	update it
 		sta Lib_ptr0+0
 		lda Hitbox_H,x
 		sta Lib_ptr0+1
-		jmp (Lib_ptr0); void()
-
-	:
-	lda Player_focused; if focused
+		jmp (Lib_ptr0); 	void() |
+	:;			else
+	lda Player_focused;	if focused
 	beq :+
-	lda Hitbox_state; and hitbox isn't deployed
-	bne :+
-		lda #HITBOX01; deploy the hitbox
-		jsr Hitbox_new
+		lda #HITBOX01; 		deploy the hitbox
+		jmp Hitbox_new
 	:
-	rts
+	rts;			else return void
 
 Hitbox_new:; void(a)
 	
@@ -533,6 +481,7 @@ Hitbox_new:; void(a)
 	lda #0
 	sta h
 	rts
+
 
 Hitbox_L:
 	.byte NULL 
@@ -549,37 +498,36 @@ Hitbox_H:
 Hitbox_01:
 DEPLOY_FRAMES=4
 
-	lda Player_xPos_H
-	sta Hitbox_xPos
-	lda Player_yPos_H
-	sta Hitbox_yPos
-
-	lda h
-	adc #1
-	cmp #DEPLOY_FRAMES
-	bcc @statePersists
-		lda #HITBOX02
-		jmp Hitbox_new
-@statePersists:
-	sta h
-
-	lda #SPRITE1D
-	sta Hitbox_sprite
-	rts
-
-Hitbox_02:
-	lda Player_xPos_H
+	lda Player_xPos_H;	glue to player position
 	sta Hitbox_xPos
 	lda Player_yPos_H
 	sta Hitbox_yPos
 	
-	inc h
-	lda h
+	lda #SPRITE1D;		set the sprite
+	sta Hitbox_sprite
+
+	lda #DEPLOY_FRAMES-1;	see if deploy stage is over
+	cmp h;			if over
+	bcs :+
+		lda #HITBOX02;		switch the hitbox state to deployed
+		jmp Hitbox_new
+	:
+	inc h;			else increase the iterator
+	
+	rts
+
+Hitbox_02:
+	lda Player_xPos_H;	glue to the player position
+	sta Hitbox_xPos
+	lda Player_yPos_H
+	sta Hitbox_yPos
+	
+	lda h;			use bits 3 and 4
 	lsr
 	lsr
 	lsr
 	and #%11
-	tax
+	tax;			to determine the animation frame
 	lda @hitboxAnimation,x
 	sta Hitbox_sprite
 
@@ -588,6 +536,7 @@ Hitbox_02:
 		lda #HITBOX03
 		jmp Hitbox_new
 	:
+	inc h;			tick the iterator
 	rts
 
 @hitboxAnimation:
@@ -596,25 +545,22 @@ Hitbox_02:
 
 Hitbox_03:
 RECALL_FRAMES=4
-	lda Player_xPos_H
+	lda Player_xPos_H;	glue to player
 	sta Hitbox_xPos
 	lda Player_yPos_H
 	sta Hitbox_yPos
 	
-	clc
-	lda h
-	adc #1
-	cmp #RECALL_FRAMES
-	bcc :+
-
-		lda #NULL; disable
-		sta Hitbox_sprite
-		jmp Hitbox_new
-	:
-	sta h
-
 	lda #SPRITE1D
 	sta Hitbox_sprite
+	
+	lda #RECALL_FRAMES-1;	if recalling has gone on for n frames
+	cmp h
+	bcs :+
+		lda #NULL;		disable	sprite
+		sta Hitbox_sprite;	
+		jmp Hitbox_new;		turn off hitbox
+	:
+	inc h;			else tick iterator
 
 	rts
 

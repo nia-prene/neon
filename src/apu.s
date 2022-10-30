@@ -131,18 +131,18 @@ APU_setSong:;void(x)
 	lda tracks,x
 	tay
 	lda tracks_L,y
-	sta Lib_ptr0
+	sta NMIptr0
 	lda tracks_H,y
-	sta Lib_ptr0+1
+	sta NMIptr0+1
 	ldy #0
-	lda (Lib_ptr0),y
+	lda (NMIptr0),y
 	sta loops,x
 	iny
-	lda (Lib_ptr0),y;get new instrument
+	lda (NMIptr0),y;get new instrument
 	sta instrument,x
 	sta Music_savedInstrument,x
 	iny
-	lda (Lib_ptr0),y;get new volume
+	lda (NMIptr0),y;get new volume
 	sta maxVolume,x
 	sta Music_savedVolume,x
 	iny
@@ -155,11 +155,11 @@ APU_setSong:;void(x)
 	lda tracks,x
 	tay
 	lda tracks_L,y
-	sta Lib_ptr0
+	sta NMIptr0
 	lda tracks_H,y
-	sta Lib_ptr0+1
+	sta NMIptr0+1
 	ldy #0
-	lda (Lib_ptr0),y
+	lda (NMIptr0),y
 	sta loops,x
 	iny
 	sty trackIndex,x
@@ -269,10 +269,10 @@ APU_tickState:
 
 	ldy state,x;attack,decay,sustain
 	lda states_L,y
-	sta Lib_ptr0+0
+	sta NMIptr0+0
 	lda states_H,y
-	sta Lib_ptr0+1
-	jmp (Lib_ptr0)
+	sta NMIptr0+1
+	jmp (NMIptr0)
 
 
 SFX_advance:
@@ -341,31 +341,31 @@ getNewNote:
 	ldy loops,x;get the channel loop
 
 	lda loops_L,y;setup pointer
-	sta Lib_ptr0
+	sta NMIptr0
 	lda loops_H,y
-	sta Lib_ptr0+1
+	sta NMIptr0+1
 	
 	ldy loopIndex,x;get the index
-	lda (Lib_ptr0),y;get note
+	lda (NMIptr0),y;get note
 	bne @loopContinues;loops are null terminated
 		ldy tracks,x
 		lda tracks_L,y
-		sta Lib_ptr0
+		sta NMIptr0
 		lda tracks_H,y
-		sta Lib_ptr0+1
+		sta NMIptr0+1
 		ldy trackIndex,x;get place in song
-		lda (Lib_ptr0),y;get new loop
+		lda (NMIptr0),y;get new loop
 		bne @trackContinues;tracks are null terminated
 			ldy Music_repeatAt,x
-			lda (Lib_ptr0),y;get first loop
+			lda (NMIptr0),y;get first loop
 	@trackContinues:
 		sta loops,x
 		iny
-		lda (Lib_ptr0),y;get new instrument
+		lda (NMIptr0),y;get new instrument
 		sta instrument,x
 		sta Music_savedInstrument,x
 		iny
-		lda (Lib_ptr0),y;get new volume
+		lda (NMIptr0),y;get new volume
 		sta maxVolume,x
 		sta Music_savedVolume,x
 		iny
@@ -373,19 +373,19 @@ getNewNote:
 	@getFirstNote:
 		ldy loops,x;get the channel loop
 		lda loops_L,y;setup pointer
-		sta Lib_ptr0+0
+		sta NMIptr0+0
 		lda loops_H,y
-		sta Lib_ptr0+1
+		sta NMIptr0+1
 		ldy #0;start at beginning of loop
-		lda (Lib_ptr0),y;get note
+		lda (NMIptr0),y;get note
 @loopContinues:
 	pha;save note
 	iny
-	lda (Lib_ptr0),y;get play duration
+	lda (NMIptr0),y;get play duration
 	sta length,x
 	dec length,x;this frame counts
 	iny
-	lda (Lib_ptr0),y;get rest duration
+	lda (NMIptr0),y;get rest duration
 	sta rest,x
 	iny
 	sty loopIndex,x;save the index
@@ -440,12 +440,12 @@ SFX_getNewNote:
 	
 	ldy SFX_effect,x;get the channel loop
 	lda SFX_loops_L,y;setup pointer
-	sta Lib_ptr0+0
+	sta NMIptr0+0
 	lda SFX_loops_H,y
-	sta Lib_ptr0+1
+	sta NMIptr0+1
 
 	ldy SFX_loopIndex,x;get the index
-	lda (Lib_ptr0),y;get note
+	lda (NMIptr0),y;get note
 	bne @loopContinues;loops are null terminated
 
 		ldy SFX_instrument,x;silence channel
@@ -466,12 +466,12 @@ SFX_getNewNote:
 	sta note,x
 
 	iny
-	lda (Lib_ptr0),y;get play duration
+	lda (NMIptr0),y;get play duration
 	sta SFX_length,x
 	dec SFX_length,x;this frame counts
 
 	iny
-	lda (Lib_ptr0),y;get rest duration
+	lda (NMIptr0),y;get rest duration
 	sta SFX_rest,x
 
 	iny
@@ -510,37 +510,37 @@ SFX_getNewNote:
 getNewSample:
 	ldy loops+4;get the channel loop
 	lda loops_L,y;setup pointer
-	sta Lib_ptr0+0 
+	sta NMIptr0+0 
 	lda loops_H,y
-	sta Lib_ptr0+1
+	sta NMIptr0+1
 	ldy loopIndex+4;get the index
-	lda (Lib_ptr0),y;get note
+	lda (NMIptr0),y;get note
 	bne @loopContinues;loops are null terminated
 		ldy tracks+4
 		lda tracks_L,y
-		sta Lib_ptr0+0
+		sta NMIptr0+0
 		lda tracks_H,y
-		sta Lib_ptr0+1
+		sta NMIptr0+1
 		ldy trackIndex+4;get place in song
-		lda (Lib_ptr0),y;get new loop
+		lda (NMIptr0),y;get new loop
 		bne @trackContinues;tracks are null terminated
 			ldy Music_repeatAt+4
-			lda (Lib_ptr0),y;get first loop
+			lda (NMIptr0),y;get first loop
 	@trackContinues:
 		sta loops+4
 		iny
 		sty trackIndex+4;save place in song
 		ldy loops+4;get the channel loop
 		lda loops_L,y;setup pointer
-		sta Lib_ptr0+0 
+		sta NMIptr0+0 
 		lda loops_H,y
-		sta Lib_ptr0+1
+		sta NMIptr0+1
 		ldy #0;start at beginning of loop
-		lda (Lib_ptr0),y;get sample
+		lda (NMIptr0),y;get sample
 @loopContinues:
 	sta note+4
 	iny
-	lda (Lib_ptr0),y;get rest duration
+	lda (NMIptr0),y;get rest duration
 	sta rest+4
 	dec rest+4;this note counts
 	iny

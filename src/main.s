@@ -22,48 +22,19 @@
 .include "apu.h"
 
 .zeropage
-Main_stack: .res 1
-hasFrameBeenRendered: .res 1
-framesDropped: .res 1
-Main_frame_L: .res 1
-Main_frameFinished: .res 1
+Main_stack:	.res 1
 
+.data
+NMI_finished:	.res 1
 
 .code
 main:
 	NES_init
-	jsr PPU_init
-	jsr Players_init
-	jsr APU_init
 	
 	lda #GAMESTATE01
 	jsr Gamestates_new
 
-	lda #FALSE
-	sta Main_frameFinished
-
-@gameLoop:
-
-	
-	lda Main_frameFinished;hold here until nmi updates frame
-	bne @gameLoop
-	
-	lda #>(@endOfFrameHousekeeping-1)
-	pha
-	lda #<(@endOfFrameHousekeeping-1)
-	pha
-
-	jsr Gamestates_tick
-	ldy Gamestates_current
-	lda Gamestates_H,y
-	pha
-	lda Gamestates_L,y
-	pha
-	rts
-@endOfFrameHousekeeping:
-	lda #TRUE
-	sta Main_frameFinished
-	jmp @gameLoop
+	jmp Gamestates_tick
 
 
 nmi:
@@ -75,14 +46,10 @@ nmi:
 	tya
 	pha
 	
-	inc Main_frame_L
+	inc NMI_finished
 
-	lda Main_frameFinished; if frame is finished
-	beq :+; else no graphic update
-
-		lda #FALSE; frame is rendered
-		sta Main_frameFinished
-
+	lda PPU_bufferReady; 	if buffer is ready
+	beq skipBuffer
 		tsx
 		stx Main_stack
 		ldx PPU_stack
@@ -93,17 +60,14 @@ nmi:
 	Main_NMIReturn:
 		ldx Main_stack
 		txs
-		jsr OAM_beginDMA
-
-:
-	
+		lda #FALSE; frame is rendered
+		sta PPU_bufferReady
+skipBuffer:
+	jsr OAM_beginDMA
 	jsr PPU_setScroll
 	jsr SFX_advance;tick sound effects
 	jsr Song_advance;tick music
 	
-
-	ldx Player_current
-	jsr Gamepads_read
 
 	pla; restore registers
 	tay
@@ -112,6 +76,16 @@ nmi:
 	pla
 	plp
 	rti
+
+
+NMI_wait:
+	lda NMI_finished
+	beq NMI_wait
+	lda #FALSE
+	sta NMI_finished
+
+	rts
+
 
 .segment "VECTORS"
 .word nmi 	;jump here during vblank

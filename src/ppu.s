@@ -80,8 +80,9 @@ PPU_scrollSpeed_h: .res 1
 PPU_scrollSpeed_l: .res 1
 PPU_stack: .res 1
 PPU_bufferBytes:.res 1
-.data 
 
+.data 
+PPU_bufferReady:	.res 1
 
 tile16a: .res 1
 tile16b: .res 1
@@ -98,10 +99,10 @@ tile64d: .res 1
 .code
 
 PPU_init:
-	bit PPUSTATUS ;discharge capacitance
+
 @vblankwait2:
 	bit PPUSTATUS ;wait for vblank bit to be set
-    bpl @vblankwait2
+	bpl @vblankwait2
 	;enable vertical blanking irq
 	lda #PPU_SETTINGS
 	;save ppu settings
@@ -112,24 +113,18 @@ PPU_init:
 	sta currentMaskSettings
 	rts
 
+
 disableRendering:;(void)
 ;holds cpu in loop until next nmi, then disables rendering via PPUMASK
-	lda Main_frame_L
-@waitForBlank:
-	cmp Main_frame_L
-	beq @waitForBlank
 	lda currentMaskSettings
 	and #DISABLE_RENDERING
 	sta PPUMASK
 	sta currentMaskSettings
 	rts
 
+
 enableRendering:;(a)
 ;holds cpu in loop until next nmi, then disables rendering via PPUMASK
-	lda Main_frame_L
-@waitForBlank:
-	cmp Main_frame_L
-	beq @waitForBlank
 	lda currentMaskSettings
 	ora #ENABLE_RENDERING
 	sta PPUMASK
@@ -271,8 +266,10 @@ PPU_NMIPlan00:
 ;byte writes INCLUDE functions pushed on stack
 MAX_BYTES=128
 PALETTE_BYTES=5
-;save the main stack
-	tsx
+	
+	lda PPU_bufferReady;		if buffer is full from last frame
+	bne @return
+	tsx;save the main stack
 	stx Main_stack
 ;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
 	ldx #(MAX_BYTES + 8)
@@ -347,6 +344,11 @@ PALETTE_BYTES=5
 :	dey
 	bpl @paletteLoop
 @bufferFull:
+
+	lda #TRUE
+	sta PPU_bufferReady
+
+@return:
 	rts
 
 
@@ -360,6 +362,9 @@ PPU_NMIPlan01:; void(a) |
 
 	and #%11; msb of g
 	tay
+	
+	lda PPU_bufferReady;		if buffer is full from last frame
+	bne @return
 
 	tsx
 	stx Main_stack
@@ -378,18 +383,21 @@ PPU_NMIPlan01:; void(a) |
 	sbc @colorMutator,y
 	bcs :+
 		lda #$0f
+		sec
 :
 	pha
 	lda color2,x
 	sbc @colorMutator,y
 	bcs :+
 		lda #$0f
+		sec
 :
 	pha
 	lda color1,x
 	sbc @colorMutator,y
 	bcs :+
 		lda #$0f
+		sec
 :
 	pha
 	lda backgroundColor
@@ -409,50 +417,15 @@ PPU_NMIPlan01:; void(a) |
 	lda #<(PPU_renderAllPalettesNMI-1)
 	pha
 	sws PPU_stack, Main_stack
-;do this during nmi
+
+	lda #TRUE
+	sta PPU_bufferReady
+@return:
 	rts
+
 @colorMutator:
 	.byte $30, $20, $10, $00
 
-PPU_NMIPlan02:
-;byte writes INCLUDE functions pushed on stack
-PORTRAIT_BYTES=18
-;save the main stack
-	tsx
-	stx Main_stack
-;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
-	ldx #MAX_BYTES+8
-	txs
-;after routine runs, return at the end of NMI
-	lda #>(Main_NMIReturn-1)
-	pha
-	lda #<(Main_NMIReturn-1)
-	pha
-	sws PPU_stack, Main_stack
-;we just stored 2 bytes
-	lda #2
-	sta PPU_bufferBytes
-;check if portrait needs updating
-	lda Portraits_hasChanged
-	beq :+
-		clc
-		lda #PORTRAIT_BYTES
-		adc PPU_bufferBytes
-		sta PPU_bufferBytes
-		jsr PPU_portraitToBuffer
-	;update has been made
-		lda #FALSE
-		sta Portraits_hasChanged
-:	
-	ldy #3
-	lda Palettes_hasChanged,y
-	beq :+
-		jsr PPU_paletteToBuffer
-		lda #FALSE
-		sta Palettes_hasChanged,y
-:
-@bufferFull:
-	rts
 
 PPU_NMIPlan03:
 ;fades out colors
@@ -1287,10 +1260,3 @@ PORTRAIT_ADDRESS=$24c3
 	sta PPUDATA
 	rts
 
-.rodata
-
-attributeTableConversionL:
-	.byte $c0, $c8, $d0, $d8, $e0, $e8, $f0, $f8, $c1, $c9, $d1, $d9, $e1, $e9, $f1, $f9
-	.byte $c2, $ca, $d2, $da, $e2, $ea, $f2, $fa, $c3, $cb, $d3, $db, $e3, $eb, $f3, $fb
-	.byte $c4, $cc, $d4, $dc, $e4, $ec, $f4, $fc, $c5, $cd, $d5, $dd, $e5, $ed, $f5, $fd
-	.byte $c6, $ce, $d6, $de, $e6, $ee, $f6, $fe, $c7, $cf, $d7, $df, $e7, $ef, $f7, $ff

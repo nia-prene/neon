@@ -7,6 +7,7 @@
 .globalzp PPU_willVRAMUpdate
 .globalzp Scroll_delta
 
+.global PPU_bufferReady
 
 ; methods
 .global PPU_init

@@ -35,6 +35,7 @@
 .globalzp Lib_ptr0
 .globalzp Lib_ptr1
 .globalzp Lib_ptr2
+.globalzp NMIptr0
 
 ;functions
 .global checkCollision

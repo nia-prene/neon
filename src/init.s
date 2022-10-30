@@ -40,9 +40,9 @@
     sta $500,x
     sta $600,x
     sta $700,x
-    inx
-    bne @clrmem
-;white out color palettes
+	inx
+	bne @clrmem
+;black out color palettes
 	lda #$3f
 	sta $2006
 	lda #$00
