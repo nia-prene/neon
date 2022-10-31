@@ -9,6 +9,7 @@
 .include	"gamepads.h"
 .include	"header.s"
 .include	"hud.h"
+.include	"init.s"
 .include	"main.h"
 .include	"oam.h"
 .include	"palettes.h"
@@ -43,16 +44,16 @@ GAMESTATE01=$01; loading a level
 GAMESTATE02=$02; fade in screen while scroll
 GAMESTATE03=$03; move player to start pos, ease in status bar
 GAMESTATE04=$04; ease out status bar, move player to dialogue spt
-GAMESTATE05=$05; available
-GAMESTATE06=$06; fade out screen while scroll
-GAMESTATE07=$07; music test state
+GAMESTATE05=$05; title screen load
+GAMESTATE06=$06; fade out gameover
+GAMESTATE07=$07; game over
 GAMESTATE08=$08; game pause
 GAMESTATE09=$09; charms spinning 
 GAMESTATE0A=$0A; player falling
 GAMESTATE0B=$0B; player recovering
-GAMESTATE0C=$0C; available
+GAMESTATE0C=$0C; title screen wait for start
 GAMESTATE0D=$0D; Charms sucking
-GAMESTATE0E=$0E; available
+GAMESTATE0E=$0E; fade out title
 
 Gamestates_new:;	void(a) |
 	
@@ -125,33 +126,20 @@ gamestate00:
 
 gamestate01:;void(currentPlayer, currentScene)
 ;loads level with current player.
-	jsr PPU_init
-	jsr Players_init
-	jsr Score_clear
-	jsr APU_init
 
 	jsr APU_setSong
 	jsr NMI_wait;		void() |	wait for next nmi
 	jsr disableRendering; 	void() |	before turning off screen
 
-	ldx #0
-	ldy #4
-	jsr setPalette; (x,y)
-	
-	ldx #PURPLE_BULLET
-	ldy #7
-	jsr setPalette; (x,y)
-
 	ldx nextScene
 	jsr setPaletteCollection; (x)
+	lda #3
+	jsr Palettes_fade
+	jsr PPU_NMIPlan00
+	jsr NMI_wait
 
-	ldx nextScene
-	jsr PPU_renderScreen; void(x)
-
-	jsr PPU_renderRightScreen
-
-	ldx nextScene
-	jsr Waves_new; (x)
+	lda nextScene
+	jsr PPU_renderScreen; void(a)
 
 	jsr PPU_resetScroll
 	jsr NMI_wait;		void() |	wait for next nmi
@@ -167,14 +155,34 @@ gamestate02:
 	jsr NMI_wait
 	jsr PPU_updateScroll
 	
+	ldx nextScene
+	jsr setPaletteCollection; (x)
+	
 	lda Gamestates_clock
-	jsr PPU_NMIPlan01;(a)
+	eor #%11111111
+	and #%11000
+	lsr
+	lsr
+	lsr
+	jsr Palettes_fade
+
+	jsr PPU_NMIPlan00
 	
 	lda Gamestates_clock
 	cmp #%11000
 	bne :+
+		ldx nextScene
+		jsr Waves_new; (x)
 		lda #GAMESTATE03
 		jsr Gamestates_new
+		
+		ldx #0
+		ldy #4
+		jsr setPalette; (x,y)
+	
+		ldx #PURPLE_BULLET
+		ldy #7
+		jsr setPalette; (x,y)
 	:
 	jmp Gamestates_tick
 
@@ -246,25 +254,112 @@ gamestate04:
 	jmp Gamestates_tick
 
 gamestate05:
+	NES_init
+	jsr PPU_init
+	jsr Players_init
+	jsr Score_clear
+	jsr APU_init
 
-gamestate06:
-;fades screen out and updates scroll
-	jsr NMI_wait
-	jsr PPU_updateScroll
-	lda Gamestates_clock
-	bne :+
-		lda #GAMESTATE02
-		jmp Gamestates_new
-:	clc
-	and #%11000000
-	rol
-	rol
-	rol
-	tay
-	jsr PPU_NMIPlan03;void(y)
+	jsr NMI_wait;		void() |	wait for next nmi
+	jsr disableRendering; 	void() |	before turning off screen
+
+	ldx #0
+	ldy #4
+	jsr setPalette; (x,y)
+
+	ldx #SCENE01;			get title screen
+	jsr setPaletteCollection; (x)
+
+	lda #SCENE01;			get title screen
+	jsr PPU_renderScreen; void(a)
+
+	jsr PPU_renderRightScreen
+
+	jsr PPU_drawPressStart
+
+	jsr PPU_resetScroll
+	jsr NMI_wait;		void() |	wait for next nmi
+	jsr enableRendering;	void() |	before turning on screen
+
+	lda #GAMESTATE0C;	change the gamestate
+	jsr Gamestates_new; 	void(a) |
 	jmp Gamestates_tick
 
+
+
+
+gamestate06:
+
+	jsr PPU_updateScroll;		void()	adjust the scroll first
+	jsr Score_clearFrameTally;	void()	clear it for this frame
+	jsr PlayerBullets_move;		void()
+	jsr Bullets_tick
+	jsr Powerups_tick
+	
+	ldx currentScene
+	jsr setPaletteCollection; (x)
+	
+	lda Gamestates_clock
+	and #%111000
+	lsr
+	lsr
+	lsr
+	jsr Palettes_fade
+
+	jsr NMI_wait;			wait til player sees last frame
+	
+	jsr Hitbox_tick;		adjust the hitbox
+	
+	jsr Enemies_tick;		void() | 
+	jsr Waves_dispense;		void() | 
+	jsr Effects_tick;		void() | 
+
+	jsr Score_tallyFrame; 		void()	total this frame
+	
+	jsr OAM_build00; 	void()		draw sprites
+	jsr PPU_NMIPlan00
+	
+	lda Gamestates_clock
+	cmp #%100111
+	bne :+
+		lda #GAMESTATE05
+		jsr Gamestates_new
+		jsr APU_pauseMusic; silence the music
+		jsr APU_pauseSFX; silence the SFX
+	:
+	jsr PPU_waitForSprite0Hit
+	jmp Gamestates_tick
+
+
 gamestate07:
+
+	jsr PPU_updateScroll;		void()	adjust the scroll first
+	jsr PlayerBullets_move;		void()
+	jsr Bullets_tick
+	jsr Powerups_tick
+	
+	jsr NMI_wait;			wait til player sees last frame
+	
+	clc;				add 1 so the animation doesnt reset
+	lda Gamestates_clock
+	adc #1
+	jsr Player_fall;		void(a);	move player down
+
+	jsr Hitbox_tick;		adjust the hitbox
+	
+	jsr Enemies_tick;		void() | 
+	jsr Effects_tick;		void() | 
+
+	jsr OAM_build00; 	void()		draw sprites
+	
+	lda Gamestates_clock
+	cmp #128
+	bne :+
+		lda #GAMESTATE06
+		jsr Gamestates_new
+	:
+	jsr PPU_waitForSprite0Hit
+	jmp Gamestates_tick
 
 
 gamestate08:; void()
@@ -363,30 +458,34 @@ gamestate0A:; falling off broom
 	
 	lda Gamestates_clock
 	jsr Player_fall;void(a)
+	jsr Hitbox_tick;
 
 	jsr Enemies_tick
 	jsr Effects_tick;		void() | 
 	jsr Waves_dispense 
 
 	jsr Score_tallyFrame
-
-	jsr OAM_build00; (a)
-	jsr PPU_NMIPlan00
 	
-	lda Gamestates_clock;		if not zero (not first frame)
-	beq :+;		else if
-		jsr PPU_waitForSprite0Hit;	do sprite 0 split
-	:
 	lda Gamestates_clock;	recall clock
 	cmp #64
-	bne:+
+	bne @stillAlive
 		jsr Player_hit; 	detract heart
-	:
+		bcs @stillAlive
+			lda #GAMESTATE07;	game over state
+			jsr Gamestates_new
+@stillAlive:
 	lda Gamestates_clock;	recall clock
 	cmp #128;	if 128
 	bne :+
 		lda #GAMESTATE0B;	load recovery state
 		jsr Gamestates_new;	change states
+	:
+	jsr OAM_build00
+	jsr PPU_NMIPlan00
+	
+	lda Gamestates_clock;		if not zero (not first frame)
+	beq :+;		else if
+		jsr PPU_waitForSprite0Hit;	do sprite 0 split
 	:
 	jmp Gamestates_tick
 
@@ -435,7 +534,18 @@ gamestate0B:; recovering from fall
 	jmp Gamestates_tick
 
 
-gamestate0C:; a moment of no shooting
+gamestate0C:
+	jsr NMI_wait
+	jsr PPU_NMIPlan00
+	
+	jsr Gamepads_read
+	lda Gamepads_state
+	and #BUTTON_START
+	beq :+
+		lda #GAMESTATE0E
+		jsr Gamestates_new;	void(a) |
+	:
+	jmp Gamestates_tick
 
 
 gamestate0D:
@@ -481,6 +591,28 @@ gamestate0D:
 
 
 Gamestate0E:
+	jsr NMI_wait
+	jsr PPU_updateScroll
+	
+	ldx #SCREEN01
+	jsr setPaletteCollection; (x)
+	
+	lda Gamestates_clock
+	and #%111000
+	lsr
+	lsr
+	lsr
+	jsr Palettes_fade
+
+	jsr PPU_NMIPlan00
+	
+	lda Gamestates_clock
+	cmp #%100111
+	bne :+
+		lda #GAMESTATE01
+		jsr Gamestates_new
+	:
+	jmp Gamestates_tick
 
 
 Gamestates_pause:;c(a,x) |

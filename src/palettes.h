@@ -19,6 +19,7 @@
 
 ;palette collection objects
 .globalzp BEACH_PALETTE
+.globalzp COLLECTION01
 
 ;constants
 .globalzp NUMBER_OF_PALETTES
@@ -29,8 +30,10 @@
 .global color2
 .global color3
 .global Palettes_hasChanged
+.global Palettes_backgroundChanged
 
 ;functions
 .global setPalette
 .global setPaletteCollection
+.global Palettes_fade
 .global Palettes_swapEnemyPalettes

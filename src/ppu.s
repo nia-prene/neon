@@ -266,9 +266,12 @@ PPU_NMIPlan00:
 ;byte writes INCLUDE functions pushed on stack
 MAX_BYTES=128
 PALETTE_BYTES=5
+BYTES_BACKGROUND = 3;		color and address
 	
 	lda PPU_bufferReady;		if buffer is full from last frame
-	bne @return
+	beq :+
+		rts
+	:
 	tsx;save the main stack
 	stx Main_stack
 ;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
@@ -286,9 +289,18 @@ PALETTE_BYTES=5
 ;we just stored 2 bytes
 	lda #2
 	sta PPU_bufferBytes
-
-;check if score needs updating
-	lda Score_hasChanged
+	
+	lda Palettes_backgroundChanged
+	beq @noBackground
+		clc
+		lda #BYTES_BACKGROUND
+		adc PPU_bufferBytes
+		sta PPU_bufferBytes
+		jsr PPU_backgroundColorToBuffer
+		lda #FALSE
+		sta Palettes_backgroundChanged
+@noBackground:	
+	lda Score_hasChanged;check if score needs updating
 	beq @noScore
 		clc
 		lda #BYTES_SCORE
@@ -428,8 +440,17 @@ PPU_NMIPlan01:; void(a) |
 
 
 PPU_NMIPlan03:
-;fades out colors
-;save the main stack
+
+	lsr
+	lsr
+	lsr
+
+	and #%11; msb of g
+	tay
+	
+	lda PPU_bufferReady;		if buffer is full from last frame
+	bne @return
+
 	tsx
 	stx Main_stack
 ;make a new ppu stack, large enough to hold all byte writes and a couple addresses if interrupted
@@ -447,18 +468,21 @@ PPU_NMIPlan03:
 	sbc @colorMutator,y
 	bcs :+
 		lda #$0f
+		sec
 :
 	pha
 	lda color2,x
 	sbc @colorMutator,y
 	bcs :+
 		lda #$0f
+		sec
 :
 	pha
 	lda color1,x
 	sbc @colorMutator,y
 	bcs :+
 		lda #$0f
+		sec
 :
 	pha
 	lda backgroundColor
@@ -478,7 +502,10 @@ PPU_NMIPlan03:
 	lda #<(PPU_renderAllPalettesNMI-1)
 	pha
 	sws PPU_stack, Main_stack
-;do this during nmi
+
+	lda #TRUE
+	sta PPU_bufferReady
+@return:
 	rts
 @colorMutator:
 	.byte $00, $10, $20, $30
@@ -791,9 +818,9 @@ render32:;(a)
 	rts
 
 
-PPU_renderScreen:
+PPU_renderScreen:;	void(a)
+	tax
 	;clear vblank bit before write
-	bit PPUSTATUS
 	lda currentPPUSettings
 	ora #INCREMENT_1
 	sta PPUCTRL
@@ -1136,6 +1163,31 @@ PPU_renderBombsNMI:
 	sta PPUDATA
 	rts
 
+
+PPU_backgroundColorToBuffer:
+	sws Main_stack, PPU_stack
+	
+	lda backgroundColor;		save background
+	pha
+	lda #>(PPU_drawBackground-1);	save draw routine
+	pha
+	lda #<(PPU_drawBackground-1)
+	pha
+	
+	sws PPU_stack, Main_stack 
+	rts
+
+PPU_drawBackground:
+ADDRESS_BACKGROUND	=	$3F00
+	lda #>ADDRESS_BACKGROUND
+	sta PPUADDR
+	lda #<ADDRESS_BACKGROUND
+	sta PPUADDR
+	pla
+	sta PPUDATA
+	rts
+
+
 PPU_paletteToBuffer:;void(y)
 ;arguments 
 ;y - palette to update
@@ -1260,3 +1312,31 @@ PORTRAIT_ADDRESS=$24c3
 	sta PPUDATA
 	rts
 
+
+PPU_drawPressStart:
+	lda #$2A
+	sta PPUADDR
+	lda #$4A
+	sta PPUADDR
+	ldx #00
+@loop:
+	lda @word,x
+	sta PPUDATA
+	inx
+	cpx #$0B
+	bcc @loop
+
+	lda #$23
+	sta PPUADDR
+	lda #$E0
+	sta PPUADDR
+
+	ldx #32-1
+@attribute:
+	lda #%10101010
+	sta PPUDATA
+	dex
+	bpl @attribute
+	rts
+@word:
+	.byte $DF,$E1,$D4,$E2,$E2,$04,$E2,$E3,$D0,$E1,$E3

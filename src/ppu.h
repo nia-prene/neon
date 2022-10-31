@@ -31,3 +31,4 @@
 .global disableRendering
 .global renderAllPalettes
 .global PPU_renderScreen
+.global PPU_drawPressStart

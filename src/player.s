@@ -53,7 +53,7 @@ h:.res 1;hitbox variable
 .code
 Players_init:
 ; initializes players to blank slate values to set up game
-	lda #5
+	lda #1
 	sta Player_hearts
 
 	lda #3
@@ -457,6 +457,7 @@ HITBOX01	=1;	Deploying
 HITBOX02	=2;	deployed
 HITBOX03	=3;	retracting
 HITBOX04	=4;	broom when falling
+HITBOX05	=5;	game over
 
 Hitbox_tick:; void()
 
@@ -485,17 +486,19 @@ Hitbox_new:; void(a)
 
 Hitbox_L:
 	.byte NULL 
-	.byte <(Hitbox_01)
-	.byte <(Hitbox_02)
-	.byte <(Hitbox_03)
-	.byte <(Hitbox_04)
+	.byte <(Hitbox01)
+	.byte <(Hitbox02)
+	.byte <(Hitbox03)
+	.byte <(Hitbox04)
+	.byte <(Hitbox05)
 Hitbox_H:
 	.byte NULL 
-	.byte >(Hitbox_01)
-	.byte >(Hitbox_02)
-	.byte >(Hitbox_03)
-	.byte >(Hitbox_04)
-Hitbox_01:
+	.byte >(Hitbox01)
+	.byte >(Hitbox02)
+	.byte >(Hitbox03)
+	.byte >(Hitbox04)
+	.byte >(Hitbox05)
+Hitbox01:
 DEPLOY_FRAMES=4
 
 	lda Player_xPos_H;	glue to player position
@@ -516,7 +519,7 @@ DEPLOY_FRAMES=4
 	
 	rts
 
-Hitbox_02:
+Hitbox02:
 	lda Player_xPos_H;	glue to the player position
 	sta Hitbox_xPos
 	lda Player_yPos_H
@@ -543,7 +546,7 @@ Hitbox_02:
 	.byte SPRITE19,SPRITE1A,SPRITE1B,SPRITE1C
 
 
-Hitbox_03:
+Hitbox03:
 RECALL_FRAMES=4
 	lda Player_xPos_H;	glue to player
 	sta Hitbox_xPos
@@ -565,7 +568,20 @@ RECALL_FRAMES=4
 	rts
 
 
-Hitbox_04:
+Hitbox04:
+	lda #SPRITE13;		set hitbox sprite to broom
+	sta Hitbox_sprite
+
+	rts
+
+Hitbox05:
+	lda #128
+	sta Hitbox_xPos
+	lda #128-32
+	sta Hitbox_yPos
+
+	lda #SPRITE2B
+	sta Hitbox_sprite
 	rts
 
 
@@ -644,21 +660,23 @@ Player_hit:
 	bcs :+
 		lda #0; no underflow
 		sta Player_power_l
-		sec; reset carry
 	:sta Player_power_h
 
-	;sec; decrease hearts
-	lda Player_hearts
-	sbc #1
-	bcs :+
-		lda #5; do gameover stuff
-	:sta Player_hearts
-	
 	lda #00
 	sta Shots_remaining
 
 	lda #TRUE
 	sta Player_haveHeartsChanged
+
+	sec; decrease hearts
+	lda Player_hearts
+	sbc #1
+	sta Player_hearts
+	bne :+
+		lda #HITBOX05
+		jsr Hitbox_new
+		clc
+	:;sec
 	rts
 
 
@@ -682,6 +700,8 @@ SPEED_l		= 0
 	bne :+
 		lda #SFX02
 		jsr SFX_newEffect
+		lda #HITBOX04;		change hitbox to broom 
+		jsr Hitbox_new
 	:
 	clc
 	lda Player_yPos_L; 	move player down
@@ -693,9 +713,7 @@ SPEED_l		= 0
 	bcc :+; if y > 255
 		lda #255;	no overflow
 	:sta Player_yPos_H
-
-	lda #SPRITE13;		set hitbox sprite to broom
-	sta Hitbox_sprite
+	
 
 	lda #SPRITE14;		set player to falling sprite
 	sta Player_sprite
@@ -715,8 +733,7 @@ RECOVER_SPEED=5
 		
 		lda #FALSE
 		sta Player_inPosition;	player not in position
-		sta Hitbox_sprite;	remove broom
-		sta Hitbox_state;	disable hitbox
+		jsr Hitbox_new;		
 	:
 
 	lda Player_inPosition

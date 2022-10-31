@@ -7,4 +7,4 @@
 .global Gamestates_L
 
 ; objects
-.globalzp GAMESTATE01
+.globalzp GAMESTATE05

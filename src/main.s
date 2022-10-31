@@ -18,7 +18,6 @@
 .include "powerups.h"
 .include "score.h"
 .include "hud.h"
-.include "init.s"
 .include "apu.h"
 
 .zeropage
@@ -29,9 +28,8 @@ NMI_finished:	.res 1
 
 .code
 main:
-	NES_init
 	
-	lda #GAMESTATE01
+	lda #GAMESTATE05
 	jsr Gamestates_new
 
 	jmp Gamestates_tick

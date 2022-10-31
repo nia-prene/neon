@@ -45,6 +45,7 @@ SPRITE27	= $27;	powerup large
 SPRITE28	= $28;	bullet 11
 SPRITE29	= $29;	bullet 01
 SPRITE2A	= $2A;	bullet 10
+SPRITE2B	= $2B;	game over
 
 ; format
 ; 	Tile, Y, X, Attribute 
@@ -237,6 +238,17 @@ Sprite2A:
 	.lobytes $24,	 -04,	-04,	%10
 	.byte NULL
 Sprite2B:
+	.lobytes $EC, -8, -(((4*7)+4)+1), %0
+	.lobytes $E4, -8, -(((3*7)+4)+1), %0
+	.lobytes $F2, -8, -(((2*7)+4)+1), %0
+	.lobytes $E2, -8, -((1*7)+4), %0
+	
+	.lobytes $EE, -8, (0*7)+4, %0
+	.lobytes $F4, -8, (1*7)+4, %0
+	.lobytes $E2, -8, (2*7)+4, %0
+	.lobytes $E0, -8, (3*7)+4, %0
+	.byte NULL
+
 Sprite2C:
 Sprite2D:
 Sprite2E:
