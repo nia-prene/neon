@@ -346,9 +346,8 @@ secondPass:;		void(x)
 	ldx #POWERUPS_MAX-1;	for each item in powerups
 
 @loop:
-	lda Powerups_active,x;	if active
+	lda Powerups_ID,x;	if active
 	beq @next
-		tay;			active byte is also ID
 		lda Powerups_yPos,x;	copy y value
 		sta buildY
 		lda Powerups_xPos,x;	copy x value
@@ -357,8 +356,9 @@ secondPass:;		void(x)
 		lda #0
 		sta buildPalette;	clear out palette
 		
+		lda Powerups_sprite,x;	get sprite
+		
 		stx xReg;		save x
-		lda Powerups_sprite,y;	get sprite
 		jsr OAM_build;		c(a) | 
 		bcs @full;		return c set if full
 		ldx xReg;		recall x

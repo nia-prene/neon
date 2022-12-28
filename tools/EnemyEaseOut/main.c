@@ -1,32 +1,43 @@
 #include <stdio.h>
 #include <math.h>
-#define FRAMES (16-1)
-#define STEPS 1.0/FRAMES
+#define FRAMES (16.0f-1.0f)
 #define SLOWSPEED .0f
-#define FASTSPEED 4.0f
+#define FASTSPEED 1.0f
 #define SPEEDDIFF (float)FASTSPEED-SLOWSPEED
-#define ROUND 16
+#define ROUND 64
 float easeOut(float x);
 
 int main(){
 	FILE *file;
-	file=fopen("output.txt", "w");
+	file=fopen("output.s", "w");
 		
-	fprintf(file,"@playerSpeeds_H:\n");
-	fprintf(file,"\t.byte ");
-
-	for (float i=0;i<=1;i=i+STEPS){
+	for (int i=0;i<=FRAMES;i++){
+		float step = ((int)i) / FRAMES;
 		//print the high byte of speed rounded down to .25
-		int speed =  FASTSPEED-((round((((SPEEDDIFF)*easeOut(i))*ROUND)))/ROUND);
-		fprintf(file,"%2d, ",speed);
+		int speed =  FASTSPEED-((round((((SPEEDDIFF)*easeOut(step))*ROUND)))/ROUND);
+		if ((i & 0b111) == 0b000){
+			fprintf(file,"\n\t.byte\t");
+		}
+		if ((i & 0b111) == 0b111){
+			fprintf(file,"$%02X",speed);
+		} else {
+			fprintf(file,"$%02X, ",speed);
+		
+		}
 	}
-	fprintf(file,"\n@playerSpeeds_L:\n");
-	fprintf(file,"\t.byte ");
-	for (float i=0;i<=1;i=i+STEPS){
-		float speed =FASTSPEED-(round((((SPEEDDIFF)*easeOut(i))*ROUND))/ROUND);
-		int whole =  FASTSPEED-((round((((SPEEDDIFF)*easeOut(i))*ROUND)))/ROUND);
+	for (int i=0;i<=FRAMES;i++){
+		float step = ((int)i) / FRAMES;
+		float speed =FASTSPEED-(round((((SPEEDDIFF)*easeOut(step))*ROUND))/ROUND);
+		int whole =  FASTSPEED-((round((((SPEEDDIFF)*easeOut(step))*ROUND)))/ROUND);
 		//print the low byte of speed rounded down to .5	
-		fprintf(file,"%d, ",(int)((speed-whole)*256));
+		if ((i & 0b111) == 0b000){
+			fprintf(file,"\n\t.byte\t");
+		}
+		if ((i & 0b111) == 0b111){
+			fprintf(file,"$%02X",(int)((speed-whole)*256));
+		} else {
+			fprintf(file,"$%02X, ",(int)((speed-whole)*256));
+		}			
 	}
 }
 

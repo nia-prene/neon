@@ -53,7 +53,7 @@ h:.res 1;hitbox variable
 .code
 Players_init:
 ; initializes players to blank slate values to set up game
-	lda #1
+	lda #5
 	sta Player_hearts
 
 	lda #3
@@ -123,6 +123,7 @@ BRAKES_MAX=16
 		rts;			void
 
 	@goingFast:
+		dec Player_speedIndex; move index 
 		dec Player_speedIndex; move index 
 		bpl :+
 			lda #FALSE
@@ -616,23 +617,24 @@ MAX_BULLET_DIAMETER=8
 		bcs @nextBullet
 			
 			sec
-			lda Player_yPos_H; find player x bounded box
+			lda Player_yPos_H;	find y distance
 			sbc enemyBulletYH,x
-			bcs :+
-				eor #%11111111
+			bcs :+;			if negative
+				;clc			
+				eor #%11111111;		two's compliment
 				adc #1
 			:
-			cmp #3; todo bullet safe distances
-			bcs @nextBullet
+			cmp #4;			if less or equal
+			bcs @nextBullet;	else miss
 			
-			sec
-			lda Player_xPos_H; find player x bounded box
+			sec;			find x distance
+			lda Player_xPos_H
 			sbc enemyBulletXH,x
 			bcs :+
-				eor #%11111111
-				adc #1
+				eor #%11111111;		if negative
+				adc #1;			two's compliment
 			:
-			cmp #3; todo bullet safe distances
+			cmp #4
 			bcs @nextBullet
 				
 				lda Player_yPos_H;	mark where hit

@@ -46,7 +46,7 @@ GAMESTATE03=$03; move player to start pos, ease in status bar
 GAMESTATE04=$04; ease out status bar, move player to dialogue spt
 GAMESTATE05=$05; title screen load
 GAMESTATE06=$06; fade out gameover
-GAMESTATE07=$07; game over
+GAMESTATE07=$07; game over display message
 GAMESTATE08=$08; game pause
 GAMESTATE09=$09; charms spinning 
 GAMESTATE0A=$0A; player falling
@@ -54,6 +54,9 @@ GAMESTATE0B=$0B; player recovering
 GAMESTATE0C=$0C; title screen wait for start
 GAMESTATE0D=$0D; Charms sucking
 GAMESTATE0E=$0E; fade out title
+GAMESTATE0F=$0F; victory bullets to charms
+GAMESTATE10=$10; victory charm suck
+GAMESTATE11=$11; victory fade out
 
 Gamestates_new:;	void(a) |
 	
@@ -62,7 +65,6 @@ Gamestates_new:;	void(a) |
 
 
 Gamestates_tick:;	void()
-	
 
 	inc Gamestates_clock;			increment iterator
 
@@ -87,35 +89,38 @@ Gamestates_tick:;	void()
 
 gamestate00:
 
-	jsr PPU_updateScroll;		void()	adjust the scroll first
 	jsr Score_clearFrameTally;	void()	clear it for this frame
 	jsr PlayerBullets_move;		void()
 	jsr Bullets_tick
-	jsr Powerups_tick
 	
 	jsr NMI_wait;			wait til player sees last frame
+	jsr PPU_updateScroll;		void()	adjust the scroll first
 	jsr Gamepads_read;		read the gamepads
-	
+	jsr Gamestates_pause
 	jsr Player_setSpeed;		adjust player speed
 	jsr Player_move;		move the player
 	jsr Hitbox_tick;		adjust the hitbox
 	jsr PlayerBullets_shoot; 	void(a,x) |
-	
-	jsr Enemies_tick;		void() | 
-	jsr Waves_dispense;		void() | 
-	jsr Effects_tick;		void() | 
-
-	jsr Bombs_toss ;		c(a,x) |	see if bomb	
-	bcc :+;				if player dropped the bomb
-		lda #GAMESTATE09;	change gamestates
-		jsr Gamestates_new; a()
-	:
-	jsr Powerups_collect;	void() |	collect powerups
 	jsr Player_isHit;	c() | 		if player is hit
 	bcc :+
 		lda #GAMESTATE0A;		change gamestate
 		jsr Gamestates_new; void(a)
 	:
+	jsr Bombs_toss ;		c(a,x) |	see if bomb	
+	bcc :+;				if player dropped the bomb
+		lda #GAMESTATE09;	change gamestates
+		jsr Gamestates_new; a()
+	:
+	jsr Enemies_tick;		a() | 
+	beq :+
+		lda #GAMESTATE0F
+		jsr Gamestates_new
+	:
+	jsr Powerups_tick
+	jsr Powerups_collect;	void() |	collect powerups
+	jsr Waves_dispense;		void() | 
+	jsr Effects_tick;		void() | 
+
 	jsr OAM_build00; 	void()		draw sprites
 	jsr PPU_NMIPlan00; void() |
 	
@@ -190,7 +195,6 @@ gamestate02:
 gamestate03:
 SCORE_OFFSET=7
 ;move player into place, show status, ready? Go!
-	jsr PPU_updateScroll
 	jsr PlayerBullets_move;void()
 
 	jsr OAM_initSprite0
@@ -200,6 +204,7 @@ SCORE_OFFSET=7
 	jsr Sprite0_setSplit; void(a)
 	
 	jsr NMI_wait;			wait til player sees last frame
+	jsr PPU_updateScroll
 	lda Gamestates_clock
 	jsr Player_toStartingPos; void(a)
 	jsr Gamepads_read
@@ -226,13 +231,13 @@ SCORE_OFFSET=7
 
 gamestate04:
 ;hide HUD and allow player to move before level todo ready go
-	jsr PPU_updateScroll
+	jsr Bullets_tick;void()
 	jsr PlayerBullets_move;void()
-	
 	jsr HUD_easeOut;a()
 	jsr Sprite0_setSplit;(a)
 	
 	jsr NMI_wait
+	jsr PPU_updateScroll
 	
 	jsr Gamepads_read
 	jsr Player_setSpeed;(a)
@@ -289,12 +294,10 @@ gamestate05:
 
 
 gamestate06:
-
-	jsr PPU_updateScroll;		void()	adjust the scroll first
+; fade out gameover
 	jsr Score_clearFrameTally;	void()	clear it for this frame
 	jsr PlayerBullets_move;		void()
 	jsr Bullets_tick
-	jsr Powerups_tick
 	
 	ldx currentScene
 	jsr setPaletteCollection; (x)
@@ -307,10 +310,12 @@ gamestate06:
 	jsr Palettes_fade
 
 	jsr NMI_wait;			wait til player sees last frame
+	jsr PPU_updateScroll;		void()	adjust the scroll first
 	
 	jsr Hitbox_tick;		adjust the hitbox
 	
 	jsr Enemies_tick;		void() | 
+	jsr Powerups_tick
 	jsr Waves_dispense;		void() | 
 	jsr Effects_tick;		void() | 
 
@@ -332,13 +337,12 @@ gamestate06:
 
 
 gamestate07:
-
-	jsr PPU_updateScroll;		void()	adjust the scroll first
+; display gameover
 	jsr PlayerBullets_move;		void()
 	jsr Bullets_tick
-	jsr Powerups_tick
 	
 	jsr NMI_wait;			wait til player sees last frame
+	jsr PPU_updateScroll;		void()	adjust the scroll first
 	
 	clc;				add 1 so the animation doesnt reset
 	lda Gamestates_clock
@@ -348,6 +352,7 @@ gamestate07:
 	jsr Hitbox_tick;		adjust the hitbox
 	
 	jsr Enemies_tick;		void() | 
+	jsr Powerups_tick
 	jsr Effects_tick;		void() | 
 
 	jsr OAM_build00; 	void()		draw sprites
@@ -393,13 +398,12 @@ gamestate08:; void()
 
 gamestate09:; Level - charms spinning
 	
-	jsr PPU_updateScroll;void()
 	jsr Score_clearFrameTally;	void() |	clear frame score
-	jsr Powerups_tick;		void() | 	move powerups
 	jsr PlayerBullets_move;void()
 	jsr Charms_spin
 	
 	jsr NMI_wait
+	jsr PPU_updateScroll;void()
 	
 	jsr OAM_initSprite0;	turn on sprite 0
 	lda #SCORE_OFFSET
@@ -413,10 +417,20 @@ gamestate09:; Level - charms spinning
 	jsr Hitbox_tick
 	jsr PlayerBullets_shoot;(a)
 	
-	;jsr PPU_waitForSprite0Reset;()
+	lda Gamestates_clock
+	cmp #32
+	bne :+
+		lda #GAMESTATE0D
+		jsr Gamestates_new
+	:
 
 	jsr Waves_dispense 
 	jsr Enemies_tick
+	beq :+
+		lda #GAMESTATE10;	change gamestates
+		jsr Gamestates_new; a()
+	:
+	jsr Powerups_tick;		void() | 	move powerups
 	jsr Effects_tick;		void() | 
 	
 	jsr Powerups_collect;		void() |	collect powerups
@@ -430,25 +444,17 @@ gamestate09:; Level - charms spinning
 	lda Gamestates_clock
 	beq :+
 		jsr PPU_waitForSprite0Hit
-		lda Gamestates_clock
 	:
-	cmp #32
-	bne @statePersists
-		lda #GAMESTATE0D
-		jsr Gamestates_new
-@statePersists:
-
 	jmp Gamestates_tick
 
 
 gamestate0A:; falling off broom
-	jsr PPU_updateScroll
-	jsr Powerups_tick
 	jsr Score_clearFrameTally;void()
 	jsr Bullets_tick
 	jsr PlayerBullets_move;void()
 	
 	jsr NMI_wait
+	jsr PPU_updateScroll
 
 	jsr OAM_initSprite0; set up hit
 	lda #SCORE_OFFSET
@@ -460,12 +466,6 @@ gamestate0A:; falling off broom
 	jsr Player_fall;void(a)
 	jsr Hitbox_tick;
 
-	jsr Enemies_tick
-	jsr Effects_tick;		void() | 
-	jsr Waves_dispense 
-
-	jsr Score_tallyFrame
-	
 	lda Gamestates_clock;	recall clock
 	cmp #64
 	bne @stillAlive
@@ -480,6 +480,17 @@ gamestate0A:; falling off broom
 		lda #GAMESTATE0B;	load recovery state
 		jsr Gamestates_new;	change states
 	:
+	jsr Enemies_tick
+	beq :+
+		lda #GAMESTATE0F
+		jsr Gamestates_new
+	:
+	jsr Powerups_tick
+	jsr Effects_tick;		void() | 
+	jsr Waves_dispense 
+
+	jsr Score_tallyFrame
+	
 	jsr OAM_build00
 	jsr PPU_NMIPlan00
 	
@@ -492,17 +503,22 @@ gamestate0A:; falling off broom
 
 gamestate0B:; recovering from fall
 
-	jsr PPU_updateScroll;void()
-	jsr Powerups_tick
 	jsr Score_clearFrameTally;void()
 	jsr PlayerBullets_move;	void()
 	jsr Bullets_tick
 	
 	jsr NMI_wait
+	jsr PPU_updateScroll;void()
 
 	jsr OAM_initSprite0
 	jsr HUD_easeOut;a()
 	jsr Sprite0_setSplit;(a)
+	lda Gamestates_clock
+	cmp #128
+	bcc :+
+		lda #GAMESTATE00
+		jsr Gamestates_new
+	:
 	
 	jsr Gamepads_read
 	lda Gamestates_clock
@@ -515,6 +531,11 @@ gamestate0B:; recovering from fall
 	jsr Player_flicker;	void(a) |	flicker the player
 
 	jsr Enemies_tick
+	beq :+
+		lda #GAMESTATE0F
+		jsr Gamestates_new
+	:
+	jsr Powerups_tick
 	jsr Powerups_collect;		void() |	collect powerups
 	jsr Effects_tick;		void() | 
 	jsr Waves_dispense
@@ -524,12 +545,6 @@ gamestate0B:; recovering from fall
 	
 	jsr Score_tallyFrame;(x)
 
-	lda Gamestates_clock
-	cmp #128
-	bcc :+
-		lda #GAMESTATE00
-		jsr Gamestates_new
-	:
 	jsr PPU_waitForSprite0Hit
 	jmp Gamestates_tick
 
@@ -550,12 +565,19 @@ gamestate0C:
 
 gamestate0D:
 
-	jsr PPU_updateScroll;void()
 	jsr Score_clearFrameTally;void()
 	jsr PlayerBullets_move;void()
 	jsr Charms_suck; a,x(void)
 	
+	lda Gamestates_clock
+	cmp #128
+	bne :+
+		lda #GAMESTATE00
+		jsr Gamestates_new
+	:
+
 	jsr NMI_wait
+	jsr PPU_updateScroll;void()
 
 	jsr Gamepads_read
 	jsr Player_setSpeed;(a)
@@ -563,9 +585,14 @@ gamestate0D:
 	jsr Hitbox_tick
 	jsr PlayerBullets_shoot;(a)
 	jsr Player_collectCharms
+	jsr Powerups_tick;		void() | 	move powerups
 	jsr Powerups_collect;		void() |	collect powerups
 	
 	jsr Enemies_tick
+	beq :+
+		lda #GAMESTATE0F
+		jsr Gamestates_new
+	:
 	jsr Waves_dispense 
 	jsr Effects_tick;		void() | 
 	
@@ -580,11 +607,6 @@ gamestate0D:
 		jsr HUD_easeOut;	a()		ease the HUD out
 		jsr Sprite0_setSplit;	void(a)		set the split
 		lda Gamestates_clock
-	:
-	cmp #128
-	bne :+
-		lda #GAMESTATE00
-		jsr Gamestates_new
 	:
 	jsr PPU_waitForSprite0Hit
 	jmp Gamestates_tick
@@ -615,8 +637,93 @@ Gamestate0E:
 	jmp Gamestates_tick
 
 
-Gamestates_pause:;c(a,x) |
+Gamestate0F:
+
+	jsr Score_clearFrameTally;	void()	clear it for this frame
+	jsr PlayerBullets_move;		void()
+	jsr Charms_spin
+	
+	jsr NMI_wait;			wait til player sees last frame
+	jsr PPU_updateScroll;		void()	adjust the scroll first
+	jsr OAM_initSprite0
+	jsr HUD_easeOut;		a()
+	jsr Sprite0_setSplit;		void(a)		set the split
+	
+	jsr Gamepads_read;		read the gamepads
+	jsr Player_setSpeed;		adjust player speed
+	jsr Player_move;		move the player
+	jsr Hitbox_tick;		adjust the hitbox
+	jsr PlayerBullets_shoot; 	void(a,x) |
+	
+	jsr Enemies_tick;		a() | 
+	jsr Effects_tick;		void() | 
+
+	jsr Powerups_tick
+	jsr Powerups_collect;		void() |	collect powerups
+	jsr Player_collectCharms;	void() |	collect powerups
+	
+	jsr OAM_build00; 		void()		draw sprites
+	jsr PPU_NMIPlan00; 		void() |	do NMI updates
+	
+	jsr Score_tallyFrame; 		void()	total this frame
+	
+	lda Gamestates_clock;		spin charms for 32 frames 
+	cmp #32
+	bne :+
+		lda #GAMESTATE10;	change gamestate
+		jsr Gamestates_new;	void(a)	|
+	:
+	lda Gamestates_clock;		don't wait on 
+	beq :+
+		jsr PPU_waitForSprite0Hit
+	:
+	jmp Gamestates_tick
+
+Gamestate10:
+
+	jsr Score_clearFrameTally;	void()
+	jsr PlayerBullets_move;		void()
+	jsr Charms_suck; 		void() |
+	
 	jsr NMI_wait
+	jsr PPU_updateScroll;		void()
+	
+	jsr OAM_initSprite0
+	jsr HUD_easeIn;		a()
+	jsr Sprite0_setSplit;	void(a)		set the split
+	
+	jsr Gamepads_read
+	jsr Player_setSpeed;(a)
+	jsr Player_move;(a)
+	jsr Hitbox_tick
+	jsr PlayerBullets_shoot;(a)
+	jsr Player_collectCharms
+	jsr Powerups_collect;		void() |	collect powerups
+	
+	jsr Enemies_tick
+	jsr Powerups_tick;		void() | 	move powerups
+	jsr Effects_tick;		void() | 
+	
+	jsr OAM_build00; (a)
+	jsr PPU_NMIPlan00
+	
+	jsr Score_tallyFrame;
+
+	jsr PPU_waitForSprite0Hit
+
+	lda Gamestates_clock
+	cmp #128
+	bne :+
+		lda #GAMESTATE06
+		jsr Gamestates_new
+	:
+	jmp Gamestates_tick
+
+Gamestate11:
+Gamestate12:
+Gamestate13:
+
+Gamestates_pause:;c(a,x) |
 	
 	lda Gamepads_state
 	and #BUTTON_START;if start button pressed
@@ -635,9 +742,12 @@ Gamestates_H:
 	.byte >gamestate00,>gamestate01,>gamestate02,>gamestate03
 	.byte >gamestate04,>gamestate05,>gamestate06,>gamestate07
 	.byte >gamestate08,>gamestate09,>gamestate0A,>gamestate0B
-	.byte >gamestate0C,>gamestate0D,>Gamestate0E
+	.byte >gamestate0C,>gamestate0D,>Gamestate0E,>Gamestate0F
+	.byte >Gamestate10,>Gamestate11,>Gamestate12,>Gamestate13
 Gamestates_L:
 	.byte <gamestate00,<gamestate01,<gamestate02,<gamestate03
 	.byte <gamestate04,<gamestate05,<gamestate06,<gamestate07
 	.byte <gamestate08,<gamestate09,<gamestate0A,<gamestate0B
-	.byte <gamestate0C,<gamestate0D,<Gamestate0E
+	.byte <gamestate0C,<gamestate0D,<Gamestate0E,<Gamestate0F
+	.byte <Gamestate10,<Gamestate11,<Gamestate12,<Gamestate13
+

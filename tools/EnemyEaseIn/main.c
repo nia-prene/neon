@@ -3,30 +3,42 @@
 #define FRAMES (16-1)
 #define STEPS 1.0/FRAMES
 #define SLOWSPEED 0
-#define FASTSPEED 2
+#define FASTSPEED 1
 #define SPEEDDIFF (float)FASTSPEED-SLOWSPEED
-#define ROUND 16
+#define ROUND 64
 float easeIn(float x);
 
 int main(){
 	FILE *file;
-	file=fopen("output.txt", "w");
+	file=fopen("output.s", "w");
 		
-	fprintf(file,"@playerSpeeds_H:\n");
-	fprintf(file,"\t.byte ");
-
-	for (float i=0;i<=1;i=i+STEPS){
+	for (int i=0;i<=FRAMES;i=i+1){
 		//print the high byte of speed rounded down to .25
-		int speed =  SLOWSPEED+((round((((SPEEDDIFF)*easeIn(i))*ROUND)))/ROUND);
-		fprintf(file,"%2d, ",speed);
+		float step = ((float)i)/FRAMES;
+		int speed =  SLOWSPEED+((round((((SPEEDDIFF)*easeIn(step))*ROUND)))/ROUND);
+		if ((i & 0b111) == (0b000)){
+			fprintf(file,"\n\t.byte\t");
+		}
+		if ((i & 0b111) == (0b111)){
+			fprintf(file,"$%02X",speed);
+		}else {
+			fprintf(file,"$%02X ,",speed);
+		}
 	}
-	fprintf(file,"\n@playerSpeeds_L:\n");
-	fprintf(file,"\t.byte ");
-	for (float i=0;i<=1;i=i+STEPS){
-		float speed =SLOWSPEED+(round((((SPEEDDIFF)*easeIn(i))*ROUND))/ROUND);
-		int whole =  SLOWSPEED+((round((((SPEEDDIFF)*easeIn(i))*ROUND)))/ROUND);
+	fprintf(file,"\n");
+	for (int i=0;i<=FRAMES;i=i+1){
+		float step = ((float)i)/FRAMES;
+		float speed =SLOWSPEED+(round((((SPEEDDIFF)*easeIn(step))*ROUND))/ROUND);
+		int whole =  SLOWSPEED+((round((((SPEEDDIFF)*easeIn(step))*ROUND)))/ROUND);
 		//print the low byte of speed rounded down to .5	
-		fprintf(file,"%d, ",(int)((speed-whole)*256));
+		if ((i & 0b111) == (0b000)){
+			fprintf(file,"\n\t.byte\t");
+		}
+		if ((i & 0b111) == (0b111)){
+			fprintf(file,"$%02X",(int)((speed-whole)*256));
+		} else {
+			fprintf(file,"$%02X, ",(int)((speed-whole)*256));
+		}
 	}
 }
 

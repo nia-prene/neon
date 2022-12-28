@@ -7,7 +7,7 @@
 
 
 ;attributes
-.global		Powerups_active
+.global		Powerups_ID
 .global		Powerups_yPos
 .global		Powerups_xPos
 .global		Powerups_sprite

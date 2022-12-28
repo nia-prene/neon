@@ -1246,7 +1246,7 @@ instDuty:;ddlc vvvv
 	.byte DUTY02,DUTY02,TRI,NOISE,DUTY02,DUTY00,NOISE,DUTY01
 	.byte DUTY02,NOISE,DUTY02,NOISE,DUTY02,NOISE
 instAttack_H:
-	.byte 8, 8, 15, 15, 15, 15, 15, 4
+	.byte 8, 8, 15, 15, 15, 15, 4, 4
 	.byte 6, 15, 15, 15, 15, 6
 instAttack_L:
 	.byte 0, 0, 0, 0, 0, 0, 0 
@@ -1261,7 +1261,7 @@ instRelease_H:
 	.byte 1, 1, 15, 0, 0, 15, 0, 0
 	.byte 0, 1, 0, 0, 15, 1
 instRelease_L:
-	.byte 0, 0, 0, 128, 64, 0, 128, 08
+	.byte 0, 0, 0, 128, 64, 0, 64, 08
 	.byte 64, 0, 0, 64, 0, 0
 instBend:
 	.byte 00, 01, 0, 0, 0, 0, 2, 3
@@ -1297,7 +1297,7 @@ SFX_Priority:
 	.byte NULL, 128, 255, 128, 128, 32, 192, 192
 	.byte 192, 192
 SFX_volume:
-	.byte NULL, 12, 08, 7, 7, 15, 15, 15
+	.byte NULL, 14, 08, 7, 7, 15, 15, 15
 	.byte 8, 11
 SFX_targetTrack:
 	.byte NULL, 03, 01, 00, 01, 03, 01, 03
@@ -1310,7 +1310,7 @@ SFX_loops_H:
 	.byte >SFX_loop08,>SFX_loop09
 
 SFX_loop01:
-	.byte N0B, 6, 9, NULL
+	.byte N0C, 6, 9, NULL
 SFX_loop02:
 	.byte D5, 9, 128, NULL
 SFX_loop03:

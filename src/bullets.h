@@ -28,7 +28,8 @@
 .global		Bullets_type
 .global		Bullets_sprite
 .global		Bullets_stagger
-
+.global		Charm_speed_H
+.global		Charm_speed_L
 ;functions
 .global Bullets_tick
 .global Bullets_aim
@@ -36,3 +37,5 @@
 .global Bullets_toCharm
 .global Charms_spin
 .global Charms_suck
+
+

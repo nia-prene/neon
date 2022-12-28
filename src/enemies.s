@@ -23,36 +23,36 @@ enemyYH:			.res MAX_ENEMIES
 enemyXH: 			.res MAX_ENEMIES
 
 .data
-Enemies_ID: 			.res MAX_ENEMIES
-enemyXL: 			.res MAX_ENEMIES
-enemyYL: 			.res MAX_ENEMIES
-enemyHPH: 			.res MAX_ENEMIES
-enemyHPL: 			.res MAX_ENEMIES
-enemyMetasprite: 		.res MAX_ENEMIES
-Enemies_diameter: 		.res MAX_ENEMIES
-enemyPalette: 			.res MAX_ENEMIES
-Enemies_pattern:		.res MAX_ENEMIES
-Enemies_animation:		.res MAX_ENEMIES
-Enemies_animationIndex:		.res MAX_ENEMIES
-Enemies_animationTimer:		.res MAX_ENEMIES
-Enemies_index:			.res MAX_ENEMIES
-Enemies_movement:		.res MAX_ENEMIES
-Enemies_vulnerability:		.res MAX_ENEMIES
-Enemies_clock:			.res MAX_ENEMIES
-Enemies_fuse:			.res MAX_ENEMIES
-i:				.res MAX_ENEMIES
-j:				.res MAX_ENEMIES
+Enemies_ID: 		.res MAX_ENEMIES
+enemyXL: 		.res MAX_ENEMIES
+enemyYL: 		.res MAX_ENEMIES
+enemyHPH: 		.res MAX_ENEMIES
+enemyHPL: 		.res MAX_ENEMIES
+enemyMetasprite: 	.res MAX_ENEMIES
+Enemies_diameter: 	.res MAX_ENEMIES
+enemyPalette: 		.res MAX_ENEMIES
+Enemies_pattern:	.res MAX_ENEMIES
+Enemies_animation:	.res MAX_ENEMIES
+Enemies_animationIndex:	.res MAX_ENEMIES
+Enemies_animationTimer:	.res MAX_ENEMIES
+Enemies_index:		.res MAX_ENEMIES
+Enemies_movement:	.res MAX_ENEMIES
+Enemies_vulnerability:	.res MAX_ENEMIES
+Enemies_clock:		.res MAX_ENEMIES
+Enemies_fuse:		.res MAX_ENEMIES
+i:			.res MAX_ENEMIES
+j:			.res MAX_ENEMIES
 
-Children_active:		.res CHILDREN_MAX
-Children_offset:		.res CHILDREN_MAX
+Children_active:	.res CHILDREN_MAX
+Children_offset:	.res CHILDREN_MAX
 
+Enemies_allTriggers:		.res 1;			gamestate triggers
 
 .code
 Enemies_new:; void(a)
 ;places enemy from slot onto enemy array and screen coordinates
 ;arguments
 ;a - enemy
-	
 	tax
 
 	jsr Enemies_get; x() | y
@@ -75,6 +75,7 @@ Enemies_new:; void(a)
 		sta Enemies_fuse,y
 		sta i,y
 		sta j,y
+		sta enemyMetasprite,y
 
 		lda #TRUE
 		sta isEnemyActive,y
@@ -110,7 +111,9 @@ Children_new:;			c,y(a) | x
 		sta Enemies_index,y
 		sta Enemies_clock,y
 		sta Enemies_fuse,y
+		sta enemyMetasprite,y
 		sta j,y
+
 
 		jsr Children_get;	c,x() | y
 		bcc @enemiesFull;	return if full
@@ -132,6 +135,50 @@ Children_new:;			c,y(a) | x
 		lda #TRUE;		set active
 		sta isEnemyActive,y
 		
+		;sec; return true
+
+@enemiesFull:
+	;clc; return false
+	rts
+
+
+Enemies_newSpawn:;	c(a,x)
+;a - enemy
+;x - parent enemy
+	
+	pha
+
+	jsr Enemies_get; 	y() | x
+	pla; 			retrieve ID 
+	bcc @enemiesFull;	return if full
+		sta Enemies_ID,y;	store ID
+		
+		lda enemyYH,x;		copy y coordinates
+		sta enemyYH,y
+
+		lda enemyXH,x;		copy y coordinates
+		sta enemyXH,y
+		
+		ldx Enemies_ID,y;	get the ID
+
+		lda romEnemyHPH,x
+		sta enemyHPH,y
+		lda romEnemyHPL,x
+		sta enemyHPL,y
+
+		lda diameter,x
+		sta Enemies_diameter,y
+		
+		lda #00
+		sta Enemies_index,y
+		sta Enemies_clock,y
+		sta Enemies_fuse,y
+		sta enemyMetasprite,y
+		sta i,y
+		sta j,y
+
+		lda #TRUE
+		sta isEnemyActive,y
 		;sec; return true
 
 @enemiesFull:
@@ -171,11 +218,13 @@ Children_get:;			c,y() | x
 	rts;			c
 
 
-Enemies_tick:
-;arguments - none
-;returns - none
+Enemies_tick:;			a() |	
+; a - bit encoded triggers
+	
+	lda #FALSE;		clear gamestate triggers
+	sta Enemies_allTriggers
 
-	ldx #MAX_ENEMIES-1; for each enemy
+	ldx #MAX_ENEMIES-1; 	for each enemy
 @loop:
 
 	lda isEnemyActive,x;update active enemies
@@ -214,19 +263,20 @@ Enemies_tick:
 		beq :+
 		jsr Enemies_isAlive; 		a(x) |  and defeated
 		bcs :+
-			jsr Enemies_defeat;	void(x) | 
+			jsr Enemies_defeat;	a(x) | 	
 			jsr Enemies_transferPoints
 			jmp @nextEnemy;		next in collection
 		:
 		jsr Patterns_tick; void(x)
 @nextEnemy:
 
-	inc Enemies_clock,x
+	inc Enemies_clock,x;	tick clock
 	
 	dex
-	bpl @loop; while x
+	bpl @loop; 		while x
 	
-	rts
+	lda Enemies_allTriggers
+	rts;			return a
 
 
 Enemies_tickState:
@@ -382,22 +432,45 @@ Enemies_isAlive:; c(x) |
 Enemies_defeat:;		void(x) | x
 FUSE 	= 16
 	
+	ldy Enemies_ID,x;		get ID
 	
-	lda #FUSE;		get fuse
-	sta Enemies_fuse,x;	give enemy fuse
+	lda Enemy_fuse,y;		set fuse
+	sta Enemies_fuse,x
 	
-	lda #MOVEMENT02
+	lda #MOVEMENT02;		set movement
 	sta Enemies_movement,x
 
-	lda #255
+	lda #255;			don't allow state change
 	sta isEnemyActive,x
 
-	lda #00;		clear out the palette
+	lda #00;			clear out the palette
 	sta enemyPalette,x
 	
-	ldy Enemies_ID,x;	get ID
-	lda Defeat,y;		get the defeat object
-	jmp Enemies_newEffect;	void(a) | x
+	stx xReg;			save x
+	sty yReg;			save y
+	lda #SFX01;			make sound effect
+	jsr SFX_newEffect
+	ldx xReg;			restore x
+	ldy yReg;			restore y
+
+	lda Enemies_trigger,y;		add to list of triggers
+	ora Enemies_allTriggers
+	sta Enemies_allTriggers
+	
+	lda Enemies_spawn,y;		if going to spawn enemy
+	beq :+
+		sty yReg;		save registers
+		stx xReg
+		jsr Enemies_newSpawn;		c(a) |	make a spawn enemy
+		ldx xReg
+		ldy yReg
+	:
+	lda Enemies_effect,y;		get the defeat effect
+	beq :+
+		jmp Enemies_newEffect;		void(a) | x
+	:
+	rts
+
 
 
 Children_clear:;		void() | x
@@ -439,7 +512,6 @@ Enemies_newEffect:;		void(a) | x
 
 		lda #TRUE;			set as active
 		sta Effects_active,y
-
 @return:
 	rts
 
@@ -494,67 +566,114 @@ Enemies_transferPoints:;	void(x) | x
 
 	rts
 
-ENEMY01=$01;	reese boss
-ENEMY02=$02;	fairy that returns fast
-ENEMY03=$03;	mushroom hopper
-ENEMY04=$04;	balloon cannon left
-ENEMY05=$05;	balloon cannon right
-ENEMY06=$06;	fairy that return slow
-ENEMY07=$07;	reese's left handgun
-ENEMY08=$08;	reese's right handgun
-ENEMY09=$09;	reese's left pattern
-ENEMY0A=$0A;	reese's right pattern
-ENEMY0B=$0B;	reese's left sniper
-ENEMY0C=$0C;	reese's right sniper
-
+ENEMY01		= $01;	reese boss phase 1
+ENEMY02		= $02;	fairy that returns fast
+ENEMY03		= $03;	mushroom hopper
+ENEMY04		= $04;	balloon cannon left
+ENEMY05		= $05;	balloon cannon right
+ENEMY06		= $06;	fairy that return slow
+ENEMY07		= $07;	reese's left handgun
+ENEMY08		= $08;	reese's right handgun
+ENEMY09		= $09;	reese's left pattern
+ENEMY0A		= $0A;	reese's right pattern
+ENEMY0B		= $0B;	reese's left sniper
+ENEMY0C		= $0C;	reese's right sniper
+ENEMY0D		= $0D;	reese boss phase 2
 
 .rodata
 
 
 romEnemyHPL:;	total hit points until defeat
-	.byte 	NULL,	$00,	$20,	$30	
+	.byte 	NULL,	$01,	$20,	$30	
 	.byte 	$80, 	$80,	$10,	$00
-	.byte	$00,	$00,	$00
-romEnemyHPH:
-	.byte 	NULL,	$10,	$00,	$00
-	.byte	$00,	$00,	$00,	$FF
-	.byte	$FF,	$FF,	$FF
-Enemies_points_l:;	points gained on defeat
-	.byte 	NULL,	$19,	$10,	$10
-	.byte	$30,	$20,	$10,	$00
-	.byte	$00
-Enemies_points_h:
-	.byte 	NULL,	$00,	$00,	$00
 	.byte	$00,	$00,	$00,	$00
-	.byte	$00
+	.byte 	$00,	$00
+romEnemyHPH:
+	.byte 	NULL,	$00,	$00,	$00
+	.byte	$00,	$00,	$00,	$FF
+	.byte	$FF,	$FF,	$FF,	$FF
+	.byte	$00,	$08
+Enemies_points_l:;	points gained on defeat
+	.byte 	NULL,	$00,	$10,	$10
+	.byte	$30,	$20,	$10,	$00
+	.byte	$00,	$00,	$00,	$00
+	.byte	$00,	$00
+Enemies_points_h:
+	.byte 	NULL,	$10,	$00,	$00
+	.byte	$00,	$00,	$00,	$00
+	.byte	$00,	$00,	$00,	$00
+	.byte	$00,	$10
 
 diameter:;	hitbox diameter
 	.byte 	NULL,	$10,	$10,	$10
 	.byte	$10,	$10,	$10,	$00
-	.byte	$00
+	.byte	$00,	$00,	$00,	$00
+	.byte	$00,	$10
 
 Enemies_powerups:;	powerup byte |b b b s s s s s|
 	.byte	NULL,	0|0, 	0|0, 	0|1
 	.byte	0|3, 	0|3, 	0|0,	$00
-	.byte	$00
-
-.proc Defeat
-ENEMY 	= %10000000
-EFFECT 	= %00000000
+	.byte	$00,	$00,	$00,	$00
+	.byte	$00,	$00
+Enemy_fuse:
+	.byte	NULL,	$01,	$10,	$10
+	.byte	$10,	$10,	$10,	$10
+	.byte	$10,	$10,	$10,	$10
+	.byte	$10,	$10
+Enemies_effect:
 	.byte 	NULL
-	.byte	EFFECT|ANIMATION06
-	.byte	EFFECT|ANIMATION06
-	.byte	EFFECT|ANIMATION06
-	.byte	EFFECT|ANIMATION06
-	.byte	EFFECT|ANIMATION06
-	.byte	EFFECT|ANIMATION06
-	.byte	EFFECT|ANIMATION06
+	.byte	ANIMATION09
+	.byte	ANIMATION06
+	.byte	ANIMATION06
+	.byte	ANIMATION06
+	.byte	ANIMATION06
+	.byte	ANIMATION06
+	.byte	ANIMATION06
 
-	.byte	EFFECT|ANIMATION01
-	.byte	EFFECT|ANIMATION01
-	.byte	EFFECT|ANIMATION01
 	.byte	NULL
-.endProc
+	.byte	NULL
+	.byte	NULL
+	.byte	NULL
+	.byte	NULL
+	.byte	ANIMATION09
+
+
+Enemies_spawn:
+	.byte NULL
+	.byte ENEMY0D
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+
+
+.proc Enemies_trigger
+WIN	=	%1
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte NULL
+	.byte WIN
+.endproc
 
 
 SIZE		= 5; bytes
@@ -778,16 +897,69 @@ Enemy0C:
 	.byte 255
 	.byte NULL, 0
 
+
+Enemy0D:
+	.byte MOVEMENT01;	stand still
+	.byte NULL;		be invisible
+	.byte NULL;		don't shoot
+	.byte INVULNERABLE;	don't take tamage
+	.byte 255;		wait for flicker to stop	
+
+	.byte MOVEMENT13;	ease back to center
+	.byte ANIMATION09;	floating animation
+	.byte NULL;		don't shoot
+	.byte VULNERABLE;	don't take tamage
+	.byte $10
+	
+	.byte MOVEMENT14;	ease in right
+	.byte ANIMATION09;	floating animation
+	.byte NULL;		don't shoot
+	.byte VULNERABLE;	don't take tamage
+	.byte 64
+	
+	.byte MOVEMENT15;	ease out right
+	.byte ANIMATION09;	floating animation
+	.byte NULL;		don't shoot
+	.byte VULNERABLE;	don't take tamage
+	.byte 16
+	
+	.byte MOVEMENT16;	ease in left
+	.byte ANIMATION09;	floating animation
+	.byte PATTERN07;	shoot forward
+	.byte VULNERABLE;	don't take tamage
+	.byte 128
+	
+	.byte MOVEMENT17;	ease out left
+	.byte ANIMATION09;	floating animation
+	.byte PATTERN07;	shoot forward
+	.byte VULNERABLE;	don't take tamage
+	.byte 16
+	
+	.byte MOVEMENT14;	ease in right
+	.byte ANIMATION09;	floating animation
+	.byte PATTERN07;	shoot forward
+	.byte VULNERABLE;	don't take tamage
+	.byte 128
+	
+	.byte MOVEMENT15;	ease out right
+	.byte ANIMATION09;	floating animation
+	.byte PATTERN07;	shoot forward
+	.byte VULNERABLE;	don't take tamage
+	.byte 16
+	
+	.byte NULL,(SIZE*4)
+
+
 Enemies_L:
 	.byte NULL,<Enemy01,<Enemy02,<Enemy03
 	.byte <Enemy04,<Enemy05,<Enemy06,<Enemy07
 	.byte <Enemy08,<Enemy09,<Enemy0A,<Enemy0B
-	.byte <Enemy0C
+	.byte <Enemy0C,<Enemy0D
 Enemies_H:
 	.byte NULL,>Enemy01,>Enemy02,>Enemy03
 	.byte >Enemy04,>Enemy05,>Enemy06,>Enemy07
 	.byte >Enemy08,>Enemy09,>Enemy0A,>Enemy0B
-	.byte >Enemy0C
+	.byte >Enemy0C,>Enemy0D
 
 
 MOVEMENT01=$01; not moving
@@ -808,8 +980,11 @@ MOVEMENT0F=$0F; Lock $60 pixels left of parent
 MOVEMENT10=$10; Lock $60 pixels right of parent
 MOVEMENT11=$11; reese charge back
 MOVEMENT12=$12; spawn reese's snipers
-
-
+MOVEMENT13	= $13;		move back to boss center
+MOVEMENT14	= $14;		ease in right
+MOVEMENT15	= $15;		ease out right
+MOVEMENT16	= $16;		ease in left
+MOVEMENT17	= $17;		ease out left
 ;Enemy stays in place
 .proc Movement01; c(x) |
 	clc
@@ -1166,6 +1341,173 @@ SPEED		= $0080
 
 .endproc
 
+.proc Movement13
+BOSS_Y 	= $30
+BOSS_X 	= $80
+	
+	sec
+	lda enemyYH,x;	find distance
+	sbc #BOSS_Y
+	bcs :+
+		eor #%11111111;		if negative, twos compliment
+		adc #1;		
+		tay;			set as speed
+		
+		;clc
+		lda enemyYL,x;		move player down
+		adc Charm_speed_L,y
+		sta enemyYL,x
+
+		lda enemyYH,x
+		adc Charm_speed_H,y
+		sta enemyYH,x
+		jmp @doX
+	:
+	tay;			set as speed offset
+	lda enemyYL,x;		move player up
+	sbc Charm_speed_L,y
+	sta enemyYL,x
+
+	lda enemyYH,x
+	sbc Charm_speed_H,y
+	sta enemyYH,x
+
+@doX:
+	sec
+	lda enemyXH,x;	find distance
+	sbc #BOSS_X
+	bcs :+
+		eor #%11111111;		if negative, two's compliment
+		adc #1
+		tay
+		
+		lda enemyXL,x;		move player right
+		adc Charm_speed_L,y
+		sta enemyXL,x
+
+		lda enemyXH,x
+		adc Charm_speed_H,y
+		sta enemyXH,x
+		jmp @return
+	:
+	tay;			set as speed offset
+	lda enemyXL,x;			else move left
+	sbc Charm_speed_L,y
+	sta enemyXL,x
+
+	lda enemyXH,x
+	sbc Charm_speed_H,y
+	sta enemyXH,x
+	
+@return:
+	clc;			mark on-screen
+	rts
+.endproc
+
+.proc Movement14
+	
+	ldy Enemies_clock,x
+	cpy #%1111
+	bcc :+
+		ldy #%1111
+	:
+	clc
+	lda enemyXL,x
+	adc Ease_inOnes_l,y
+	sta enemyXL,x
+
+	lda enemyXH,x
+	adc Ease_inOnes_h,y
+	sta enemyXH,x
+
+	rts;			c
+
+.endproc
+
+.proc Movement15
+	
+	ldy Enemies_clock,x
+	cpy #%1111
+	bcc :+
+		ldy #%1111
+	:
+	clc
+	lda enemyXL,x
+	adc Ease_outOnes_l,y
+	sta enemyXL,x
+
+	lda enemyXH,x
+	adc Ease_outOnes_h,y
+	sta enemyXH,x
+
+	rts;			c
+
+.endproc
+
+.proc Movement16
+	
+	ldy Enemies_clock,x
+	cpy #%1111
+	bcc :+
+		ldy #%1111
+	:
+	sec
+	lda enemyXL,x
+	sbc Ease_inOnes_l,y
+	sta enemyXL,x
+
+	lda enemyXH,x
+	sbc Ease_inOnes_h,y
+	sta enemyXH,x
+	
+	rol
+	eor #%1
+	ror
+
+	rts;			c
+
+.endproc
+
+.proc Movement17
+	
+	ldy Enemies_clock,x
+	cpy #%1111
+	bcc :+
+		ldy #%1111
+	:
+	sec
+	lda enemyXL,x
+	sbc Ease_outOnes_l,y
+	sta enemyXL,x
+
+	lda enemyXH,x
+	sbc Ease_outOnes_h,y
+	sta enemyXH,x
+	
+	rol
+	eor #%1
+	ror
+
+	rts;			c
+
+.endproc
+
+
+Ease_inOnes_l:
+	.byte	$00, $00, $00, $04, $04, $08, $10, $1C
+	.byte	$28, $38, $4C, $64, $84, $A8, $D0, $00
+
+Ease_inOnes_h:
+	.byte	$00 ,$00 ,$00 ,$00 ,$00 ,$00 ,$00 ,$00
+	.byte	$00 ,$00 ,$00 ,$00 ,$00 ,$00 ,$00 ,$01
+
+Ease_outOnes_l:
+	.byte	$00, $00, $00, $FC, $FC, $F8, $F0, $E4
+	.byte	$D8, $C8, $B4, $9C, $7C, $58, $30, $00
+
+Ease_outOnes_h:
+	.byte	$01, $01, $01, $00, $00, $00, $00, $00
+	.byte	$00, $00, $00, $00, $00, $00, $00, $00
 
 Ease_inTwos_l:
 	.byte 0, 0, 0, 0, 16, 16, 32, 48, 80, 112, 144, 208, 0, 80, 160, 0
@@ -1189,13 +1531,15 @@ Movement_L:
 	.byte <Movement04,<Movement05,<Movement06,<Movement07
 	.byte <Movement08,<Movement09,<Movement0A,<Movement0B
 	.byte <Movement0C,<Movement0D,<Movement0E,<Movement0F
-	.byte <Movement10,<Movement11,<Movement12
+	.byte <Movement10,<Movement11,<Movement12,<Movement13
+	.byte <Movement14,<Movement15,<Movement16,<Movement17
 
 Movement_H:
 	.byte        NULL,>Movement01,>Movement02,>Movement03
 	.byte >Movement04,>Movement05,>Movement06,>Movement07
-	.byte >Movement08,>Movement09,>Movement09,>Movement0B
+	.byte >Movement08,>Movement09,>Movement0A,>Movement0B
 	.byte >Movement0C,>Movement0D,>Movement0E,>Movement0F
-	.byte >Movement10,>Movement11,>Movement12
+	.byte >Movement10,>Movement11,>Movement12,>Movement13
+	.byte >Movement14,>Movement15,>Movement16,>Movement17
 
 

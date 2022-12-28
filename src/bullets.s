@@ -25,8 +25,6 @@ quickBulletY: .res 1
 isEnemyBulletActive: .res MAX_ENEMY_BULLETS
 
 .data
-Bullets_stagger:	.res 1;		staggers oam build
-
 Bullet_invisibility:	.res 1;		invisibility for constructed bullet
 Bullet_type:		.res 1;		type for cunstructed bullet
 
@@ -324,15 +322,17 @@ Charms_suck:
 
 .rodata
 
-BULLET01 = $01;		standard purple
-BULLET02 = $02;		standard color 01
-BULLET03 = $03;		standard color 10
-BULLET04 = $04;		standard color 01
+BULLET01 = $01;		standard, color 11
+BULLET02 = $02;		standard, color 01
+BULLET03 = $03;		standard, color 10
+BULLET04 = $04;		standard, color 01
 
 
 Bullets_sprite:
 	.byte NULL,SPRITE28,SPRITE29,SPRITE2A
 	.byte SPRITE1E
+
+Bullets_dangerDistance:
 
 .macro bulletFib quadrant, X_H, X_L, Y_H, Y_L,
 .if (.xmatch ({quadrant}, 1) .or .xmatch ({quadrant}, 2))

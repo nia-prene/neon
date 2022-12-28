@@ -46,6 +46,14 @@ SPRITE28	= $28;	bullet 11
 SPRITE29	= $29;	bullet 01
 SPRITE2A	= $2A;	bullet 10
 SPRITE2B	= $2B;	game over
+SPRITE2C	= $2C;	card quarter turned front
+SPRITE2D	= $2D;	card sideways
+SPRITE2E	= $2E;	card turned back
+SPRITE2F	= $2F;	card quarter turned back returning
+SPRITE30	= $30;	
+SPRITE31	= $31;	card quarter turned front returning
+SPRITE32	= $32;	sideways right
+
 
 ; format
 ; 	Tile, Y, X, Attribute 
@@ -250,21 +258,38 @@ Sprite2B:
 	.byte NULL
 
 Sprite2C:
+	.lobytes $30, -8, -4, %0
+	.byte NULL
 Sprite2D:
+	.lobytes $36, -8, -4, %0
+	.byte NULL
 Sprite2E:
+	.lobytes $2A, -8, -4, %0
+	.byte NULL
 Sprite2F:
+	.lobytes $2C, -8, -4, %0
+	.byte NULL
+Sprite30:
+	.lobytes $2A, -8, -4, %01000000
+	.byte NULL
+Sprite31:
+	.lobytes $4E, -8, -4, %00
+	.byte NULL
+Sprite32:
+	.lobytes $36, -8, -4, %01000000
+	.byte NULL
 
 ANIMATION01	= $01; 	Fairy
 ANIMATION02	= $02; 	Mushroom stand crouch
 ANIMATION03	= $03; 	Mushroom jump
 ANIMATION04	= $04; 	balloon cannon
 ANIMATION05	= $05; 	Mushroom standing
-ANIMATION06	= $06;	enemy clear
+ANIMATION06	= $06;	explosion
 ANIMATION07	= $07;	shot crumpling
 ANIMATION08	= $08;	missile crumpling
 ANIMATION09	= $09;	reese idle
 ANIMATION0A	= $0A;	reese hands up
-ANIMATION0B	= $0B;	reese hands forward
+ANIMATION0B	= $0B;	spinning card
 
 Animation01:
 	.byte SPRITE0E, 4, SPRITE0F, 4
@@ -290,7 +315,7 @@ Animation05:
 
 
 Animation06:
-	.byte SPRITE0A, 8, SPRITE0B, 8, SPRITE0C, 8, SPRITE0D, 8
+	.byte SPRITE0A, 6, SPRITE0B, 6, SPRITE0C, 6, SPRITE0D, 6
 	.byte NULL
 
 Animation07:
@@ -309,15 +334,25 @@ Animation0A:
 	.byte SPRITE18, 255
 	.byte NULL, 0
 Animation0B:
-
+	.byte SPRITE26, 6
+	.byte SPRITE2C, 6
+	.byte SPRITE2D, 6
+	.byte SPRITE2E, 6
+	.byte SPRITE2F, 6
+	.byte SPRITE30, 6
+	.byte SPRITE32, 6
+	.byte SPRITE31, 6
+	.byte NULL, 0
 Sprites_h:
 	.byte NULL, >Sprite01, >Sprite02, >Sprite03, >Sprite04, >Sprite05, >Sprite06, >Sprite07, >Sprite08, >Sprite09, >Sprite0A, >Sprite0B, >Sprite0C, >Sprite0D, >Sprite0E, >Sprite0F
 	.byte >Sprite10, >Sprite11, >Sprite12, >Sprite13, >Sprite14, >Sprite15, >Sprite16, >Sprite17, >Sprite18, >Sprite19, >Sprite1A, >Sprite1B, >Sprite1C, >Sprite1D, >Sprite1E, >Sprite1F
 	.byte >Sprite20, >Sprite21, >Sprite22, >Sprite23, >Sprite24, >Sprite25, >Sprite26, >Sprite27, >Sprite28, >Sprite29, >Sprite2A, >Sprite2B, >Sprite2C, >Sprite2D, >Sprite2E, >Sprite2F
+	.byte >Sprite30, >Sprite31, >Sprite32
 Sprites_l:
 	.byte NULL, <Sprite01, <Sprite02, <Sprite03, <Sprite04, <Sprite05, <Sprite06, <Sprite07, <Sprite08, <Sprite09, <Sprite0A, <Sprite0B, <Sprite0C, <Sprite0D, <Sprite0E, <Sprite0F
 	.byte <Sprite10, <Sprite11, <Sprite12, <Sprite13, <Sprite14, <Sprite15, <Sprite16, <Sprite17, <Sprite18, <Sprite19, <Sprite1A, <Sprite1B, <Sprite1C, <Sprite1D, <Sprite1E, <Sprite1F
 	.byte <Sprite20, <Sprite21, <Sprite22, <Sprite23, <Sprite24, <Sprite25, <Sprite26, <Sprite27, <Sprite28, <Sprite29, <Sprite2A, <Sprite2B, <Sprite2C, <Sprite2D, <Sprite2E, <Sprite2F
+	.byte <Sprite30, <Sprite31, <Sprite32
 
 Animations_l:
 	.byte NULL,<Animation01,<Animation02,<Animation03

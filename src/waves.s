@@ -211,8 +211,8 @@ waveStrings_L:
 	.byte <waveString00
 waveString00:
 
-	.byte WAVE02
-	.byte WAVE03
+	;.byte WAVE02
+	;.byte WAVE03
 	.byte WAVE01
 	.byte NULL
 ;pointers to individual enemy waves (below)
@@ -240,7 +240,7 @@ Wave_palette01:
 
 wave01:
 	
-	.byte ENEMY01, BOTTOM|32, 1
+	.byte ENEMY01, BOTTOM|31, 1
 	.byte NULL
 
 wave02:
