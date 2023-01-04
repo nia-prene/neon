@@ -33,3 +33,10 @@
 .globalzp ENEMY06
 .globalzp ENEMY07
 .globalzp ENEMY08
+.globalzp ENEMY09
+.globalzp ENEMY0A
+.globalzp ENEMY0B
+.globalzp ENEMY0C
+.globalzp ENEMY0D
+.globalzp ENEMY0E
+.globalzp ENEMY0F

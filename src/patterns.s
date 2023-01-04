@@ -53,7 +53,7 @@ PATTERN05	= $05;		reese handguns
 PATTERN06	= $06;		reese charge forward
 PATTERN07	= $07;		reese spray backward
 PATTERN08	= $08;		reese recovery pattern
-PATTERN09	= $09;		reese side snipers
+PATTERN09	= $09;		reese ball forward
 PATTERN0A	= $0A;		
 PATTERN0B	= $0B;		
 
@@ -255,12 +255,12 @@ AIM		= %00111111
 
 
 .proc Pattern06
-RATE			= %11
-BULLET_COUNT		= 4
-BULLET_INVISIBILITY	= 1
-FRAME_CHANGE		= 12
-PATTERN_CHANGE		= 128/BULLET_COUNT
-TYPE			= 1
+RATE		= %11
+COUNT		= 4
+INVISIBILITY	= 2
+FRAME_CHANGE	= 12
+PATTERN_CHANGE	= 128/COUNT
+TYPE		= 1
 
 	lda Enemies_clock,x
 	and #RATE
@@ -275,7 +275,7 @@ TYPE			= 1
 
 		sta p,x
 
-		lda #BULLET_COUNT
+		lda #COUNT
 		sta bulletCount
 
 	@bulletLoop:
@@ -295,7 +295,7 @@ TYPE			= 1
 		lda #TYPE
 		sta Bullets_type,y
 
-		lda #BULLET_INVISIBILITY
+		lda #INVISIBILITY
 		sta isEnemyBulletActive,y
 		
 		clc
@@ -405,7 +405,17 @@ TYPE			= 1
 
 
 .proc Pattern09
-
+RATE	= %00001111
+BULLET = %01000000 -1
+SPEED	= %11
+	lda Enemies_clock,x
+	and #RATE
+	bne @return
+		jsr Bullets_aim
+		ora #SPEED
+		jmp Bullets_new; c(a,x) | x
+@return:
+	rts
 .endproc
 .proc Pattern0A
 .endproc

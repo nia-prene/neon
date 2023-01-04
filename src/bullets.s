@@ -40,7 +40,9 @@ enemyBulletYL:		.res MAX_ENEMY_BULLETS
 
 	
 Bullets_new:; c(x) | x
-	
+DEFAULT_INVISIBILITY	= 08
+DEFAULT_TYPE 		= 01
+
 	pha; save ID
 	jsr Bullets_get;c,y(void) | x
 	pla; restore ID
@@ -53,11 +55,19 @@ Bullets_new:; c(x) | x
 		sta enemyBulletYH,y;
 		
 		lda Bullet_type
+		bne :+
+			lda #DEFAULT_TYPE
+		:
 		sta Bullets_type,y
 	
 		lda Bullet_invisibility; invisibility frames
+		bne :+
+			lda #DEFAULT_INVISIBILITY
+		:
 		sta isEnemyBulletActive,y
-	
+		lda #FALSE
+		sta Bullet_invisibility
+		sta Bullet_type
 @bulletsFull:
 	rts; c
 

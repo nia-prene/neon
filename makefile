@@ -1,12 +1,19 @@
 objects = apu.o bombs.o bullets.o effects.o enemies.o gamepads.o gamestates.o hud.o lib.o main.o oam.o palettes.o patterns.o shots.o player.o powerups.o ppu.o scenes.o score.o sprites.o tiles.o textbox.o waves.o
 game = neon.nes
 source = src/
-builddir = build/
+builddir = obj/
 configfile = neon.cfg
 debugfile = neon.dbg
 EMULATOR = ~/Programs/Mesen/Mesen.exe
 cleanfiles = *.o *.dbg *.nes
 
+vpath %.s src
+vpath %.h src
+vpath %.sh src
+vpath %.py src
+vpath %.o obj
+
+src = src/
 LD = ld65
 AS = ca65
 MONO = mono
@@ -22,8 +29,9 @@ $(objects): %.o: $(source)%.s $(source)%.h
 $(game): $(objects)
 	$(LD) $(LDflags) $(builddir)*.o
 
+$(src)ease.s: ease.sh
+	$< | tee $@
+
 test: ${game}
 	${MONO} ${EMULATOR} ${builddir}${game} &
 
-clean:
-	-rm $(builddir)*.o

@@ -909,7 +909,7 @@ Enemy0D:
 	.byte ANIMATION09;	floating animation
 	.byte NULL;		don't shoot
 	.byte VULNERABLE;	don't take tamage
-	.byte $10
+	.byte $80
 	
 	.byte MOVEMENT14;	ease in right
 	.byte ANIMATION09;	floating animation
@@ -925,25 +925,25 @@ Enemy0D:
 	
 	.byte MOVEMENT16;	ease in left
 	.byte ANIMATION09;	floating animation
-	.byte PATTERN07;	shoot forward
+	.byte PATTERN09;	shoot forward
 	.byte VULNERABLE;	don't take tamage
 	.byte 128
 	
 	.byte MOVEMENT17;	ease out left
 	.byte ANIMATION09;	floating animation
-	.byte PATTERN07;	shoot forward
+	.byte NULL;		don't shoot
 	.byte VULNERABLE;	don't take tamage
 	.byte 16
 	
 	.byte MOVEMENT14;	ease in right
 	.byte ANIMATION09;	floating animation
-	.byte PATTERN07;	shoot forward
+	.byte PATTERN09;	shoot forward
 	.byte VULNERABLE;	don't take tamage
 	.byte 128
 	
 	.byte MOVEMENT15;	ease out right
 	.byte ANIMATION09;	floating animation
-	.byte PATTERN07;	shoot forward
+	.byte NULL;		don't shoot
 	.byte VULNERABLE;	don't take tamage
 	.byte 16
 	
