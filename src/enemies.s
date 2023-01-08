@@ -4,6 +4,7 @@
 
 .include "apu.h"
 .include "bullets.h"
+.include "ease.h"
 .include "effects.h"
 .include "patterns.h"
 .include "powerups.h"
@@ -1047,10 +1048,10 @@ MUTATOR=1
 	tay
 	clc
 	lda enemyYL,x
-	adc Ease_outTwos_l,y
+	adc ease_outTwos_l,y
 	sta enemyYL,x
 	lda enemyYH,x
-	adc Ease_outTwos_h,y
+	adc ease_outTwos_h,y
 	sta enemyYH,x
 
 	rts; c
@@ -1069,10 +1070,10 @@ MUTATOR=1
 	tay
 	sec
 	lda enemyYL,x
-	sbc Ease_inTwos_l,y
+	sbc ease_inTwos_l,y
 	sta enemyYL,x
 	lda enemyYH,x
-	sbc Ease_inTwos_h,y
+	sbc ease_inTwos_h,y
 	sta enemyYH,x
 	bcs :+
 		sec; clear from screen
@@ -1141,11 +1142,11 @@ MUTATOR=1
 	:
 	
 	clc
-	lda Ease_outFours_l,y
+	lda ease_outFours_l,y
 	adc enemyYL,x
 	sta enemyYL,x
 
-	lda Ease_outFours_h,y
+	lda ease_outFours_h,y
 	adc enemyYH,x
 	sta enemyYH,x
 
@@ -1165,10 +1166,10 @@ MUTATOR=1
 	tay
 	clc
 	lda enemyYL,x
-	adc Ease_outTwos_l,y
+	adc ease_outTwos_l,y
 	sta enemyYL,x
 	lda enemyYH,x
-	adc Ease_outTwos_h,y
+	adc ease_outTwos_h,y
 	sta enemyYH,x
 
 	rts; c
@@ -1350,26 +1351,34 @@ BOSS_X 	= $80
 	sbc #BOSS_Y
 	bcs :+
 		eor #%11111111;		if negative, twos compliment
-		adc #1;		
+		adc #1
+		lsr
+		lsr
+		lsr
+		lsr
 		tay;			set as speed
 		
 		;clc
 		lda enemyYL,x;		move player down
-		adc Charm_speed_L,y
+		adc ease_inEights_l,y
 		sta enemyYL,x
 
 		lda enemyYH,x
-		adc Charm_speed_H,y
+		adc ease_inEights_l,y
 		sta enemyYH,x
 		jmp @doX
 	:
+	lsr
+	lsr
+	lsr
+	lsr
 	tay;			set as speed offset
 	lda enemyYL,x;		move player up
-	sbc Charm_speed_L,y
+	sbc ease_inEights_l,y
 	sta enemyYL,x
 
 	lda enemyYH,x
-	sbc Charm_speed_H,y
+	sbc ease_inEights_l,y
 	sta enemyYH,x
 
 @doX:
@@ -1382,21 +1391,21 @@ BOSS_X 	= $80
 		tay
 		
 		lda enemyXL,x;		move player right
-		adc Charm_speed_L,y
+		adc ease_inEights_l,y
 		sta enemyXL,x
 
 		lda enemyXH,x
-		adc Charm_speed_H,y
+		adc ease_inEights_l,y
 		sta enemyXH,x
 		jmp @return
 	:
 	tay;			set as speed offset
 	lda enemyXL,x;			else move left
-	sbc Charm_speed_L,y
+	sbc ease_inEights_l,y
 	sta enemyXL,x
 
 	lda enemyXH,x
-	sbc Charm_speed_H,y
+	sbc ease_inEights_l,y
 	sta enemyXH,x
 	
 @return:
@@ -1413,11 +1422,11 @@ BOSS_X 	= $80
 	:
 	clc
 	lda enemyXL,x
-	adc Ease_inOnes_l,y
+	adc ease_inOnes_l,y
 	sta enemyXL,x
 
 	lda enemyXH,x
-	adc Ease_inOnes_h,y
+	adc ease_inOnes_h,y
 	sta enemyXH,x
 
 	rts;			c
@@ -1433,11 +1442,11 @@ BOSS_X 	= $80
 	:
 	clc
 	lda enemyXL,x
-	adc Ease_outOnes_l,y
+	adc ease_outOnes_l,y
 	sta enemyXL,x
 
 	lda enemyXH,x
-	adc Ease_outOnes_h,y
+	adc ease_outOnes_h,y
 	sta enemyXH,x
 
 	rts;			c
@@ -1453,11 +1462,11 @@ BOSS_X 	= $80
 	:
 	sec
 	lda enemyXL,x
-	sbc Ease_inOnes_l,y
+	sbc ease_inOnes_l,y
 	sta enemyXL,x
 
 	lda enemyXH,x
-	sbc Ease_inOnes_h,y
+	sbc ease_inOnes_h,y
 	sta enemyXH,x
 	
 	rol
@@ -1477,11 +1486,11 @@ BOSS_X 	= $80
 	:
 	sec
 	lda enemyXL,x
-	sbc Ease_outOnes_l,y
+	sbc ease_outOnes_l,y
 	sta enemyXL,x
 
 	lda enemyXH,x
-	sbc Ease_outOnes_h,y
+	sbc ease_outOnes_h,y
 	sta enemyXH,x
 	
 	rol
@@ -1492,39 +1501,6 @@ BOSS_X 	= $80
 
 .endproc
 
-
-Ease_inOnes_l:
-	.byte	$00, $00, $00, $04, $04, $08, $10, $1C
-	.byte	$28, $38, $4C, $64, $84, $A8, $D0, $00
-
-Ease_inOnes_h:
-	.byte	$00 ,$00 ,$00 ,$00 ,$00 ,$00 ,$00 ,$00
-	.byte	$00 ,$00 ,$00 ,$00 ,$00 ,$00 ,$00 ,$01
-
-Ease_outOnes_l:
-	.byte	$00, $00, $00, $FC, $FC, $F8, $F0, $E4
-	.byte	$D8, $C8, $B4, $9C, $7C, $58, $30, $00
-
-Ease_outOnes_h:
-	.byte	$01, $01, $01, $00, $00, $00, $00, $00
-	.byte	$00, $00, $00, $00, $00, $00, $00, $00
-
-Ease_inTwos_l:
-	.byte 0, 0, 0, 0, 16, 16, 32, 48, 80, 112, 144, 208, 0, 80, 160, 0
-Ease_inTwos_h:
-	.byte  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  2
-Ease_inFours_l:
-Ease_inFours_H:
-	
-Ease_outTwos_l:
-	.byte 0,0,0,0,240, 240, 224, 208, 176, 144, 112, 48, 0, 176, 96, 0
-Ease_outTwos_h:
-	.byte  2,  2,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0
-
-Ease_outFours_l:
-	.byte 0, 0, 0, 240, 240, 224, 192, 144, 96, 32, 208, 112, 240, 96, 192, 0
-Ease_outFours_h:
-	.byte  4,  4,  4,  3,  3,  3,  3,  3,  3,  3,  2,  2,  1,  1,  0,  0
 
 Movement_L:
 	.byte 	     NULL,<Movement01,<Movement02,<Movement03

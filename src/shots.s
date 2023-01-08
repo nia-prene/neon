@@ -3,6 +3,7 @@
 .include "shots.h"
 
 .include "apu.h"
+.include "ease.h"
 .include "gamepads.h"
 .include "player.h"
 .include "sprites.h"
@@ -127,34 +128,25 @@ BULLET_SPEED = 18
 
 @missile_tick:
 
-	ldy Missiles_velocity
-	dey
-	bpl :+
-
-		lda #FALSE
-		sta Shots_isActive+(SHOTS_MAX-1)
-
-	:
-	
+	lda Missiles_velocity
+	cmp #16
+	bcs @clear
+	asl
+	tay
 	sec
 	lda bulletY+(SHOTS_MAX-1)
-	sbc @delta,y
+	sbc ease_outSixteens_h,y
 	sta bulletY+(SHOTS_MAX-1)
-	bcs :+
-		lda #FALSE
-		sta Shots_isActive+(SHOTS_MAX-1)
-	:
-	
-	sty Missiles_velocity
-
+	bcc @clear
+	inc Missiles_velocity
 @return:
 	rts
 
-@delta:
-	.byte  0,  6, 10, 13, 14, 15, 16, 16 
-	.byte 0, 6, 11, 14, 16, 17, 18, 18
+@clear:
+	lda #FALSE
+	sta Shots_isActive+(SHOTS_MAX-1)
 
-
+	rts
 .proc Shot00
 
 
@@ -394,7 +386,7 @@ DAMAGE = 5
 		lda #TRUE
 		sta Shots_isActive+(SHOTS_MAX-1)
 
-		lda #8
+		lda #0
 		sta Missiles_velocity
 
 @return:

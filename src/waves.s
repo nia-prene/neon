@@ -240,7 +240,8 @@ Wave_palette01:
 
 wave01:
 	
-	.byte ENEMY0D, BOTTOM|31, 1
+	.byte ENEMY01, BOTTOM|31, 1
+;	.byte ENEMY0D, BOTTOM|31, 1
 	.byte NULL
 
 wave02:

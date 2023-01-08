@@ -1,4 +1,4 @@
-objects = apu.o bombs.o bullets.o effects.o enemies.o gamepads.o gamestates.o hud.o lib.o main.o oam.o palettes.o patterns.o shots.o player.o powerups.o ppu.o scenes.o score.o sprites.o tiles.o textbox.o waves.o
+objects = apu.o bombs.o bullets.o ease.o effects.o enemies.o gamepads.o gamestates.o hud.o lib.o main.o oam.o palettes.o patterns.o shots.o player.o powerups.o ppu.o scenes.o score.o sprites.o tiles.o textbox.o waves.o 
 game = neon.nes
 source = src/
 builddir = obj/
@@ -12,6 +12,7 @@ vpath %.h src
 vpath %.sh src
 vpath %.py src
 vpath %.o obj
+vpath %.cfg src
 
 src = src/
 LD = ld65
@@ -29,8 +30,11 @@ $(objects): %.o: $(source)%.s $(source)%.h
 $(game): $(objects)
 	$(LD) $(LDflags) $(builddir)*.o
 
-$(src)ease.s: ease.sh
-	$< | tee $@
+$(src)ease.s: ease.sh ease.cfg
+	$< > $@
+
+$(src)ease.h: ease_header.sh ease.cfg
+	$< > $@
 
 test: ${game}
 	${MONO} ${EMULATOR} ${builddir}${game} &

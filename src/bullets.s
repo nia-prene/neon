@@ -2,6 +2,7 @@
 
 .include "lib.h"
 
+.include "ease.h"
 .include "player.h"
 .include "sprites.h"
 .include "bombs.h"
@@ -250,11 +251,20 @@ Charms_suck:
 		bcs @playerXGreater
 
 			eor #%11111111; ones compliment
+			lsr
+			cmp #16-1
+			bcc :+
+				lda #16-1
+			:
 			tay
 			jmp @moveLeft
 
 	@playerXGreater:
-	
+		lsr
+		cmp #16-1
+		bcc :+
+			lda #16-1
+		:
 		tay
 		jmp @moveRight
 
@@ -266,11 +276,20 @@ Charms_suck:
 		bcs @playerYGreater
 
 			eor #%11111111; ones compliment
+			lsr
+			cmp #16-1
+			bcc :+
+				lda #16-1
+			:
 			tay
 			jmp @moveUp
 
 	@playerYGreater:
-
+		lsr
+		cmp #16-1
+		bcc :+
+			lda #16-1
+		:
 		tay
 		jmp @moveDown
 
@@ -285,11 +304,11 @@ Charms_suck:
 @moveLeft:
 
 	lda enemyBulletXL,x
-	sbc Charm_speed_L,y
+	sbc ease_inEights_l,y
 	sta enemyBulletXL,x
 	
 	lda enemyBulletXH,x
-	sbc Charm_speed_H,y
+	sbc ease_inEights_h,y
 	sta enemyBulletXH,x
 
 	jmp @doY
@@ -297,11 +316,11 @@ Charms_suck:
 @moveRight:
 
 	lda enemyBulletXL,x
-	adc Charm_speed_L,y
+	adc ease_inEights_l,y
 	sta enemyBulletXL,x
 	
 	lda enemyBulletXH,x
-	adc Charm_speed_H,y
+	adc ease_inEights_h,y
 	sta enemyBulletXH,x
 	
 	jmp @doY
@@ -309,11 +328,11 @@ Charms_suck:
 @moveDown:
 
 	lda enemyBulletYL,x
-	adc Charm_speed_L,y
+	adc ease_inEights_l,y
 	sta enemyBulletYL,x
 	
 	lda enemyBulletYH,x
-	adc Charm_speed_H,y
+	adc ease_inEights_h,y
 	sta enemyBulletYH,x
 
 	jmp @nextCharm
@@ -321,11 +340,11 @@ Charms_suck:
 @moveUp:
 
 	lda enemyBulletYL,x
-	sbc Charm_speed_L,y
+	sbc ease_inEights_l,y
 	sta enemyBulletYL,x
 	
 	lda enemyBulletYH,x
-	sbc Charm_speed_H,y
+	sbc ease_inEights_h,y
 	sta enemyBulletYH,x
 
 	jmp @nextCharm
@@ -1509,37 +1528,3 @@ log2_tab:
 	.byte $fe,$fe,$fe,$ff,$ff,$ff,$ff,$ff
 
 
-Charm_speed_L:
-	.byte   0,  54, 107, 159, 210,   3,  51,  97, 142, 186, 229,  15,  56,  95, 134, 171
-	.byte 208, 243,  22,  55,  88, 120, 151, 181, 210, 239,  11,  38,  64,  90, 115, 139
-	.byte 162, 185, 208, 230, 251,  15,  36,  55,  74,  93, 111, 128, 145, 162, 178, 194
-	.byte 209, 224, 239, 253,  10,  24,  37,  50,  62,  74,  86,  97, 108, 119, 129, 140
-	.byte 149, 159, 169, 178, 187, 195, 204, 212, 220, 228, 235, 243, 250,   1,   8,  14
-	.byte  21,  27,  33,  39,  45,  50,  56,  61,  66,  72,  76,  81,  86,  90,  95,  99
-	.byte 103, 107, 111, 115, 119, 123, 126, 130, 133, 136, 139, 142, 146, 148, 151, 154
-	.byte 157, 159, 162, 164, 167, 169, 172, 174, 176, 178, 180, 182, 184, 186, 188, 190
-	.byte 192, 193, 195, 196, 198, 200, 201, 203, 204, 205, 207, 208, 209, 210, 212, 213
-	.byte 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 226, 227, 228
-	.byte 229, 229, 230, 231, 231, 232, 233, 233, 234, 234, 235, 236, 236, 237, 237, 238
-	.byte 238, 239, 239, 239, 240, 240, 241, 241, 241, 242, 242, 243, 243, 243, 244, 244
-	.byte 244, 244, 245, 245, 245, 246, 246, 246, 246, 247, 247, 247, 247, 248, 248, 248
-	.byte 248, 248, 249, 249, 249, 249, 249, 249, 250, 250, 250, 250, 250, 250, 250, 251
-	.byte 251, 251, 251, 251, 251, 251, 251, 252, 252, 252, 252, 252, 252, 252, 252, 252
-	.byte 252, 252, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253
-Charm_speed_H:
-	.byte   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2
-	.byte   2,   2,   3,   3,   3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   4,   4
-	.byte   4,   4,   4,   4,   4,   5,   5,   5,   5,   5,   5,   5,   5,   5,   5,   5
-	.byte   5,   5,   5,   5,   6,   6,   6,   6,   6,   6,   6,   6,   6,   6,   6,   6
-	.byte   6,   6,   6,   6,   6,   6,   6,   6,   6,   6,   6,   6,   6,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
-	.byte   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7,   7
