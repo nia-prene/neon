@@ -36,6 +36,9 @@ $(src)ease.s: ease.sh ease.cfg
 $(src)ease.h: ease_header.sh ease.cfg
 	$< > $@
 
+$(src)sprite_data.s: sprites.sh
+	$< |tee $@
+
 test: ${game}
 	${MONO} ${EMULATOR} ${builddir}${game} &
 

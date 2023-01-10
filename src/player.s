@@ -758,7 +758,8 @@ RECOVER_SPEED=5
 
 
 Player_collectCharms:
-COLLECTION_RANGE	= 12
+COLLECTION_RANGE_X	= 12
+COLLECTION_RANGE_Y	= 20
 
 	ldx #MAX_ENEMY_BULLETS-1
 @bulletLoop:
@@ -774,7 +775,7 @@ COLLECTION_RANGE	= 12
 			eor #%11111111 ;if negative
 			adc #1
 		
-		:cmp #COLLECTION_RANGE; if x distance < width
+		:cmp #COLLECTION_RANGE_X; if x distance < width
 		bcs @nextBullet ;else
 		sec ;find y distance
 		lda enemyBulletYH,x
@@ -784,7 +785,7 @@ COLLECTION_RANGE	= 12
 			eor #%11111111 ;if negative
 			adc #1; two's compliment
 		
-		:cmp #COLLECTION_RANGE;if y distance < height
+		:cmp #COLLECTION_RANGE_Y;if y distance < height
 		bcs @nextBullet
 			
 			;clc
