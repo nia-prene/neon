@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#converts 8x8 tile to chr
+#converts 4bpp bmp to 2bpp nes
 use strict;
 use warnings;
 use diagnostics;
