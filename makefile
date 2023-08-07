@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 objects = apu.o bombs.o bullets.o ease.o effects.o enemies.o gamepads.o gamestates.o hud.o lib.o main.o oam.o palettes.o patterns.o shots.o player.o powerups.o ppu.o scenes.o score.o sprites.o tiles.o textbox.o waves.o 
 game = neon.nes
 source = src/
@@ -22,13 +24,11 @@ MONO = mono
 ASflags =-o $(builddir)$@ --debug-info
 LDflags =-o $(builddir)$@ -C $(configfile) --dbgfile $(builddir)$(debugfile)
 
-.PHONY all: $(objects) $(game)
-
-$(objects): %.o: $(source)%.s $(source)%.h
-	$(AS) $(ASflags) $<
-
-$(game): $(objects)
+$(game): $(objects) 
 	$(LD) $(LDflags) $(builddir)*.o
+
+$(objects): %.o: $(source)%.s $(source)%.h $(src)metasprites.s $(src)sprites.chr
+	$(AS) $(ASflags) $<
 
 $(src)ease.s: ease.sh ease.cfg
 	$< > $@
@@ -36,8 +36,11 @@ $(src)ease.s: ease.sh ease.cfg
 $(src)ease.h: ease_header.sh ease.cfg
 	$< > $@
 
-$(src)sprite_data.s: sprites.sh
-	$< |tee $@
+$(src)animations.s: $(src)animations.sh
+	$< > $@
+
+$(src)metasprites.s $(src)sprites.chr $(src)sprite_palettes.s: sprites.sh animations.s
+	$< 
 
 test: ${game}
 	${MONO} ${EMULATOR} ${builddir}${game} &

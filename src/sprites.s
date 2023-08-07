@@ -2,7 +2,6 @@
 .include "sprites.h"
 
 .rodata
-
 SPRITE01	=$01;	Player 1 neutral sprite
 SPRITE02	=$02; 	Player 1 moving left
 SPRITE03	=$03; 	Player 1 moving right
