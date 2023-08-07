@@ -89,8 +89,9 @@ NMI_wait:
 .word nmi 	;jump here during vblank
 .word main;jump here on reset
 
-.segment "SPRITES"
-.incbin "sprites.chr"
-.segment "BACKGROUND"
-.incbin "background.chr"
-;.incbin "graphics.chr"
+;.segment "SPRITES"
+;.incbin "sprites.chr"
+;.segment "BACKGROUND"
+;.incbin "background.chr"
+.segment "GRAPHICS"
+.incbin "graphics.chr"

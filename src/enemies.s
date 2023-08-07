@@ -585,12 +585,12 @@ ENEMY0D		= $0D;	reese boss phase 2
 
 
 romEnemyHPL:;	total hit points until defeat
-	.byte 	NULL,	$01,	$20,	$30	
+	.byte 	NULL,	$00,	$20,	$30	
 	.byte 	$80, 	$80,	$10,	$00
 	.byte	$00,	$00,	$00,	$00
 	.byte 	$00,	$00
 romEnemyHPH:
-	.byte 	NULL,	$00,	$00,	$00
+	.byte 	NULL,	$01,	$00,	$00
 	.byte	$00,	$00,	$00,	$FF
 	.byte	$FF,	$FF,	$FF,	$FF
 	.byte	$00,	$08
